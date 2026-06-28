@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id            String  @id @default(cuid())
+  companyCode   String  @unique
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  addressStreet String?
+  addressCity   String?
+  addressState  String?
+  addressZip    String?
+
+  licenseNumber      String?
+  website            String?
+  logoUrl            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  descOfImprov       String?
+  qualifierName      String?
+  businessTaxReceipt String?
+
+  jobs  Job[]
+  users User[]
+}
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  passwordHash    String
+  role            String
+  companyId       String?
+  createdAt       DateTime @default(now())
+  activeCompanyId String?
+  email           String?
+  company         Company? @relation(fields: [companyId], references: [id])
+}
+
+model Job {
+  id              String  @id @default(cuid())
+  companyId       String
+  jobNumber       Int
+  title           String?
+  customerName    String?
+  customerPhone   String?
+  customerAddress String?
+  customerCity    String?
+  customerState   String?
+  customerZip     String?
+
+  legalDescription String?
+  lotNumber        String?
+  blockNumber      String?
+  subdivision      String?
+  buildingNumber   String?
+  unitNumber       String?
+
+  taxFolioNumber String?
+  jobValue       Float?
+  description    String?
+
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime? @updatedAt
+  status        String?  @default("open")
+  customerEmail String?
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  documents JobDocument[]
+  jobFiles  JobFile[]
+  snippetPath String? @db.Text
+}
+
+model FormTemplate {
+  id           String             @id @default(cuid())
+  name         String
+  createdAt    DateTime           @default(now())
+  fieldNames   Json
+  storagePath  String?
+  description  String?
+  county       String
+  path         String
+  updatedAt    DateTime           @updatedAt
+  formType     String
+  mapping      Json?
+  municipality String?
+  mappings     FormFieldMapping[] @relation("TemplateMappings")
+}
+
+model FormFieldMapping {
+  id           String       @id @default(cuid())
+  templateId   String
+  pdfFieldName String
+  createdAt    DateTime     @default(now())
+  mappedTo     String
+  updatedAt    DateTime     @updatedAt
+  template     FormTemplate @relation("TemplateMappings", fields: [templateId], references: [id])
+}
+
+model JobDocument {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id])
+
+  templateId   String?
+  templatePath String
+  templateName String
+
+  createdAt DateTime @default(now())
+}
+
+model JobFile {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  fileName  String
+  createdAt DateTime @default(now())
+}
