@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import bcrypt from "bcryptjs";

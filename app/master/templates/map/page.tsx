@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { extractPdfFields } from "@/lib/pdf/extractFields"; // correct import
-import { saveMappings } from "../[id]/map/actions"; // correct path
+import { extractPdfFields } from "@/lib/pdf/extractFields"; // stays client-safe
 
 export default function TemplateMappingPage() {
   const params = useSearchParams();
@@ -18,9 +17,6 @@ export default function TemplateMappingPage() {
   const [mappings, setMappings] = useState<Record<string, string>>({});
   const [templateId, setTemplateId] = useState<string>("");
 
-  /* ---------------------------------------------------------
-     LOAD TEMPLATE METADATA + SIGNED URL + FIELD NAMES
-  --------------------------------------------------------- */
   useEffect(() => {
     if (!templatePath) return;
 
@@ -41,7 +37,7 @@ export default function TemplateMappingPage() {
 
       setTemplateId(data.template.id);
 
-      // 2. Get signed URL for PDF preview
+      // 2. Signed URL
       const signed = await supabaseClient.storage
         .from("templates")
         .createSignedUrl(templatePath, 3600);
@@ -54,7 +50,7 @@ export default function TemplateMappingPage() {
 
       setPdfUrl(signed.data.signedUrl);
 
-      // 3. Extract fields using your built-in extractor
+      // 3. Extract fields
       const extracted = await extractPdfFields(templatePath);
       setFields(extracted);
 
@@ -77,9 +73,6 @@ export default function TemplateMappingPage() {
     load();
   }, [templatePath]);
 
-  /* ---------------------------------------------------------
-     UPDATE MAPPING STATE
-  --------------------------------------------------------- */
   const updateMapping = (field: string, value: string) => {
     setMappings((prev) => ({
       ...prev,
@@ -87,9 +80,6 @@ export default function TemplateMappingPage() {
     }));
   };
 
-  /* ---------------------------------------------------------
-     SAVE MAPPINGS
-  --------------------------------------------------------- */
   const handleSave = async () => {
     if (!templateId) return;
 
@@ -100,12 +90,13 @@ export default function TemplateMappingPage() {
       formData.set(`map_${f}`, mappings[f] || "");
     });
 
-    await saveMappings(formData);
+    // ⭐ Correct Next.js 16 pattern — POST to API route
+    await fetch(`/api/forms/templates/${templateId}/mappings`, {
+      method: "POST",
+      body: formData,
+    });
   };
 
-  /* ---------------------------------------------------------
-     RENDER
-  --------------------------------------------------------- */
   if (!templatePath) {
     return (
       <div className="p-10">
@@ -186,7 +177,6 @@ export default function TemplateMappingPage() {
         )}
       </div>
 
-      {/* SAVE BUTTON */}
       <button onClick={handleSave} className="btn btn-primary">
         Save Mappings
       </button>

@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
@@ -14,7 +16,6 @@ export async function updateCompanyAction(formData: FormData) {
   const companyId = formData.get("company_id") as string;
   const existingCompanyCode = formData.get("existing_company_code") as string;
 
-  // RAW VALUES
   const raw = {
     name: formData.get("company_name") as string | undefined,
     companyCode: (formData.get("company_code") as string)?.trim() || "",
@@ -36,10 +37,8 @@ export async function updateCompanyAction(formData: FormData) {
     qualifierName: (formData.get("qualifier_name") as string) || undefined,
   };
 
-  // ⭐ FORMAT COMPANY FIELDS
   const formatted = formatCompanyFields(raw);
 
-  // Build formatted full address
   const formattedAddress = [
     formatted.addressStreet,
     formatted.addressCity,
@@ -49,9 +48,6 @@ export async function updateCompanyAction(formData: FormData) {
     .filter(Boolean)
     .join(", ");
 
-  // -----------------------------
-  // MIGRATION LOGIC (unchanged)
-  // ------------------------------
   async function listAllFiles(prefix: string): Promise<string[]> {
     const files: string[] = [];
 
@@ -157,7 +153,6 @@ export async function updateCompanyAction(formData: FormData) {
     logoUrl = signed.signedUrl;
   }
 
-  // ⭐ SAVE FORMATTED COMPANY DATA
   await prisma.company.update({
     where: { id: companyId },
     data: {

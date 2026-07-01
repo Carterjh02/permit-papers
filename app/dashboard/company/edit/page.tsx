@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -54,7 +56,6 @@ export default async function CompanyAdminEditPage() {
     const user = session.user as AuthUser;
     if (user.role === "user") redirect("/dashboard/company");
 
-    // RAW VALUES
     const raw = {
       name: formData.get("name") as string | undefined,
       email: (formData.get("email") as string) || undefined,
@@ -74,10 +75,8 @@ export default async function CompanyAdminEditPage() {
         (formData.get("businessTaxReceipt") as string) || undefined,
     };
 
-    // FORMAT COMPANY FIELDS
     const formatted = formatCompanyFields(raw);
 
-    // Rebuild formatted full address
     const formattedAddress = [
       formatted.addressStreet,
       formatted.addressCity,
@@ -87,7 +86,6 @@ export default async function CompanyAdminEditPage() {
       .filter(Boolean)
       .join(", ");
 
-    // Ensure folders exist
     const basePrefix = `${companyCode}`;
     const logoPath = `${basePrefix}/logos/logo.png`;
 
@@ -104,7 +102,6 @@ export default async function CompanyAdminEditPage() {
         .upload(path, new Blob([""]), { upsert: true });
     }
 
-    // Handle logo upload
     const file = formData.get("logo") as File | null;
     let logoUrl = existingLogoUrl;
 
@@ -122,7 +119,6 @@ export default async function CompanyAdminEditPage() {
       logoUrl = signed.signedUrl;
     }
 
-    // SAVE FORMATTED COMPANY DATA
     await prisma.company.update({
       where: { id: companyIdForUpdate },
       data: {

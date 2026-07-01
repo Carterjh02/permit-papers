@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -21,7 +23,6 @@ interface PageProps {
 const PAGE_SIZE = 20;
 
 export default async function AdminUsersPage({ searchParams: searchParamsPromise }: PageProps) {
-  // Next.js 16 fix — unwrap the Promise
   const searchParams = await searchParamsPromise;
 
   const session = await getServerSession(authOptions);

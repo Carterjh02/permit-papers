@@ -1,3 +1,5 @@
+"use server";
+
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { extractPdfFields } from "@/lib/pdf/extractFields";
@@ -5,7 +7,6 @@ import { extractPdfFields } from "@/lib/pdf/extractFields";
 export default async function BatchMappingPage(props: {
   searchParams: Promise<{ paths?: string }>;
 }) {
-  // Next.js 16 requires awaiting searchParams
   const { paths: raw } = await props.searchParams;
 
   if (!raw) {
@@ -19,7 +20,6 @@ export default async function BatchMappingPage(props: {
     );
   }
 
-  // Decode and split paths
   const paths = raw
     .split(",")
     .map((p) => decodeURIComponent(p.trim()))
@@ -33,9 +33,6 @@ export default async function BatchMappingPage(props: {
     );
   }
 
-  /* ---------------------------------------------------------
-     LOAD OR CREATE TEMPLATE RECORDS
-  --------------------------------------------------------- */
   const templates = [];
 
   for (const path of paths) {
@@ -62,15 +59,11 @@ export default async function BatchMappingPage(props: {
     templates.push(template);
   }
 
-  /* ---------------------------------------------------------
-     EXTRACT FIELDS + SAVE fieldNames (mirrors old workflow)
-  --------------------------------------------------------- */
   const templateData = [];
 
   for (const template of templates) {
     const fields = await extractPdfFields(template.path);
 
-    // Save extracted fields into DB (old workflow behavior)
     await prisma.formTemplate.update({
       where: { id: template.id },
       data: { fieldNames: fields },
@@ -84,9 +77,6 @@ export default async function BatchMappingPage(props: {
     });
   }
 
-  /* ---------------------------------------------------------
-     RENDER BATCH MAPPING FORM
-  --------------------------------------------------------- */
   return (
     <form action={saveBatchMappings} className="p-10 space-y-10">
       <h1 className="text-3xl font-bold">Batch Template Mapping</h1>
@@ -146,9 +136,6 @@ export default async function BatchMappingPage(props: {
   );
 }
 
-/* ---------------------------------------------------------
-   SERVER ACTION — SAVE ALL MAPPINGS
---------------------------------------------------------- */
 async function saveBatchMappings(formData: FormData) {
   "use server";
 

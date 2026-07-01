@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -24,7 +26,6 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   if (!job) notFound();
 
-  // Ensure updatedAt is always usable
   const updatedAt = job.updatedAt ?? job.createdAt;
   const cacheKey = `v=${updatedAt.getTime()}`;
 
@@ -33,22 +34,16 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  /* ---------------------------------------------------------
-     GENERATED PREVIEWS
-  --------------------------------------------------------- */
   const generatedPreviews = job.documents.map((doc) => {
-  const fileName = doc.templateName
-  .replace(/\s+/g, "_")
-  .replace(/[^a-zA-Z0-9-_.]/g, "");
+    const fileName = doc.templateName
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9-_.]/g, "");
     const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
     const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
 
     return { id: doc.id, name: fileName, url };
   });
 
-  /* ---------------------------------------------------------
-     PERMANENT FILES
-  --------------------------------------------------------- */
   const permanentFiles = await prisma.jobFile.findMany({
     where: { jobId: id },
     orderBy: { createdAt: "asc" },
@@ -56,8 +51,8 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   const permanentPreviews = permanentFiles.map((file) => {
     const fileName = file.fileName
-  .replace(/\s+/g, "_")
-  .replace(/[^a-zA-Z0-9-_.]/g, "");
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9-_.]/g, "");
     const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
     const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
 
@@ -87,7 +82,6 @@ export default async function JobPreviewPage({ params }: PageProps) {
         </Link>
       </div>
 
-      {/* GENERATED PREVIEWS */}
       <h2 className="text-xl font-semibold mt-6">Generated Previews</h2>
 
       {generatedPreviews.length === 0 && (
@@ -111,7 +105,6 @@ export default async function JobPreviewPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* PERMANENT FILES */}
       <h2 className="text-xl font-semibold mt-10">Permanent Job Files</h2>
 
       {permanentPreviews.length === 0 && (

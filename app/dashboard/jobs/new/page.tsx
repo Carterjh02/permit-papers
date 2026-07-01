@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -39,8 +41,8 @@ export default async function NewJobPage() {
         mode="create"
         initialJob={{
           description: defaultDescription,
-          companyId,        // ⭐ REQUIRED for minimal job creation
-          createdBy: user.username, // ⭐ REQUIRED for minimal job creation
+          companyId,
+          createdBy: user.username,
         }}
         initialTemplates={[]}
         onSave={createJob}

@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -58,9 +60,6 @@ export default async function JobEditPage({ params }: PageProps) {
     templatePath: d.templatePath,
   }));
 
-  /* ---------------------------------------------------------
-     UPDATE JOB (SERVER ACTION)
-  --------------------------------------------------------- */
   async function updateJob(formData: FormData) {
     "use server";
 
@@ -149,9 +148,6 @@ export default async function JobEditPage({ params }: PageProps) {
     redirect(`/dashboard/jobs/${targetId}/preview`);
   }
 
-  /* ---------------------------------------------------------
-     ADD TEMPLATE
-  --------------------------------------------------------- */
   async function addTemplate(path: string) {
     "use server";
 
@@ -191,9 +187,6 @@ export default async function JobEditPage({ params }: PageProps) {
     });
   }
 
-  /* ---------------------------------------------------------
-     REMOVE TEMPLATE
-  --------------------------------------------------------- */
   async function removeTemplate(jobDocumentId: string) {
     "use server";
 
@@ -233,10 +226,8 @@ export default async function JobEditPage({ params }: PageProps) {
             Back to Dashboard
           </a>
 
-          {/* CLIENT-SIDE DELETE BUTTON */}
           <DeleteJobButton jobNumber={job.jobNumber} />
 
-          {/* SERVER-SIDE DELETE FORM */}
           <form
             id="delete-job-form"
             action={async () => {

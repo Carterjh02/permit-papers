@@ -1,5 +1,7 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 interface PageProps {
@@ -11,20 +13,26 @@ export default async function TemplateEditPage({ params }: PageProps) {
     where: { id: params.id },
   });
 
-  // EARLY RETURN — fixes all TS errors
   if (!template) {
-    return <div className="p-10">Template not found.</div>;
+    notFound();
   }
+
+  // TS-safe non-null alias
+  const tpl = template!;
+
+  /* -----------------------------------------------------------
+     SERVER ACTIONS
+  ----------------------------------------------------------- */
 
   async function updateTemplate(formData: FormData) {
     "use server";
 
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const folderPath = formData.get("folderPath") as string;
+    const name = (formData.get("name") as string) ?? tpl.name;
+    const description = (formData.get("description") as string) ?? tpl.description ?? "";
+    const folderPath = (formData.get("folderPath") as string) ?? "";
     const file = formData.get("file") as File | null;
 
-    let storagePath = template.storagePath;
+    let storagePath: string = tpl.storagePath ?? "";
 
     if (file && file.size > 0) {
       storagePath = `templates/${folderPath}/${file.name}`;
@@ -37,7 +45,7 @@ export default async function TemplateEditPage({ params }: PageProps) {
     }
 
     await prisma.formTemplate.update({
-      where: { id: template.id },
+      where: { id: tpl.id },
       data: {
         name,
         description,
@@ -51,18 +59,26 @@ export default async function TemplateEditPage({ params }: PageProps) {
   async function deleteTemplate() {
     "use server";
 
-    await supabaseClient.storage
-      .from("permit-papers")
-      .remove([template.storagePath]);
+    const path = tpl.storagePath ?? "";
+
+    if (path.length > 0) {
+      await supabaseClient.storage
+        .from("permit-papers")
+        .remove([path]);
+    }
 
     await prisma.formTemplate.delete({
-      where: { id: template.id },
+      where: { id: tpl.id },
     });
 
     redirect("/master/templates");
   }
 
-  const existingFolderPath = template.storagePath
+  /* -----------------------------------------------------------
+     UI
+  ----------------------------------------------------------- */
+
+  const existingFolderPath = (tpl.storagePath ?? "")
     .replace(/^templates\//, "")
     .split("/")
     .slice(0, -1)
@@ -84,7 +100,7 @@ export default async function TemplateEditPage({ params }: PageProps) {
           <label className="block text-sm font-medium text-gray-800">
             Template Name
           </label>
-          <input name="name" defaultValue={template.name} />
+          <input name="name" defaultValue={tpl.name} />
         </div>
 
         <div>
@@ -93,7 +109,7 @@ export default async function TemplateEditPage({ params }: PageProps) {
           </label>
           <textarea
             name="description"
-            defaultValue={template.description ?? ""}
+            defaultValue={tpl.description ?? ""}
           />
         </div>
 
@@ -118,7 +134,7 @@ export default async function TemplateEditPage({ params }: PageProps) {
             accept="application/pdf"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Current file: {template.storagePath}
+            Current file: {tpl.storagePath}
           </p>
         </div>
 

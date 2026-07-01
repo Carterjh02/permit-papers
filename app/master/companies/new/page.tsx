@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
@@ -7,7 +9,6 @@ export default function NewCompanyPage() {
   async function createCompany(formData: FormData) {
     "use server";
 
-    // RAW VALUES
     const raw = {
       name: formData.get("company_name") as string | undefined,
       companyCode: (formData.get("company_code") as string)?.trim(),
@@ -33,10 +34,8 @@ export default function NewCompanyPage() {
       throw new Error("Company code is required.");
     }
 
-    // ⭐ FORMAT COMPANY FIELDS
     const formatted = formatCompanyFields(raw);
 
-    // Build formatted full address
     const formattedAddress = [
       formatted.addressStreet,
       formatted.addressCity,
@@ -46,7 +45,6 @@ export default function NewCompanyPage() {
       .filter(Boolean)
       .join(", ");
 
-    // Unified storage: <companyCode>/...
     const basePrefix = `${formatted.companyCode}`;
 
     const folderPaths = [
@@ -62,7 +60,6 @@ export default function NewCompanyPage() {
         .upload(path, new Blob([""]), { upsert: true });
     }
 
-    // Handle logo upload
     const file = formData.get("logo") as File | null;
     let logoUrl: string | null = null;
 
@@ -82,7 +79,6 @@ export default function NewCompanyPage() {
       }
     }
 
-    // ⭐ SAVE FORMATTED COMPANY DATA
     await prisma.company.create({
       data: {
         name: formatted.name!,

@@ -1,3 +1,5 @@
+"use server";
+
 import Link from "next/link";
 import FolderTree, { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
 import { supabaseServer } from "@/lib/supabaseServer";

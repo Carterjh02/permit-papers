@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -29,7 +31,6 @@ export default async function MasterNewUserPage() {
     const password = formData.get("password") as string;
     const role = formData.get("role") as "master" | "admin" | "user";
 
-    // Normalize companyId (empty string → null)
     let companyId = formData.get("companyId") as string | null;
     if (!companyId || companyId.trim() === "") {
       companyId = null;

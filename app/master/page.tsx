@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,12 +8,10 @@ import { redirect } from "next/navigation";
 export default async function MasterHome() {
   const session = await getServerSession(authOptions);
 
-  // Must be logged in
   if (!session?.user) redirect("/login");
 
   const user = session.user;
 
-  // Only master can access this page
   if (user.role !== "master") {
     redirect("/dashboard");
   }
