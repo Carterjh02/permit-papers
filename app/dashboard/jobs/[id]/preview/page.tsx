@@ -31,11 +31,13 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  // ⭐ Use templateOutputPath (filled PDF)
+  // Use templateOutputPath (filled PDF)
   const generatedPreviews = job.documents
     .filter((doc) => doc.templateOutputPath) // only show generated PDFs
     .map((doc) => {
-      const fileName = `${doc.templateName}.pdf`;
+      const fileName = doc.templateName.endsWith(".pdf")
+  ? doc.templateName
+  : `${doc.templateName}.pdf`;
       const url = `${baseUrl}/storage/v1/object/public/companies/${doc.templateOutputPath}?${cacheKey}`;
 
       return {

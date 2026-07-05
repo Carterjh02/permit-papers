@@ -25,7 +25,6 @@ interface JobFormClientProps {
     jobValue?: number | null;
     description?: string | null;
     snippetPath?: string | null;
-
     companyId?: string;
     createdBy?: string;
   };
@@ -90,7 +89,6 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const [showBrowser, setShowBrowser] = useState(false);
   const [templates, setTemplates] = useState(initialTemplates);
-  const [saving, setSaving] = useState(false);
 
   const [snippetUrl, setSnippetUrl] = useState<string | null>(
     initialJob?.snippetPath
@@ -158,12 +156,14 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const handleSelectTemplate = async (path: string) => {
     const cleanPath = path.replace(/\\/g, "/");
-
+  
+    await ensureJobExists(); // no unused variable
+  
     if (onAddTemplate) await onAddTemplate(cleanPath);
-
+  
     setTemplates((prev) => {
       if (prev.some((t) => t.templatePath === cleanPath)) return prev;
-
+  
       return [
         ...prev,
         {
@@ -173,9 +173,9 @@ export default function JobFormClient({
         },
       ];
     });
-
+  
     setShowBrowser(false);
-  };
+  };  
 
   const handleRemove = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
@@ -188,34 +188,35 @@ export default function JobFormClient({
   };
 
   /* ---------------------------------------------------------
-     FORM SUBMIT
-  --------------------------------------------------------- */
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSaving(true);
-
-    const formData = new FormData(e.currentTarget);
-
-    const rawPrice = jobPrice.replace(/,/g, "");
-    formData.set("job_price", rawPrice);
-
-    formData.set(
-      "template_paths",
-      JSON.stringify(templates.map((t) => t.templatePath))
-    );
-
-    if (localJobId) formData.set("job_id", localJobId);
-
-    await onSave(formData);
-    setSaving(false);
-  };
-
-  /* ---------------------------------------------------------
      RENDER
   --------------------------------------------------------- */
   return (
     <div className="grid grid-cols-[2fr,1fr] gap-6">
-      <form onSubmit={handleSubmit} className="space-y-6 card p-6">
+      {/* ⭐ FORM BINDS SERVER ACTION DIRECTLY */}
+      <form className="space-y-6 card p-6">
+        {/* Hidden fields required for server action */}
+        <input
+          type="hidden"
+          name="job_price"
+          value={jobPrice.replace(/,/g, "")}
+        />
+        <input
+          type="hidden"
+          name="template_paths"
+          value={JSON.stringify(templates.map((t) => t.templatePath))}
+        />
+        {localJobId && (
+          <input type="hidden" name="job_id" value={localJobId} />
+        )}
+        {initialJob?.companyId && (
+          <input type="hidden" name="company_id" value={initialJob.companyId} />
+        )}
+        <input
+          type="hidden"
+          name="description"
+          value={initialJob?.description ?? ""}
+        />
+
         {/* ---------------------------------------------------------
            SNIPPET UPLOAD
         --------------------------------------------------------- */}
@@ -369,7 +370,7 @@ export default function JobFormClient({
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Job Value</label>
               <input
-                name="job_price"
+                name="job_price_display"
                 inputMode="decimal"
                 className="input input-bordered"
                 value={jobPrice}
@@ -391,19 +392,15 @@ export default function JobFormClient({
         </div>
 
         {/* ---------------------------------------------------------
-           SAVE BUTTON
+           SAVE BUTTON (server action bound here)
         --------------------------------------------------------- */}
         <div className="flex justify-end mt-6">
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={saving}
+            formAction={onSave}
           >
-            {saving
-              ? "Saving..."
-              : mode === "create"
-              ? "Save & Preview"
-              : "Update & Preview"}
+            {mode === "create" ? "Save & Preview" : "Update & Preview"}
           </button>
         </div>
       </form>

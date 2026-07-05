@@ -51,7 +51,7 @@ export async function fillPdf({
   }));
 
   // ============================================================
-  // ALLOWED KEYS — updated from cheat sheet
+  // ALLOWED KEYS
   // ============================================================
   const allowedKeys = new Set([
     // Company
@@ -71,6 +71,7 @@ export async function fillPdf({
     "company_address_city",
     "company_address_state",
     "company_address_zip",
+    "company_address_city_state_zip",
     "desc_of_improvement",
     "desc_of_improv",
 
@@ -166,7 +167,7 @@ export async function fillPdf({
     }
 
     // -------------------------
-    // Company Name + Address (FIXED)
+    // Company Name + Address
     // -------------------------
     else if (normalizedName === "company_name_address") {
       value = [
@@ -223,6 +224,20 @@ export async function fillPdf({
         .filter(Boolean)
         .join(", ");
     }
+
+    // -------------------------
+    // Company Address City, State, Zip
+    // -------------------------
+    else if (normalizedName === "company_address_city_state_zip") {
+      value = [
+        company["company_address_city"],
+        company["company_address_state"],
+        company["company_address_zip"],
+      ]
+        .map((v) => String(v ?? "").trim())
+        .filter(Boolean)
+        .join(", ");
+    }    
 
     // -------------------------
     // Description of Improvement — FIXED OVERRIDE LOGIC

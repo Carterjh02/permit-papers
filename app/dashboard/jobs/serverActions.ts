@@ -2,19 +2,16 @@
 
 import { prisma } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabaseServer";
-
 import { autoMapFields } from "@/lib/autoMapping";
 import { fillPdf } from "@/lib/pdf/fillPdf";
 import { uploadPdf } from "@/lib/uploadPdf";
-
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
 
-
 /* -----------------------------------------------------------
-   GENERATE PREVIEWS (MOVED HERE)
+   GENERATE PREVIEWS
 ----------------------------------------------------------- */
 export async function generatePreviews(jobId: string) {
   const job = await prisma.job.findUnique({
@@ -29,13 +26,12 @@ export async function generatePreviews(jobId: string) {
 
   for (const doc of job.documents) {
     try {
-      // Skip if no templateSourcePath (TS fix)
       if (!doc.templateSourcePath) {
         console.log("⚠️ No templateSourcePath for document:", doc.id);
         continue;
       }
 
-      // 1. Download BLANK template from templates bucket
+      // 1. Download blank template
       const { data, error } = await supabaseServer.storage
         .from("templates")
         .download(doc.templateSourcePath);
@@ -47,7 +43,7 @@ export async function generatePreviews(jobId: string) {
 
       const buffer = Buffer.from(await data.arrayBuffer());
 
-      // 2. Load field names from FormTemplate
+      // 2. Load field names
       const template = await prisma.formTemplate.findFirst({
         where: { path: doc.templateSourcePath },
       });
@@ -107,7 +103,7 @@ export async function generatePreviews(jobId: string) {
         desc_of_improv: job.description ?? "",
       };
 
-      // 4. Fill the PDF
+      // 4. Fill PDF
       const filled = await fillPdf({
         templateBuffer: buffer,
         autoMapped,
@@ -115,17 +111,26 @@ export async function generatePreviews(jobId: string) {
         job: jobData,
       });
 
-      // 5. Upload filled PDF
-      const outputPath = `${companyCode}/jobs/${jobNumber}/${doc.templateName}.pdf`;
+      // ⭐ 5. Build SAFE filename (matches uploadPdf)
+      let safeDocumentName = doc.templateName
+        .replace(/\s+/g, "_")
+        .replace(/[^a-zA-Z0-9._-]/g, "");
 
+      if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
+        safeDocumentName += ".pdf";
+      }
+
+      const outputPath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
+
+      // 6. Upload filled PDF using safe name
       await uploadPdf({
         companyCode,
         jobNumber,
-        documentName: doc.templateName,
+        documentName: safeDocumentName,
         pdfBytes: filled,
       });
 
-      // 6. Update database with output path
+      // 7. Update DB with correct path
       await prisma.jobDocument.update({
         where: { id: doc.id },
         data: { templateOutputPath: outputPath },
@@ -146,7 +151,9 @@ export async function generatePreviews(jobId: string) {
    CREATE MINIMAL JOB
 ----------------------------------------------------------- */
 export async function createMinimalJob(companyId: string, createdBy: string) {
-  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+  });
   if (!company) throw new Error("Company not found.");
 
   const lastJob = await prisma.job.findFirst({
@@ -179,14 +186,13 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
 }
 
 /* -----------------------------------------------------------
-   UPLOAD SNIPPET IMMEDIATELY
+   UPLOAD SNIPPET
 ----------------------------------------------------------- */
 export async function uploadSnippetImmediately(jobId: string, file: File) {
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     include: { company: true },
   });
-
   if (!job) throw new Error("Job not found.");
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -290,6 +296,7 @@ export async function updateJobAction(formData: FormData) {
   });
 
   await generatePreviews(targetId);
+
   redirect(`/dashboard/jobs/${targetId}/preview`);
 }
 
@@ -326,14 +333,14 @@ export async function addTemplateAction(jobId: string, path: string) {
     data: {
       jobId: existing.id,
       templateId: template?.id ?? null,
-      templateName: template?.name ?? cleanPath.split("/").slice(-1)[0] ?? cleanPath,
-  
+      templateName:
+        template?.name ??
+        cleanPath.split("/").slice(-1)[0] ??
+        cleanPath,
       templateSourcePath: cleanPath,
-  
       templateOutputPath: null,
     },
   });
-  
 }
 
 /* -----------------------------------------------------------
@@ -374,6 +381,7 @@ export async function deleteJobAction(jobId: string) {
 
   redirect("/dashboard");
 }
+
 /* -----------------------------------------------------------
    CREATE JOB (FULL SAVE)
 ----------------------------------------------------------- */
@@ -404,30 +412,50 @@ export async function createJobAction(formData: FormData) {
       : null,
   };
 
+  const formatted = formatJobFields({
+    customerName: raw.customerName ?? undefined,
+    customerPhone: raw.customerPhone ?? undefined,
+    customerAddress: raw.customerAddress ?? undefined,
+    customerCity: raw.customerCity ?? undefined,
+    customerState: raw.customerState ?? undefined,
+    customerZip: raw.customerZip ?? undefined,
+    legalDescription: raw.legalDescription ?? undefined,
+  });
+
   const templatePaths = JSON.parse(
     (formData.get("template_paths") as string) ?? "[]"
   ) as string[];
+
+  // Compute next jobNumber
+  const lastJob = await prisma.job.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const nextJobNumber = lastJob ? lastJob.jobNumber + 1 : 1;
 
   const job = await prisma.job.create({
     data: {
       companyId,
       createdBy: user.username,
       description,
-      jobNumber: 0, // your schema requires this
-      customerName: raw.customerName ?? undefined,
-      customerPhone: raw.customerPhone ?? undefined,
+      jobNumber: nextJobNumber,
+      customerName: formatted.customerName,
+      customerPhone: formatted.customerPhone,
       customerEmail: raw.customerEmail ?? undefined,
-      customerAddress: raw.customerAddress ?? undefined,
-      customerCity: raw.customerCity ?? undefined,
-      customerState: raw.customerState ?? undefined,
-      customerZip: raw.customerZip ?? undefined,
-      legalDescription: raw.legalDescription ?? undefined,
+      customerAddress: formatted.customerAddress,
+      customerCity: formatted.customerCity,
+      customerState: formatted.customerState,
+      customerZip: formatted.customerZip,
+      legalDescription:
+        formatted.legalDescription ?? raw.legalDescription ?? undefined,
       subdivision: raw.subdivision ?? undefined,
       taxFolioNumber: raw.taxFolioNumber ?? undefined,
       jobValue: raw.jobValue ?? undefined,
     },
   });
 
+  // Create JobDocument rows
   for (const path of templatePaths) {
     const cleanPath = path.replace(/\\/g, "/");
 
@@ -440,13 +468,18 @@ export async function createJobAction(formData: FormData) {
         jobId: job.id,
         templateId: template?.id ?? null,
         templatePath: cleanPath,
+        templateSourcePath: cleanPath,
         templateName:
           template?.name ??
           cleanPath.split("/").slice(-1)[0] ??
           cleanPath,
+        templateOutputPath: null,
       },
     });
   }
+
+  // Generate previews immediately
+  await generatePreviews(job.id);
 
   redirect(`/dashboard/jobs/${job.id}/preview`);
 }

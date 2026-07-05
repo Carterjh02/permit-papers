@@ -21,12 +21,27 @@ export async function uploadPdf(options: UploadPdfOptions) {
   const safeJobNumber = String(jobNumber).replace(/[^0-9]/g, "");
 
   // Sanitize filename (spaces → underscores, remove unsafe chars)
-  const safeDocumentName = documentName
-    .replace(/\s+/g, "_")
-    .replace(/[^a-zA-Z0-9-_.]/g, "");
+  let safeDocumentName = documentName
+  .replace(/\s+/g, "_")
+  .replace(/[^a-zA-Z0-9._-]/g, "");
 
-  // FINAL PATH (inside the companies bucket)
-  const filePath = `${safeCompany}/jobs/${safeJobNumber}/${safeDocumentName}.pdf`;
+if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
+  safeDocumentName += ".pdf";
+}
+
+const filePath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
+
+  // DEBUG LOGS — these will tell us EXACTLY what's happening
+  console.log("📁 Uploading PDF...");
+  console.log("companyCode:", companyCode);
+  console.log("safeCompany:", safeCompany);
+  console.log("jobNumber:", jobNumber);
+  console.log("safeJobNumber:", safeJobNumber);
+  console.log("documentName:", documentName);
+  console.log("safeDocumentName:", safeDocumentName);
+  console.log("filePath:", filePath);
+  console.log("pdfBytes length:", pdfBytes?.length);
+  console.log("Bucket: companies");
 
   // Upload (overwrite enabled)
   const { error: uploadError } = await supabaseServer.storage
@@ -36,9 +51,12 @@ export async function uploadPdf(options: UploadPdfOptions) {
       contentType: "application/pdf",
     });
 
+  // MORE DEBUG LOGS
   if (uploadError) {
-    console.error("PDF upload error:", uploadError);
+    console.error("❌ PDF upload error:", uploadError);
     throw new Error("Failed to upload PDF.");
+  } else {
+    console.log("✅ PDF uploaded successfully:", filePath);
   }
 
   return {
