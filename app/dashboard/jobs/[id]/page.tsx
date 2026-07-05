@@ -59,10 +59,11 @@ export default async function JobEditPage({ params }: PageProps) {
     createdBy: user.username,
   };
 
+  // ⭐ FIXED: templatePath is now nullable in Prisma, so normalize it
   const initialTemplates = job.documents.map((d) => ({
     id: d.id,
     templateName: d.templateName ?? "",
-    templatePath: d.templatePath,
+    templatePath: d.templatePath ?? "",
   }));
 
   return (
