@@ -26,7 +26,7 @@ export async function uploadPdf(options: UploadPdfOptions) {
     .replace(/[^a-zA-Z0-9-_.]/g, "");
 
   // FINAL PATH (inside the companies bucket)
-  const filePath = `${safeCompany}/jobs/${safeJobNumber}/${safeDocumentName}`;
+  const filePath = `${safeCompany}/jobs/${safeJobNumber}/${safeDocumentName}.pdf`;
 
   // Upload (overwrite enabled)
   const { error: uploadError } = await supabaseServer.storage
@@ -41,13 +41,7 @@ export async function uploadPdf(options: UploadPdfOptions) {
     throw new Error("Failed to upload PDF.");
   }
 
-  // Public URL
-  const { data: publicUrlData } = supabaseServer.storage
-    .from("companies")
-    .getPublicUrl(filePath);
-
   return {
     filePath,
-    publicUrl: publicUrlData.publicUrl,
   };
 }

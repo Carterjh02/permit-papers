@@ -29,16 +29,27 @@ export async function generatePreviews(jobId: string) {
 
   for (const doc of job.documents) {
     try {
+      // Skip if no templateSourcePath (TS fix)
+      if (!doc.templateSourcePath) {
+        console.log("⚠️ No templateSourcePath for document:", doc.id);
+        continue;
+      }
+
+      // 1. Download BLANK template from templates bucket
       const { data, error } = await supabaseServer.storage
         .from("templates")
-        .download(doc.templatePath);
+        .download(doc.templateSourcePath);
 
-      if (error || !data) continue;
+      if (error || !data) {
+        console.log("❌ Failed to download template:", doc.templateSourcePath);
+        continue;
+      }
 
       const buffer = Buffer.from(await data.arrayBuffer());
 
+      // 2. Load field names from FormTemplate
       const template = await prisma.formTemplate.findFirst({
-        where: { path: doc.templatePath },
+        where: { path: doc.templateSourcePath },
       });
 
       const fieldNames = Array.isArray(template?.fieldNames)
@@ -47,6 +58,7 @@ export async function generatePreviews(jobId: string) {
 
       const autoMapped = autoMapFields(fieldNames);
 
+      // 3. Build company + job data
       const companyData = {
         company_name: job.company.name ?? "",
         company_license: job.company.licenseNumber ?? "",
@@ -95,6 +107,7 @@ export async function generatePreviews(jobId: string) {
         desc_of_improv: job.description ?? "",
       };
 
+      // 4. Fill the PDF
       const filled = await fillPdf({
         templateBuffer: buffer,
         autoMapped,
@@ -102,11 +115,20 @@ export async function generatePreviews(jobId: string) {
         job: jobData,
       });
 
+      // 5. Upload filled PDF
+      const outputPath = `${companyCode}/jobs/${jobNumber}/${doc.templateName}.pdf`;
+
       await uploadPdf({
         companyCode,
         jobNumber,
         documentName: doc.templateName,
         pdfBytes: filled,
+      });
+
+      // 6. Update database with output path
+      await prisma.jobDocument.update({
+        where: { id: doc.id },
+        data: { templateOutputPath: outputPath },
       });
     } catch (err) {
       console.log("❌ ERROR IN PREVIEW GENERATION:", err);
@@ -303,14 +325,15 @@ export async function addTemplateAction(jobId: string, path: string) {
   await prisma.jobDocument.create({
     data: {
       jobId: existing.id,
-      templateId: template?.id,
-      templatePath: cleanPath,
-      templateName:
-        template?.name ??
-        cleanPath.split("/").slice(-1)[0] ??
-        cleanPath,
+      templateId: template?.id ?? null,
+      templateName: template?.name ?? cleanPath.split("/").slice(-1)[0] ?? cleanPath,
+  
+      templateSourcePath: cleanPath,
+  
+      templateOutputPath: null,
     },
   });
+  
 }
 
 /* -----------------------------------------------------------

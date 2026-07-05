@@ -29,28 +29,26 @@ export default async function JobPreviewPage({ params }: PageProps) {
   const updatedAt = job.updatedAt ?? job.createdAt;
   const cacheKey = `v=${updatedAt.getTime()}`;
 
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  // ⭐ Use templateOutputPath (filled PDF)
+  const generatedPreviews = job.documents
+    .filter((doc) => doc.templateOutputPath) // only show generated PDFs
+    .map((doc) => {
+      const fileName = `${doc.templateName}.pdf`;
+      const url = `${baseUrl}/storage/v1/object/public/companies/${doc.templateOutputPath}?${cacheKey}`;
+
+      return {
+        id: doc.id,
+        name: fileName,
+        url,
+      };
+    });
+
+  // Permanent files (unchanged)
   const safeCompany = job.company.companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "");
   const jobNumber = job.jobNumber;
 
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // FIXED: use templatePath instead of templateName
-  const generatedPreviews = job.documents.map((doc) => {
-    const fullPath = doc.templatePath; // e.g. "Locktight/jobs/1/winload.pdf"
-
-    // Extract filename from templatePath
-    const fileName = fullPath.split("/").pop()!;
-
-    const url = `${baseUrl}/storage/v1/object/public/companies/${fullPath}?${cacheKey}`;
-
-    return {
-      id: doc.id,
-      name: fileName,
-      url,
-    };
-  });
-
-  // Permanent files already store correct fileName
   const permanentFiles = await prisma.jobFile.findMany({
     where: { jobId: id },
     orderBy: { createdAt: "asc" },
