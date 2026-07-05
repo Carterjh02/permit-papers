@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -34,30 +34,43 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  const generatedPreviews = job.documents.map((doc) => {
-    const fileName = doc.templateName
-      .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9-_.]/g, "");
-    const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
-    const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
+  const generatedPreviews = job.documents.map(
+    (doc: {
+      id: string;
+      templateName: string | null;
+      templatePath: string;
+    }): { id: string; name: string; url: string } => {
+      const fileName = (doc.templateName ?? "")
+        .replace(/\s+/g, "_")
+        .replace(/[^a-zA-Z0-9-_.]/g, "");
 
-    return { id: doc.id, name: fileName, url };
-  });
+      const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
+      const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
+
+      return { id: doc.id, name: fileName, url };
+    }
+  );
 
   const permanentFiles = await prisma.jobFile.findMany({
     where: { jobId: id },
     orderBy: { createdAt: "asc" },
   });
 
-  const permanentPreviews = permanentFiles.map((file) => {
-    const fileName = file.fileName
-      .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9-_.]/g, "");
-    const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
-    const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
+  const permanentPreviews = permanentFiles.map(
+    (file: {
+      id: string;
+      fileName: string;
+    }): { id: string; name: string; url: string } => {
+      const fileName = file.fileName
+        .replace(/\s+/g, "_")
+        .replace(/[^a-zA-Z0-9-_.]/g, "");
 
-    return { id: file.id, name: fileName, url };
-  });
+      const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
+      const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
+
+      return { id: file.id, name: fileName, url };
+    }
+  );
 
   async function backToJob() {
     "use server";
@@ -90,18 +103,20 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
       {generatedPreviews.length > 0 && (
         <div className="space-y-8">
-          {generatedPreviews.map((p) => (
-            <div key={p.id} className="card p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{p.name}</h3>
-                <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
-                  Open / Download
-                </a>
-              </div>
+          {generatedPreviews.map(
+            (p: { id: string; name: string; url: string }) => (
+              <div key={p.id} className="card p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">{p.name}</h3>
+                  <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
+                    Open / Download
+                  </a>
+                </div>
 
-              <iframe src={p.url} className="w-full h-[600px]" />
-            </div>
-          ))}
+                <iframe src={p.url} className="w-full h-[600px]" />
+              </div>
+            )
+          )}
         </div>
       )}
 
@@ -115,18 +130,20 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
       {permanentPreviews.length > 0 && (
         <div className="space-y-8">
-          {permanentPreviews.map((p) => (
-            <div key={p.id} className="card p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{p.name}</h3>
-                <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
-                  Open / Download
-                </a>
-              </div>
+          {permanentPreviews.map(
+            (p: { id: string; name: string; url: string }) => (
+              <div key={p.id} className="card p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">{p.name}</h3>
+                  <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
+                    Open / Download
+                  </a>
+                </div>
 
-              <iframe src={p.url} className="w-full h-[600px]" />
-            </div>
-          ))}
+                <iframe src={p.url} className="w-full h-[600px]" />
+              </div>
+            )
+          )}
         </div>
       )}
     </div>

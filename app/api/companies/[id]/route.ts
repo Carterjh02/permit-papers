@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, context: { params: { id: string } }) {
-  const id = context.params.id;
+export async function POST(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
 
   const form = await req.formData();
   const name = form.get("name") as string;

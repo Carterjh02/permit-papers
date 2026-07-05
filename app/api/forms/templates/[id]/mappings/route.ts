@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const id = context.params.id;
+  const { id } = await context.params;
 
   const mappings = await prisma.formFieldMapping.findMany({
     where: { templateId: id },
@@ -16,9 +16,9 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const id = context.params.id;
+  const { id } = await context.params;
   const body = await req.json();
 
   if (!body?.mappings || !Array.isArray(body.mappings)) {

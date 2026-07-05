@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-
+  // Minimal config, no custom webpack overrides
   images: {
     remotePatterns: [
       {
@@ -12,6 +11,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Optional: empty Turbopack config to silence Next.js warnings
+  turbopack: {},
 };
 
 export default nextConfig;

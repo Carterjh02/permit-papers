@@ -3,16 +3,18 @@
 import { prisma } from "@/lib/prisma";
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function CompanyViewPage({ params }: PageProps) {
-  if (!params?.id) {
+  const { id } = await params;
+
+  if (!id) {
     return <div className="p-10">No company id in route.</div>;
   }
 
   const company = await prisma.company.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!company) {

@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { PDFDocument } from "pdf-lib";
 
-export async function GET(req: Request, context: { params: { id: string } }) {
-  const id = context.params.id;
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
 
   const template = await prisma.formTemplate.findUnique({
     where: { id },

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     where: { companyId },
   });
 
-  const jobNumber = String(count + 1);
+  // FIX: jobNumber must be a number
+  const jobNumber = count + 1;
 
   const job = await prisma.job.create({
     data: {

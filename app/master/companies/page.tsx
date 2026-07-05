@@ -4,8 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { Prisma } from "@prisma/client";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
@@ -22,7 +21,9 @@ interface PageProps {
 
 const PAGE_SIZE = 20;
 
-export default async function CompaniesPage({ searchParams: searchParamsPromise }: PageProps) {
+export default async function CompaniesPage({
+  searchParams: searchParamsPromise,
+}: PageProps) {
   const searchParams = await searchParamsPromise;
 
   const session = await getServerSession(authOptions);
@@ -34,16 +35,21 @@ export default async function CompaniesPage({ searchParams: searchParamsPromise 
   const dir = searchParams?.dir ?? "asc";
   const page = Math.max(1, Number(searchParams?.page ?? "1"));
 
-  let where: Prisma.CompanyWhereInput = {};
+  // Explicit local type instead of Prisma.CompanyWhereInput
+  const where: {
+    OR?: Array<{
+      name?: { contains: string; mode: "insensitive" };
+      companyCode?: { contains: string; mode: "insensitive" };
+      email?: { contains: string; mode: "insensitive" };
+    }>;
+  } = {};
 
   if (q.length > 0) {
-    where = {
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { companyCode: { contains: q, mode: "insensitive" } },
-        { email: { contains: q, mode: "insensitive" } },
-      ],
-    };
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { companyCode: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+    ];
   }
 
   const orderBy =
@@ -60,6 +66,16 @@ export default async function CompaniesPage({ searchParams: searchParamsPromise 
     }),
     prisma.company.count({ where }),
   ]);
+
+  // Explicit type for table rows
+  const typedCompanies: Array<{
+    id: string;
+    name: string;
+    companyCode: string;
+    email: string | null;
+    phone: string | null;
+    createdAt: Date;
+  }> = companies;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -101,7 +117,7 @@ export default async function CompaniesPage({ searchParams: searchParamsPromise 
           </>
         }
       >
-        {companies.map((c) => (
+        {typedCompanies.map((c) => (
           <tr key={c.id} className="border-b last:border-0">
             <td className="py-2 pr-4">{c.name}</td>
             <td className="py-2 pr-4">{c.companyCode}</td>
@@ -121,7 +137,7 @@ export default async function CompaniesPage({ searchParams: searchParamsPromise 
           </tr>
         ))}
 
-        {companies.length === 0 && (
+        {typedCompanies.length === 0 && (
           <tr>
             <td colSpan={6} className="py-4 text-center text-gray-500">
               No companies found.

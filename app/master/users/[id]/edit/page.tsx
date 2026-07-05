@@ -3,16 +3,17 @@
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
-import type { User, Company } from "@prisma/client";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function MasterEditUserPage({ params: paramsPromise }: PageProps) {
+export default async function MasterEditUserPage({
+  params: paramsPromise,
+}: PageProps) {
   const params = await paramsPromise;
 
   const session = await getServerSession(authOptions);
@@ -26,7 +27,21 @@ export default async function MasterEditUserPage({ params: paramsPromise }: Page
 
   if (!user) notFound();
 
-  const typedUser: User & { company: Company | null } = user;
+  // Explicit local type instead of Prisma model types
+  const typedUser: {
+    id: string;
+    username: string;
+    email: string | null;
+    passwordHash?: string;
+    company: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      companyCode: string;
+      createdAt: Date;
+    } | null;
+  } = user;
 
   async function updateUser(formData: FormData) {
     "use server";
@@ -42,7 +57,11 @@ export default async function MasterEditUserPage({ params: paramsPromise }: Page
 
     if (!username) throw new Error("Username is required.");
 
-    const updateData: Partial<User> = {
+    const updateData: {
+      username: string;
+      email: string | null;
+      passwordHash?: string;
+    } = {
       username,
       email,
     };

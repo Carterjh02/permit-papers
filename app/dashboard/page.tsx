@@ -2,10 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
 
 import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
@@ -64,7 +63,11 @@ export default async function DashboardPage({
   const dir = searchParams?.dir ?? "desc";
   const page = Math.max(1, Number(searchParams?.page ?? "1"));
 
-  const where: Prisma.JobWhereInput = { companyId };
+  const where: {
+    companyId: string;
+    status?: string;
+    OR?: Array<Record<string, unknown>>;
+  } = { companyId };
 
   if (status) where.status = status;
 
@@ -139,31 +142,43 @@ export default async function DashboardPage({
       >
         <AddJobRow />
 
-        {jobs.map((j) => {
+        {jobs.map(
+          (j: {
+            id: string;
+            jobNumber: number; // FIXED
+            customerName: string | null;
+            customerAddress: string | null;
+            customerCity: string | null;
+            customerState: string | null;
+            customerZip: string | null;
+            createdAt: Date;
+          }) => {
           const fullAddress = [
             j.customerAddress,
             j.customerCity,
             j.customerState,
             j.customerZip,
           ]
-            .filter(Boolean)
-            .join(", ");
+          .filter(Boolean)
+          .join(", ");
 
-          return (
-            <tr key={j.id} className="border-b last:border-0">
-              <td className="py-2 pr-4">{j.jobNumber}</td>
-              <td className="py-2 pr-4">{j.customerName ?? "-"}</td>
-              <td className="py-2 pr-4">{fullAddress || "-"}</td>
-              <td className="py-2 pr-4">
-                {j.createdAt.toLocaleDateString()}
-              </td>
+        return (
+          <tr key={j.id} className="border-b last:border-0">
+          <td className="py-2 pr-4">{j.jobNumber}</td>
+          <td className="py-2 pr-4">{j.customerName ?? "-"}</td>
+          <td className="py-2 pr-4">{fullAddress || "-"}</td>
+          <td className="py-2 pr-4">
+            {j.createdAt.toLocaleDateString()}
+          </td>
 
-              <td className="py-2 pr-4">
-                <JobActions jobId={j.id} jobNumber={j.jobNumber} />
-              </td>
-            </tr>
-          );
-        })}
+          <td className="py-2 pr-4">
+            <JobActions jobId={j.id} jobNumber={j.jobNumber} />
+          </td>
+        </tr>
+      );
+    }
+  )}
+
 
         {jobs.length === 0 && (
           <tr>

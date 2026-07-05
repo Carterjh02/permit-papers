@@ -4,9 +4,9 @@ import { supabaseServer } from "@/lib/supabaseServer";
 
 export async function GET(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const id = context.params.id;
+  const { id } = await context.params;
 
   const template = await prisma.formTemplate.findUnique({
     where: { id },

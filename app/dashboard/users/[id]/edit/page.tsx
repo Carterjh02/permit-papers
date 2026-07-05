@@ -3,71 +3,17 @@
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
-import bcrypt from "bcryptjs";
-import type { User } from "@prisma/client";
 
-/* -----------------------------------------------------------
-   SERVER ACTIONS
------------------------------------------------------------ */
-
-export async function updateUserAction(formData: FormData) {
-  "use server";
-
-  const id = formData.get("user_id") as string;
-
-  const current = await getServerSession(authOptions);
-  if (!current || current.user.role !== "admin") redirect("/login");
-
-  const username = (formData.get("username") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim() || null;
-  const password = (formData.get("password") as string) || "";
-
-  if (!username) throw new Error("Username is required.");
-
-  const updateData: Partial<User> = {
-    username,
-    email,
-  };
-
-  if (password.trim().length > 0) {
-    updateData.passwordHash = await bcrypt.hash(password, 10);
-  }
-
-  await prisma.user.update({
-    where: { id },
-    data: updateData,
-  });
-
-  redirect("/dashboard/users");
-}
-
-export async function deleteUserAction(formData: FormData) {
-  "use server";
-
-  const id = formData.get("user_id") as string;
-
-  const current = await getServerSession(authOptions);
-  if (!current || current.user.role !== "admin") redirect("/login");
-
-  await prisma.user.delete({
-    where: { id },
-  });
-
-  redirect("/dashboard/users");
-}
-
-/* -----------------------------------------------------------
-   PAGE COMPONENT
------------------------------------------------------------ */
+import { updateUserAction, deleteUserAction } from "./actions";
 
 export default async function AdminEditUserPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
 
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
@@ -83,7 +29,7 @@ export default async function AdminEditUserPage({
   if (!user) notFound();
   if (user.companyId !== admin.companyId) redirect("/dashboard");
 
-  const typedUser: User = user;
+  const typedUser = user;
 
   return (
     <div className="page-container space-y-6">

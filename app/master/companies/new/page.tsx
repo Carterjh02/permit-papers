@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { formatCompanyFields } from "@/lib/utils/formatters";
 
-export default function NewCompanyPage() {
+export default async function NewCompanyPage() {
   async function createCompany(formData: FormData) {
     "use server";
 

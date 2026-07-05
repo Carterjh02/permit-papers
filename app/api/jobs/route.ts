@@ -7,11 +7,17 @@ export async function GET(req: Request) {
   const q = url.searchParams.get("q") ?? "";
   const companyId = url.searchParams.get("companyId");
 
+  const numericSearch = Number(q);
+
   const results = await prisma.job.findMany({
     where: {
       companyId: companyId === "null" ? undefined : companyId ?? undefined,
       OR: [
-        { jobNumber: { contains: q, mode: "insensitive" } },
+        // FIX: jobNumber is numeric, so only search if q is numeric
+        ...(Number.isFinite(numericSearch)
+          ? [{ jobNumber: numericSearch }]
+          : []),
+
         { title: { contains: q, mode: "insensitive" } },
         { customerName: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },

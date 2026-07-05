@@ -2,18 +2,16 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
-
 import JobFormClient from "../JobFormClient";
-import { createJob } from "../actions";
+import { createJobAction, createMinimalJob, uploadSnippetImmediately } from "../serverActions";
 
 export default async function NewJobPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const user = session.user;
-
   const companyId =
     user.role === "master" ? user.activeCompanyId : user.companyId;
 
@@ -45,7 +43,18 @@ export default async function NewJobPage() {
           createdBy: user.username,
         }}
         initialTemplates={[]}
-        onSave={createJob}
+        onSave={async (formData) => {
+          "use server";
+          await createJobAction(formData);
+        }}
+        onCreateMinimalJob={async (companyId, createdBy) => {
+          "use server";
+          return await createMinimalJob(companyId, createdBy);
+        }}
+        onUploadSnippet={async (jobId, file) => {
+          "use server";
+          return await uploadSnippetImmediately(jobId, file);
+        }}
       />
     </div>
   );

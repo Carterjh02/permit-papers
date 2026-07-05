@@ -4,8 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { Prisma, User } from "@prisma/client";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
@@ -22,7 +21,9 @@ interface PageProps {
 
 const PAGE_SIZE = 20;
 
-export default async function AdminUsersPage({ searchParams: searchParamsPromise }: PageProps) {
+export default async function AdminUsersPage({
+  searchParams: searchParamsPromise,
+}: PageProps) {
   const searchParams = await searchParamsPromise;
 
   const session = await getServerSession(authOptions);
@@ -36,7 +37,14 @@ export default async function AdminUsersPage({ searchParams: searchParamsPromise
   const dir = searchParams?.dir ?? "asc";
   const page = Math.max(1, Number(searchParams?.page ?? "1"));
 
-  const where: Prisma.UserWhereInput = {
+  // Explicit type instead of "any"
+  const where: {
+    companyId?: string | null;
+    OR?: Array<{
+      username?: { contains: string; mode: "insensitive" };
+      email?: { contains: string; mode: "insensitive" };
+    }>;
+  } = {
     companyId: admin.companyId ?? undefined,
   };
 
@@ -62,7 +70,14 @@ export default async function AdminUsersPage({ searchParams: searchParamsPromise
     prisma.user.count({ where }),
   ]);
 
-  const typedUsers: User[] = users;
+  // Explicit type for map callback
+  const typedUsers: Array<{
+    id: string;
+    username: string;
+    email: string | null;
+    createdAt: Date | null;
+  }> = users;
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (

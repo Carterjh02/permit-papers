@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-interface PrintPageProps {
-  searchParams: Record<string, string | string[] | undefined>;
-}
+import { useSearchParams } from "next/navigation";
 
 interface JobData {
   id: string;
@@ -14,9 +11,11 @@ interface JobData {
   state: string;
 }
 
-export default function PrintJobPage({ searchParams }: PrintPageProps) {
-  const forms = JSON.parse((searchParams.forms as string) || "[]");
-  const jobId = searchParams.job as string;
+export default function PrintJobPage() {
+  const searchParams = useSearchParams();
+
+  const forms = JSON.parse(searchParams.get("forms") || "[]");
+  const jobId = searchParams.get("job") || "";
 
   const [job, setJob] = useState<JobData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,6 @@ export default function PrintJobPage({ searchParams }: PrintPageProps) {
     { name: string; url: string }[]
   >([]);
 
-  // Load job data (placeholder)
   useEffect(() => {
     const loadJob = async () => {
       setLoading(true);
@@ -44,7 +42,6 @@ export default function PrintJobPage({ searchParams }: PrintPageProps) {
     loadJob();
   }, [jobId]);
 
-  // Fill PDFs
   useEffect(() => {
     const fill = async () => {
       if (!job) return;
@@ -63,7 +60,6 @@ export default function PrintJobPage({ searchParams }: PrintPageProps) {
         const data = await res.json();
 
         if (data?.url) {
-          // Add cache-buster to avoid stale PDFs
           const finalUrl = `${data.url}?t=${Date.now()}`;
 
           results.push({

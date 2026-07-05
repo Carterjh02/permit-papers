@@ -7,13 +7,13 @@ import {
   PDFCheckBox,
   PDFRadioGroup,
 } from "pdf-lib";
-import type { Job, Company } from "@prisma/client";
 import { parseLegalDescription } from "@/lib/utils/parseLegalDescription";
+
+type AnyRecord = Record<string, unknown>;
 
 export async function POST(req: Request) {
   const { jobId, templatePath } = await req.json();
 
-  // Load job + company
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     include: { company: true },
@@ -25,7 +25,6 @@ export async function POST(req: Request) {
 
   const company = job.company;
 
-  // Load template record
   const template = await prisma.formTemplate.findFirst({
     where: { path: templatePath },
   });
@@ -34,12 +33,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
-  // Load mappings
   const mappings = await prisma.formFieldMapping.findMany({
     where: { templateId: template.id },
   });
 
-  // Download template PDF
   const { data: fileData, error: downloadError } = await supabaseServer.storage
     .from("templates")
     .download(template.path);
@@ -89,7 +86,9 @@ export async function POST(req: Request) {
     } else if (field instanceof PDFRadioGroup) {
       try {
         field.select(String(value));
-      } catch {}
+      } catch {
+        // ignore invalid radio selections
+      }
     }
   }
 
@@ -97,7 +96,7 @@ export async function POST(req: Request) {
      AUTO-MAPPING
   --------------------------------------------------------- */
   const companyIndexed = filterIndexable(company ?? {});
-  const jobIndexed = filterIndexable(job as unknown as Record<string, unknown>);
+  const jobIndexed = filterIndexable(job as unknown as AnyRecord);
 
   const legalDescriptionRaw = String(jobIndexed["legal_description"] ?? "");
   const parsedLegal = parseLegalDescription(legalDescriptionRaw);
@@ -111,26 +110,8 @@ export async function POST(req: Request) {
       value = formatCustomerNameAddress(jobIndexed);
     } else if (name === "desc_of_improvement") {
       value = formatDescOfImprovement(companyIndexed, jobIndexed);
-    } else if (name === "lot") {
-      value = parsedLegal.lot;
-    } else if (name === "block") {
-      value = parsedLegal.block;
-    } else if (name === "bldg") {
-      value = parsedLegal.building;
-    } else if (name === "unit") {
-      value = parsedLegal.unit;
-    } else if (name === "tract") {
-      value = parsedLegal.tract;
-    } else if (name === "parcel") {
-      value = parsedLegal.parcel;
-    } else if (name === "sec") {
-      value = parsedLegal.section;
-    } else if (name === "twp") {
-      value = parsedLegal.township;
-    } else if (name === "rng") {
-      value = parsedLegal.range;
-    } else if (name === "folio") {
-      value = parsedLegal.folio;
+    } else if (name in parsedLegal) {
+      value = parsedLegal[name as keyof typeof parsedLegal];
     } else {
       value = companyIndexed[name] ?? jobIndexed[name] ?? null;
     }
@@ -144,22 +125,15 @@ export async function POST(req: Request) {
 
   try {
     form.flatten();
-  } catch {}
+  } catch {
+    // flatten fails on some PDFs — safe to ignore
+  }
 
   const filledPdfBytes = await pdfDoc.save();
 
-  /* ---------------------------------------------------------
-     SAVE TO FLAT STORAGE
-     Bucket: companies
-     Path inside bucket: <companyCode>/jobs/<jobNumber>/<fileName>
-  --------------------------------------------------------- */
   const safeCompany = company.companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "");
   const jobNumber = job.jobNumber;
-
-  // FIX: use template.name EXACTLY as stored (no .pdf added)
   const fileName = template.name;
-
-  // FIX: correct flat path
   const outputPath = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
 
   const { error: uploadError } = await supabaseServer.storage
@@ -176,7 +150,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Public URL
   const { data: publicUrlData } = supabaseServer.storage
     .from("companies")
     .getPublicUrl(outputPath);
@@ -190,43 +163,43 @@ export async function POST(req: Request) {
 
 function resolveMappedValue(
   key: string,
-  job: Job & { company: Company | null },
-  company: Company | null
+  job: AnyRecord,
+  company: AnyRecord | null
 ): string | number | boolean | null {
   switch (key) {
     case "company_name":
-      return company?.name ?? null;
+      return (company?.name as string) ?? null;
     case "company_license":
-      return company?.licenseNumber ?? null;
+      return (company?.licenseNumber as string) ?? null;
     case "qualifier_name":
-      return company?.qualifierName ?? null;
+      return (company?.qualifierName as string) ?? null;
     case "phone":
-      return company?.phone ?? null;
+      return (company?.phone as string) ?? null;
     case "email":
-      return company?.email ?? null;
+      return (company?.email as string) ?? null;
     case "address_full":
-      return company?.address ?? null;
+      return (company?.address as string) ?? null;
 
     case "customer_name":
-      return job.customerName ?? null;
+      return (job.customerName as string) ?? null;
     case "customer_phone":
-      return job.customerPhone ?? null;
+      return (job.customerPhone as string) ?? null;
     case "customer_email":
-      return job.customerEmail ?? null;
+      return (job.customerEmail as string) ?? null;
     case "customer_address_full":
-      return job.customerAddress ?? null;
+      return (job.customerAddress as string) ?? null;
     case "customer_address_city":
-      return job.customerCity ?? null;
+      return (job.customerCity as string) ?? null;
     case "customer_address_state":
-      return job.customerState ?? null;
+      return (job.customerState as string) ?? null;
     case "customer_adddress_zip":
-      return job.customerZip ?? null;
+      return (job.customerZip as string) ?? null;
     case "customer_tax_folio":
-      return job.taxFolioNumber ?? null;
+      return (job.taxFolioNumber as string) ?? null;
     case "job_price":
-      return job.jobValue ?? null;
+      return (job.jobValue as number) ?? null;
     case "legal_description":
-      return job.legalDescription ?? null;
+      return (job.legalDescription as string) ?? null;
 
     default:
       return null;
@@ -259,8 +232,7 @@ function formatCompanyContactFull(
   const address = String(company["address_full"] ?? company["address"] ?? "").trim();
   const phone = String(company["phone"] ?? "").trim();
 
-  const parts = [name, address, phone].filter((p) => p.length > 0);
-  return parts.join(", ");
+  return [name, address, phone].filter(Boolean).join(", ");
 }
 
 function formatCustomerNameAddress(
@@ -270,8 +242,7 @@ function formatCustomerNameAddress(
   const address =
     String(job["customer_address_full"] ?? job["customer_address"] ?? "").trim();
 
-  const parts = [name, address].filter((p) => p.length > 0);
-  return parts.join(", ");
+  return [name, address].filter(Boolean).join(", ");
 }
 
 function formatDescOfImprovement(

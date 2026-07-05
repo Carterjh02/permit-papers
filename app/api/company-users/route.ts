@@ -1,4 +1,3 @@
-// app/api/company-users/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken, type GetTokenParams } from "next-auth/jwt";
@@ -37,7 +36,7 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(
-    users.map((u) => ({
+    users.map((u: { id: string; username: string; role: string; companyId: string | null }) => ({
       id: u.id,
       username: u.username,
       role: u.role,

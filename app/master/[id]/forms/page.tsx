@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 interface Template {
   id: string;
   name: string;
 }
 
-export default function JobFormsPage({ params }: { params: { id: string } }) {
-  const jobId = params.id;
+export default function JobFormsPage() {
+  const { id: jobId } = useParams();
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
