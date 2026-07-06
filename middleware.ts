@@ -1,8 +1,14 @@
 import { withAuth } from "next-auth/middleware";
 
 export default withAuth({
-  pages: {
-    signIn: "/login",
+  callbacks: {
+    /**
+     * If token exists → user is authenticated.
+     * If token is missing → redirect to /login.
+     */
+    authorized: ({ token }) => {
+      return !!token;
+    },
   },
 });
 

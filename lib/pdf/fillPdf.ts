@@ -132,7 +132,7 @@ export async function fillPdf({
 
     for (const field of fields) {
       if (field instanceof PDFTextField) {
-        await shrinker(field, value);
+        await shrinker(field, String(value));
       }
     }
   }

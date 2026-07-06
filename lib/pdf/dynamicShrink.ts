@@ -1,14 +1,8 @@
-import {
-    PDFField,
-    PDFTextField,
-    PDFDocument,
-    PDFFont,
-  } from "pdf-lib";
+import { PDFField, PDFTextField, PDFDocument, PDFFont } from "pdf-lib";
 
 // ---------------------------------------------------------
 // Types
 // ---------------------------------------------------------
-
 export type FieldKind = "numeric" | "multi" | "single";
 
 export interface FieldMeta {
@@ -23,7 +17,6 @@ export interface FieldMeta {
 // ---------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------
-
 function normalize(name: string): string {
   return name.replace(/\s+/g, "").trim().toLowerCase();
 }
@@ -40,9 +33,8 @@ function isNumericFieldName(name: string): boolean {
 }
 
 // ---------------------------------------------------------
-// Analyze a single field
+// Analyze a single field (collect ALL widget geometries)
 // ---------------------------------------------------------
-
 function analyzeTextField(field: PDFTextField): FieldMeta | null {
   const rawName = field.getName();
   const name = rawName ?? "";
@@ -52,28 +44,33 @@ function analyzeTextField(field: PDFTextField): FieldMeta | null {
   const widgets = acro.getWidgets();
   if (!widgets || widgets.length === 0) return null;
 
-  const rect = widgets[0].getRectangle();
-  if (!rect) return null;
+  // Start with very large values so Math.min works correctly
+  let minWidth = Infinity;
+  let minHeight = Infinity;
 
-  const width = rect.width;
-  const height = rect.height;
+  // Detect multiline if ANY widget is multiline
+  let multilineFlag = false;
 
-  /**
-   * Detect multi-line safely without using "any".
-   * pdf-lib does not expose getMultiline() in its types,
-   * but some PDFs include it in the underlying AcroForm object.
-   */
-  const acroWithMultiline = acro as unknown as {
-    getMultiline?: () => boolean;
-  };
+  for (const w of widgets) {
+    const rect = w.getRectangle();
+    if (!rect) continue;
 
-  const multilineFlag =
-    typeof acroWithMultiline.getMultiline === "function"
-      ? acroWithMultiline.getMultiline()
-      : height > 30; // heuristic fallback
+    minWidth = Math.min(minWidth, rect.width);
+    minHeight = Math.min(minHeight, rect.height);
 
+    const acroWithMultiline = acro as unknown as { getMultiline?: () => boolean };
+    if (typeof acroWithMultiline.getMultiline === "function") {
+      if (acroWithMultiline.getMultiline()) {
+        multilineFlag = true;
+      }
+    } else {
+      // heuristic fallback
+      if (rect.height > 30) multilineFlag = true;
+    }
+  }
+
+  // Determine field kind
   let kind: FieldKind;
-
   if (isNumericFieldName(name)) {
     kind = "numeric";
   } else if (multilineFlag) {
@@ -85,20 +82,17 @@ function analyzeTextField(field: PDFTextField): FieldMeta | null {
   return {
     name,
     normalizedName,
-    width,
-    height,
+    width: minWidth,
+    height: minHeight,
     multiline: multilineFlag,
     kind,
   };
 }
 
 // ---------------------------------------------------------
-// Analyze all fields in a form
+// Analyze all fields in a form (merge ALL widgets per name)
 // ---------------------------------------------------------
-
-export function analyzeFields(
-  fields: PDFField[]
-): Record<string, FieldMeta> {
+export function analyzeFields(fields: PDFField[]): Record<string, FieldMeta> {
   const metaByName: Record<string, FieldMeta> = {};
 
   for (const field of fields) {
@@ -110,11 +104,12 @@ export function analyzeFields(
     const existing = metaByName[meta.normalizedName];
 
     if (!existing) {
+      // First time seeing this field name
       metaByName[meta.normalizedName] = meta;
     } else {
-      // Keep the most restrictive geometry
+      // Merge geometry: always take the smallest width/height across ALL widgets
       metaByName[meta.normalizedName] = {
-        ...meta,
+        ...existing,
         width: Math.min(existing.width, meta.width),
         height: Math.min(existing.height, meta.height),
         multiline: existing.multiline || meta.multiline,
@@ -125,10 +120,10 @@ export function analyzeFields(
 
   return metaByName;
 }
+
 // ---------------------------------------------------------
 // Shrink Rule Types
 // ---------------------------------------------------------
-
 export type ShrinkMode = "words" | "chars";
 
 export interface ShrinkRule {
@@ -141,121 +136,67 @@ export interface ShrinkRule {
 // ---------------------------------------------------------
 // Base rules per field kind
 // ---------------------------------------------------------
-
 function baseRuleForKind(kind: FieldKind): ShrinkRule {
   switch (kind) {
     case "numeric":
-      return {
-        mode: "chars",
-        minFont: 4,
-        maxFont: 12,
-        sharedLayout: false,
-      };
-
+      return { mode: "chars", minFont: 4, maxFont: 12, sharedLayout: true };
     case "multi":
-      return {
-        mode: "words",
-        minFont: 9,
-        maxFont: 12,
-        sharedLayout: true,
-      };
-
+      return { mode: "words", minFont: 9, maxFont: 12, sharedLayout: true };
     case "single":
     default:
-      return {
-        mode: "words",
-        minFont: 6,
-        maxFont: 12,
-        sharedLayout: false,
-      };
+      return { mode: "words", minFont: 6, maxFont: 12, sharedLayout: true };
   }
 }
 
 // ---------------------------------------------------------
 // Geometry-based tuning
 // ---------------------------------------------------------
-
 function tuneRuleForGeometry(meta: FieldMeta, rule: ShrinkRule): ShrinkRule {
   const { width, height, kind } = meta;
-
   if (!width || !height) return rule;
 
   const aspect = width / height;
 
-  // Extremely narrow numeric fields (Broward folio)
   if (kind === "numeric" && aspect < 6) {
-    return {
-      ...rule,
-      minFont: Math.max(3.5, rule.minFont - 1),
-    };
+    return { ...rule, minFont: Math.max(3.5, rule.minFont - 1) };
   }
 
-  // Very tall multi-line fields (legal description)
   if (kind === "multi" && height > 40) {
-    return {
-      ...rule,
-      minFont: Math.min(11, rule.minFont + 1),
-    };
+    return { ...rule, minFont: Math.min(11, rule.minFont + 1) };
   }
 
-  // Short single-line fields (NOC desc_of_improv)
   if (kind === "single" && height < 18) {
-    return {
-      ...rule,
-      minFont: Math.max(7, rule.minFont + 1),
-    };
+    return { ...rule, minFont: Math.max(7, rule.minFont + 1) };
   }
 
-  // Very wide single-line fields (addresses)
   if (kind === "single" && aspect > 10) {
-    return {
-      ...rule,
-      minFont: Math.max(6, rule.minFont),
-    };
+    return { ...rule, minFont: Math.max(6, rule.minFont) };
   }
 
   return rule;
 }
 
 // ---------------------------------------------------------
-// Name-based tuning (minimal, only when geometry isn't enough)
+// Name-based tuning
 // ---------------------------------------------------------
-
 function tweakRuleForName(meta: FieldMeta, rule: ShrinkRule): ShrinkRule {
   const n = meta.normalizedName;
 
-  // Description of improvement should stay readable
   if (n === "desc_of_improv" || n === "desc_of_improvement") {
-    return {
-      ...rule,
-      minFont: Math.max(rule.minFont, 8),
-      sharedLayout: false,
-    };
+    return { ...rule, minFont: Math.max(rule.minFont, 8), sharedLayout: true };
   }
 
-  // Legal description is multi-line and important
   if (n === "legal_description") {
-    return {
-      ...rule,
-      minFont: Math.max(rule.minFont, 9),
-      sharedLayout: true,
-    };
+    return { ...rule, minFont: Math.max(rule.minFont, 9), sharedLayout: true };
   }
 
-  // City fields often overflow
-  if (n === "customer_address_city" || n === "company_address_city") {
-    return {
-      ...rule,
-      minFont: Math.min(rule.minFont, 6),
-    };
-  }
-
-  // Full address fields
-  if (n === "customer_address_full" || n === "company_address_full") {
-    return {
-      ...rule,
-      minFont: Math.min(rule.minFont, 6),
-    };
+  if (
+    n === "customer_address_city" ||
+    n === "company_address_city" ||
+    n === "customer_address_full" ||
+    n === "company_address_full"
+  ) {
+    return { ...rule, minFont: Math.min(rule.minFont, 6), sharedLayout: true };
   }
 
   return rule;
@@ -264,17 +205,16 @@ function tweakRuleForName(meta: FieldMeta, rule: ShrinkRule): ShrinkRule {
 // ---------------------------------------------------------
 // Public API: get shrink rule for a field
 // ---------------------------------------------------------
-
 export function getShrinkRule(meta: FieldMeta): ShrinkRule {
   const base = baseRuleForKind(meta.kind);
   const tuned = tuneRuleForGeometry(meta, base);
   const finalRule = tweakRuleForName(meta, tuned);
   return finalRule;
 }
+
 // ---------------------------------------------------------
 // TextLayout type
 // ---------------------------------------------------------
-
 export interface TextLayout {
   fontSize: number;
   lines: string[];
@@ -283,7 +223,6 @@ export interface TextLayout {
 // ---------------------------------------------------------
 // Word-based wrapping
 // ---------------------------------------------------------
-
 function wrapByWords(
   text: string,
   size: number,
@@ -311,9 +250,8 @@ function wrapByWords(
 }
 
 // ---------------------------------------------------------
-// Character-based wrapping (for numeric fields)
+// Character-based wrapping
 // ---------------------------------------------------------
-
 function wrapByChars(
   text: string,
   size: number,
@@ -342,7 +280,6 @@ function wrapByChars(
 // ---------------------------------------------------------
 // Compute layout using a ShrinkRule
 // ---------------------------------------------------------
-
 export function computeLayoutWithRule(
   text: string,
   fieldWidth: number,
@@ -385,62 +322,9 @@ export function computeLayoutWithRule(
 
   return { fontSize, lines: finalLines };
 }
-
 // ---------------------------------------------------------
-// Apply layout to a PDFTextField
+// Apply dynamic shrink
 // ---------------------------------------------------------
-
-export async function applyLayoutToField(
-  field: PDFTextField,
-  text: string,
-  pdfDoc: PDFDocument,
-  baseFont: PDFFont,
-  rule: ShrinkRule
-) {
-  const acro = field.acroField;
-
-  // Ensure default appearance exists
-  if (!acro.getDefaultAppearance()) {
-    acro.setDefaultAppearance(`/Helv 0 Tf 0 g`);
-  }
-
-  const widgets = acro.getWidgets();
-  if (!widgets || widgets.length === 0) {
-    field.setText(text);
-    return;
-  }
-
-  const rect = widgets[0].getRectangle();
-  if (!rect) {
-    field.setText(text);
-    return;
-  }
-
-  const padding = 4;
-  const fieldWidth = rect.width - padding;
-  const fieldHeight = rect.height - padding;
-
-  const layout = computeLayoutWithRule(
-    text,
-    fieldWidth,
-    fieldHeight,
-    baseFont,
-    rule
-  );
-
-  field.setFontSize(layout.fontSize);
-  field.updateAppearances(baseFont);
-  field.setText(layout.lines.join("\n"));
-}
-/**
- * Apply dynamic shrink logic to a field using:
- * - FieldMeta (from Part 1)
- * - ShrinkRule (from Part 2)
- * - Layout Engine (from Part 3)
- *
- * This is the single function your fillPdf.ts will call.
- */
-
 export async function applyDynamicShrink(
   field: PDFTextField,
   text: string,
@@ -449,80 +333,74 @@ export async function applyDynamicShrink(
   meta: FieldMeta,
   sharedLayoutCache: Map<string, TextLayout>
 ) {
-  const rule = getShrinkRule(meta);
+  // ============================================================
+  // DEBUG: Field identity + meta
+  // ============================================================
+  const name = field.getName();
+  const normalized = name ? name.replace(/\s+/g, "").trim().toLowerCase() : "";
 
+  console.log("=== APPLY SHRINK ===");
+  console.log("Field Name:", name);
+  console.log("Normalized:", normalized);
+  console.log("Meta:", meta);
+  console.log("Value:", text);
+
+  const rule = getShrinkRule(meta);
   const acro = field.acroField;
+
   if (!acro.getDefaultAppearance()) {
     acro.setDefaultAppearance(`/Helv 0 Tf 0 g`);
   }
 
   const widgets = acro.getWidgets();
   if (!widgets || widgets.length === 0) {
+    console.log("NO WIDGETS FOUND — setting text directly");
     field.setText(text);
-    return;
-  }
-
-  const rect = widgets[0].getRectangle();
-  if (!rect) {
-    field.setText(text);
+    console.log("=== END SHRINK ===");
     return;
   }
 
   const padding = 4;
-  const fieldWidth = rect.width - padding;
-  const fieldHeight = rect.height - padding;
-
-  // ---------------------------------------------------------
-  // Shared layout logic (multi-line fields)
-  // ---------------------------------------------------------
   let layout: TextLayout;
 
-  if (rule.sharedLayout) {
-    // If we already computed layout for this field name, reuse it
-    if (sharedLayoutCache.has(meta.normalizedName)) {
-      layout = sharedLayoutCache.get(meta.normalizedName)!;
-    } else {
-      // Compute layout using the *smallest* geometry across fields
-      layout = computeLayoutWithRule(
-        text,
-        meta.width - padding,
-        meta.height - padding,
-        baseFont,
-        rule
-      );
-      sharedLayoutCache.set(meta.normalizedName, layout);
-    }
+  // ============================================================
+  // Shared layout for all fields with same normalized name
+  // (meta.width/height are already the smallest across pages)
+  // ============================================================
+  if (sharedLayoutCache.has(meta.normalizedName)) {
+    console.log("Using cached layout for:", meta.normalizedName);
+    layout = sharedLayoutCache.get(meta.normalizedName)!;
   } else {
-    // Per-field layout
+    console.log("Computing NEW layout:");
+    console.log("  meta.width:", meta.width);
+    console.log("  meta.height:", meta.height);
+
     layout = computeLayoutWithRule(
       text,
-      fieldWidth,
-      fieldHeight,
+      meta.width - padding,
+      meta.height - padding,
       baseFont,
       rule
     );
+
+    sharedLayoutCache.set(meta.normalizedName, layout);
   }
 
-  // ---------------------------------------------------------
-  // Apply layout to field
-  // ---------------------------------------------------------
+  // ============================================================
+  // Apply layout (pdf-lib will propagate to widgets via appearances)
+  // ============================================================
+  console.log("Final Font Size:", layout.fontSize);
+  console.log("Final Lines:", layout.lines);
+  console.log("=== END SHRINK ===");
+
   field.setFontSize(layout.fontSize);
-  field.updateAppearances(baseFont);
   field.setText(layout.lines.join("\n"));
+  field.updateAppearances(baseFont);
 }
 
-/**
- * Convenience helper for fillPdf.ts:
- *
- * Given:
- * - pdfDoc
- * - baseFont
- * - fieldMetaMap (from analyzeFields)
- *
- * Returns a function you can call for each field:
- *
- *    shrinker(field, value)
- */
+// ---------------------------------------------------------
+// Create shrinker for fillPdf.ts
+// ---------------------------------------------------------
 export function createShrinker(
   pdfDoc: PDFDocument,
   baseFont: PDFFont,
@@ -532,31 +410,64 @@ export function createShrinker(
 
   return async (field: PDFTextField, value: string) => {
     const name = field.getName();
-    const normalized = name ? name.replace(/\s+/g, "").trim().toLowerCase() : "";
+    const normalized = name
+      ? name.replace(/\s+/g, "").trim().toLowerCase()
+      : "";
 
     const meta = fieldMetaMap[normalized];
+
+    console.log("=== SHRINK DEBUG ===");
+    console.log("Field Name:", name);
+    console.log("Normalized:", normalized);
+
+    if (meta) {
+      console.log("META FOUND:");
+      console.log("  meta.width:", meta.width);
+      console.log("  meta.height:", meta.height);
+      console.log("  meta.multiline:", meta.multiline);
+    } else {
+      console.log("NO META FOUND — FALLBACK MODE");
+    }
+
+    const acro = field.acroField;
+    const widgets = acro.getWidgets();
+
+    if (widgets && widgets.length > 0) {
+      const rect = widgets[0].getRectangle();
+      console.log("Widget Rect:");
+      console.log("  rect.width:", rect.width);
+      console.log("  rect.height:", rect.height);
+    } else {
+      console.log("NO WIDGETS FOUND");
+    }
+
+    console.log("Value:", value);
+    console.log("====================");
+
+    // ---------------------------------------------------------
+    // FALLBACK (no meta found)
+    // ---------------------------------------------------------
     if (!meta) {
-      // Fallback: treat as single-line text
       const fallbackRule: ShrinkRule = {
         mode: "words",
         minFont: 6,
         maxFont: 12,
-        sharedLayout: false,
+        sharedLayout: true,
       };
 
-      const acro = field.acroField;
       if (!acro.getDefaultAppearance()) {
         acro.setDefaultAppearance(`/Helv 0 Tf 0 g`);
       }
 
-      const widgets = acro.getWidgets();
-      if (!widgets || widgets.length === 0) {
+      const fallbackWidgets = acro.getWidgets();
+      if (!fallbackWidgets || fallbackWidgets.length === 0) {
         field.setText(value);
         return;
       }
 
-      const rect = widgets[0].getRectangle();
+      const rect = fallbackWidgets[0].getRectangle();
       const padding = 4;
+
       const fieldWidth = rect.width - padding;
       const fieldHeight = rect.height - padding;
 
@@ -569,11 +480,14 @@ export function createShrinker(
       );
 
       field.setFontSize(layout.fontSize);
-      field.updateAppearances(baseFont);
       field.setText(layout.lines.join("\n"));
+      field.updateAppearances(baseFont);
       return;
     }
 
+    // ---------------------------------------------------------
+    // MAIN SHRINK PATH (meta exists)
+    // ---------------------------------------------------------
     await applyDynamicShrink(
       field,
       value,

@@ -6,6 +6,7 @@ import { autoMapFields } from "@/lib/autoMapping";
 import { fillPdf } from "@/lib/pdf/fillPdf";
 import { uploadPdf } from "@/lib/uploadPdf";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
@@ -270,11 +271,9 @@ export async function updateJobAction(formData: FormData) {
     ? Number(formData.get("job_price"))
     : null;
 
+  // ⭐ ALWAYS use user-entered description
   const description =
-    (formData.get("desc_of_improvement") as string | null)?.trim() ||
-    existing.company?.descOfImprov ||
-    existing.description ||
-    "";
+    (formData.get("desc_of_improvement") as string | null)?.trim() ?? "";
 
   await prisma.job.update({
     where: { id: targetId },
@@ -375,12 +374,51 @@ export async function removeTemplateAction(jobDocumentId: string) {
    DELETE JOB
 ----------------------------------------------------------- */
 export async function deleteJobAction(jobId: string) {
-  await prisma.job.delete({
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/login");
+
+  const user = session.user;
+
+  // 1️⃣ Load job + company
+  const job = await prisma.job.findUnique({
     where: { id: jobId },
+    include: { company: true },
   });
 
+  if (!job) notFound();
+
+  const allowed =
+    user.role === "master" ||
+    user.companyId === job.companyId ||
+    user.activeCompanyId === job.companyId;
+
+  if (!allowed) redirect("/dashboard");
+
+  const companyCode = job.company.companyCode;
+  const jobNumber = job.jobNumber;
+
+  // 2️⃣ Delete Supabase folder recursively
+  const folderPath = `${companyCode}/jobs/${jobNumber}`;
+  const { error: storageError } = await supabaseServer.storage
+    .from("companies")
+    .remove([folderPath]);
+
+  if (storageError) {
+    console.log("⚠️ Failed to delete Supabase folder:", storageError);
+  }
+
+  // 3️⃣ Delete related DB rows
+  await prisma.jobDocument.deleteMany({ where: { jobId } });
+  await prisma.jobFile.deleteMany({ where: { jobId } });
+  await prisma.job.delete({ where: { id: jobId } });
+
+  // 4️⃣ Revalidate dashboard route so list updates immediately
+  revalidatePath("/dashboard");
+
+  // 5️⃣ Redirect back to dashboard
   redirect("/dashboard");
 }
+
 
 /* -----------------------------------------------------------
    CREATE JOB (FULL SAVE)
@@ -391,11 +429,16 @@ export async function createJobAction(formData: FormData) {
 
   const user = session.user;
 
+  const jobId = formData.get("job_id") as string | null;
   const companyId = formData.get("company_id") as string | null;
   if (!companyId) notFound();
 
-  const description = (formData.get("description") as string | null) ?? "";
+  // If job already exists → UPDATE instead of CREATE
+  if (jobId) {
+    return await updateJobAction(formData);
+  }
 
+  // Otherwise create a new job (first save)
   const raw = {
     customerName: formData.get("customer_name") as string | null,
     customerPhone: formData.get("customer_phone") as string | null,
@@ -434,11 +477,13 @@ export async function createJobAction(formData: FormData) {
 
   const nextJobNumber = lastJob ? lastJob.jobNumber + 1 : 1;
 
+  // Create new job
   const job = await prisma.job.create({
     data: {
       companyId,
       createdBy: user.username,
-      description,
+      description:
+        (formData.get("desc_of_improvement") as string | null)?.trim() ?? "",
       jobNumber: nextJobNumber,
       customerName: formatted.customerName,
       customerPhone: formatted.customerPhone,
@@ -478,7 +523,6 @@ export async function createJobAction(formData: FormData) {
     });
   }
 
-  // Generate previews immediately
   await generatePreviews(job.id);
 
   redirect(`/dashboard/jobs/${job.id}/preview`);
