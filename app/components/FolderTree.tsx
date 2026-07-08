@@ -27,7 +27,7 @@ interface FolderTreeProps {
   variant: Variant;
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
   onSelectFile?: (file: SupabaseFile) => void;
-  onSelectFolder?: (path: string) => void; 
+  onSelectFolder?: (path: string) => void;
 }
 
 export default function FolderTree({
@@ -35,7 +35,7 @@ export default function FolderTree({
   variant,
   deleteTemplateAction,
   onSelectFile,
-  onSelectFolder, 
+  onSelectFolder,
 }: FolderTreeProps) {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -47,7 +47,6 @@ export default function FolderTree({
       if (!term) return node;
 
       const nameMatches = node.name.toLowerCase().includes(term);
-
       const matchedFiles = node.files.filter((f) =>
         f.name.toLowerCase().includes(term)
       );
@@ -59,7 +58,9 @@ export default function FolderTree({
       }
 
       const hasMatch =
-        nameMatches || matchedFiles.length > 0 || matchedFolders.length > 0;
+        nameMatches ||
+        matchedFiles.length > 0 ||
+        matchedFolders.length > 0;
 
       if (!hasMatch) return null;
 
@@ -95,16 +96,11 @@ export default function FolderTree({
   const toggle = (path: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-  
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
-  
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
       return next;
     });
-  };  
+  };
 
   const expandAll = () => {
     const all = new Set<string>();
@@ -136,6 +132,7 @@ export default function FolderTree({
         <button onClick={collapseAll} className="btn btn-outline btn-sm">
           Collapse All
         </button>
+
         <button onClick={expandAll} className="btn btn-outline btn-sm">
           Expand All
         </button>
@@ -155,7 +152,7 @@ export default function FolderTree({
           toggle={toggle}
           deleteTemplateAction={deleteTemplateAction}
           onSelectFile={onSelectFile}
-          onSelectFolder={onSelectFolder} // PASSED DOWN
+          onSelectFolder={onSelectFolder}
         />
       </div>
     </div>
@@ -169,7 +166,7 @@ function FolderNodeView({
   toggle,
   deleteTemplateAction,
   onSelectFile,
-  onSelectFolder, // ADDED
+  onSelectFolder,
 }: {
   node: FolderNode;
   variant: Variant;
@@ -177,7 +174,7 @@ function FolderNodeView({
   toggle: (path: string) => void;
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
   onSelectFile?: (file: SupabaseFile) => void;
-  onSelectFolder?: (path: string) => void; // ADDED
+  onSelectFolder?: (path: string) => void;
 }) {
   const path = node.fullPath;
   const open = isOpen(path);
@@ -185,29 +182,25 @@ function FolderNodeView({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-gray-50">
-  {/* Expand / collapse */}
-  <button
-    type="button"
-    onClick={() => toggle(path)}
-    className="p-1"
-  >
-    {open ? (
-      <ChevronDownIcon className="w-4 h-4 text-gray-500" />
-    ) : (
-      <ChevronRightIcon className="w-4 h-4 text-gray-500" />
-    )}
-  </button>
+        {/* Expand / collapse */}
+        <button type="button" onClick={() => toggle(path)} className="p-1">
+          {open ? (
+            <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
 
-  {/* Navigate into folder */}
-  <button
-    type="button"
-    onClick={() => onSelectFolder?.(path)}
-    className="flex items-center gap-2 flex-1 text-left"
-  >
-    <FolderIcon className="w-5 h-5 text-yellow-500" />
-    <span className="font-semibold">{node.name}</span>
-  </button>
-</div>
+        {/* Navigate into folder */}
+        <button
+          type="button"
+          onClick={() => onSelectFolder?.(path)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          <FolderIcon className="w-5 h-5 text-yellow-500" />
+          <span className="font-semibold">{node.name}</span>
+        </button>
+      </div>
 
       {open ? (
         <div className="ml-6 space-y-3">
@@ -238,7 +231,7 @@ function FolderNodeView({
                   toggle={toggle}
                   deleteTemplateAction={deleteTemplateAction}
                   onSelectFile={onSelectFile}
-                  onSelectFolder={onSelectFolder} // PROP PASSED DOWN
+                  onSelectFolder={onSelectFolder}
                 />
               ))}
             </div>

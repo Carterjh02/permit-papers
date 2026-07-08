@@ -32,13 +32,16 @@ export async function generatePreviews(jobId: string) {
         continue;
       }
 
+      // ⭐ CLEAN PATH — remove accidental "templates/" prefix
+      const cleanSourcePath = doc.templateSourcePath.replace(/^templates\//, "");
+
       // 1. Download blank template
       const { data, error } = await supabaseServer.storage
         .from("templates")
-        .download(doc.templateSourcePath);
+        .download(cleanSourcePath);
 
       if (error || !data) {
-        console.log("❌ Failed to download template:", doc.templateSourcePath);
+        console.log("❌ Failed to download template:", cleanSourcePath);
         continue;
       }
 
@@ -46,7 +49,7 @@ export async function generatePreviews(jobId: string) {
 
       // 2. Load field names
       const template = await prisma.formTemplate.findFirst({
-        where: { path: doc.templateSourcePath },
+        where: { path: cleanSourcePath },
       });
 
       const fieldNames = Array.isArray(template?.fieldNames)
@@ -300,7 +303,7 @@ export async function updateJobAction(formData: FormData) {
 }
 
 /* -----------------------------------------------------------
-   ADD TEMPLATE
+   ADD TEMPLATE TO JOB
 ----------------------------------------------------------- */
 export async function addTemplateAction(jobId: string, path: string) {
   const session = await getServerSession(authOptions);
@@ -322,7 +325,8 @@ export async function addTemplateAction(jobId: string, path: string) {
 
   if (!allowed) redirect("/dashboard");
 
-  const cleanPath = path.replace(/\\/g, "/");
+  // ⭐ CLEAN PATH — remove any accidental leading "templates/"
+  const cleanPath = path.replace(/\\/g, "/").replace(/^templates\//, "");
 
   const template = await prisma.formTemplate.findFirst({
     where: { path: cleanPath },
@@ -336,14 +340,14 @@ export async function addTemplateAction(jobId: string, path: string) {
         template?.name ??
         cleanPath.split("/").slice(-1)[0] ??
         cleanPath,
-      templateSourcePath: cleanPath,
+      templateSourcePath: cleanPath, // ⭐ now always clean
       templateOutputPath: null,
     },
   });
 }
 
 /* -----------------------------------------------------------
-   REMOVE TEMPLATE
+   REMOVE TEMPLATE FROM JOB
 ----------------------------------------------------------- */
 export async function removeTemplateAction(jobDocumentId: string) {
   const session = await getServerSession(authOptions);

@@ -14,22 +14,26 @@ interface FolderBrowserPanelProps {
 }
 
 /* -----------------------------------------------------------
-   BUILD REAL TEMPLATE TREE (flat, no temp/permanent)
+   BUILD TREE DIRECTLY FROM BUCKET STRUCTURE
 ----------------------------------------------------------- */
 async function buildTree(path: string): Promise<FolderNode> {
-  const clean = path.replace(/\/$/, "");
+  const clean = path.replace(/\/+$/, ""); // normalize
+
+  // read exactly from this path inside the bucket
   const { folders, files } = await listFolder(clean);
 
   const visibleFolders = folders.filter((f) => !f.name.startsWith("."));
   const visibleFiles = files.filter((f) => !f.name.startsWith("."));
 
   const children = await Promise.all(
-    visibleFolders.map((f) => buildTree(`${clean}/${f.name}`))
+    visibleFolders.map((f) =>
+      buildTree(clean ? `${clean}/${f.name}` : f.name)
+    )
   );
 
   return {
-    name: clean.split("/").pop() || "templates",
-    fullPath: clean,
+    name: clean ? clean.split("/").pop()! : "Templates",
+    fullPath: clean, // this is the real path inside the bucket
     folders: children,
     files: visibleFiles,
   };
@@ -37,7 +41,7 @@ async function buildTree(path: string): Promise<FolderNode> {
 
 export default function FolderBrowserPanel({
   mode,
-  initialPath = "templates",
+  initialPath = "", // ⭐ start at bucket root
   onClose,
   onSelectFile,
   onUploadComplete,
@@ -54,8 +58,8 @@ export default function FolderBrowserPanel({
     setLoading(true);
 
     try {
-      const clean = currentPath.replace(/\/$/, "");
-      const parts = clean.split("/").filter(Boolean);
+      const clean = currentPath.replace(/\/+$/, "");
+      const parts = clean ? clean.split("/").filter(Boolean) : [];
       setBreadcrumbs(parts);
 
       const root = await buildTree(clean);
@@ -88,8 +92,8 @@ export default function FolderBrowserPanel({
   const createFolder = async (name: string) => {
     if (mode !== "master") return;
 
-    const base = currentPath.replace(/\/$/, "");
-    const fullPath = `${base}/${name}/.keep`;
+    const base = currentPath.replace(/\/+$/, "");
+    const fullPath = (base ? `${base}/${name}` : name) + "/.keep";
 
     const { error } = await supabaseClient.storage
       .from("templates")
@@ -109,8 +113,11 @@ export default function FolderBrowserPanel({
   const handleUpload = async (file: File) => {
     if (mode !== "master") return;
 
-    const base = currentPath.replace(/\/$/, "");
-    const fullPath = `${base}/${file.name}`.replace(/\\/g, "/");
+    const base = currentPath.replace(/\/+$/, "");
+    const fullPath = (base ? `${base}/${file.name}` : file.name).replace(
+      /\\/g,
+      "/"
+    );
 
     const { error } = await supabaseClient.storage
       .from("templates")
@@ -123,6 +130,7 @@ export default function FolderBrowserPanel({
 
     if (onUploadComplete) onUploadComplete(fullPath);
 
+    // return the real path inside the bucket
     onSelectFile(fullPath);
     await load();
   };
@@ -189,22 +197,28 @@ export default function FolderBrowserPanel({
 
         {/* BREADCRUMBS */}
         <div className="px-4 py-2 border-b border-gray-100 text-sm flex flex-wrap gap-1">
+          <button
+            onClick={() => setCurrentPath("")}
+            className="text-blue-600 hover:underline"
+          >
+            Templates
+          </button>
+
           {breadcrumbs.map((crumb, i) => (
             <span key={i} className="flex items-center">
+              <span className="mx-1 text-gray-400">/</span>
               <button
                 onClick={() => {
-                  if (mode === "master") {
-                    const newPath = breadcrumbs.slice(0, i + 1).join("/");
-                    setCurrentPath(newPath);
-                  }
+                  const newPath = breadcrumbs
+                    .slice(0, i + 1)
+                    .join("/")
+                    .replace(/\/+$/, "");
+                  setCurrentPath(newPath);
                 }}
                 className="text-blue-600 hover:underline"
               >
                 {crumb}
               </button>
-              {i < breadcrumbs.length - 1 && (
-                <span className="mx-1 text-gray-400">/</span>
-              )}
             </span>
           ))}
         </div>
@@ -218,10 +232,11 @@ export default function FolderBrowserPanel({
               root={tree}
               variant="popup"
               onSelectFolder={(path) => {
-                if (mode === "master") setCurrentPath(path);
+                setCurrentPath(path);
               }}
               onSelectFile={(file) => {
-                onSelectFile(file.path);
+                // send the exact path inside the bucket
+                onSelectFile(file.path.replace(/\\/g, "/"));
                 onClose();
               }}
             />

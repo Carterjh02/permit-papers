@@ -155,15 +155,16 @@ export default function JobFormClient({
      TEMPLATE SELECTION
   --------------------------------------------------------- */
   const handleSelectTemplate = async (path: string) => {
-    const cleanPath = path.replace(/\\/g, "/");
-  
-    await ensureJobExists(); // no unused variable
-  
+    // ⭐ CLEAN PATH — remove accidental "templates/" prefix
+    const cleanPath = path.replace(/\\/g, "/").replace(/^templates\//, "");
+
+    await ensureJobExists();
+
     if (onAddTemplate) await onAddTemplate(cleanPath);
-  
+
     setTemplates((prev) => {
       if (prev.some((t) => t.templatePath === cleanPath)) return prev;
-  
+
       return [
         ...prev,
         {
@@ -173,9 +174,9 @@ export default function JobFormClient({
         },
       ];
     });
-  
+
     setShowBrowser(false);
-  };  
+  };
 
   const handleRemove = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
@@ -392,7 +393,7 @@ export default function JobFormClient({
         </div>
 
         {/* ---------------------------------------------------------
-           SAVE BUTTON (server action bound here)
+           SAVE BUTTON
         --------------------------------------------------------- */}
         <div className="flex justify-end mt-6">
           <button
@@ -450,7 +451,7 @@ export default function JobFormClient({
       {showBrowser && (
         <FolderBrowserPanel
           mode="job"
-          initialPath="templates"
+          initialPath=""   // ⭐ CLEAN ROOT — no "templates"
           onClose={() => setShowBrowser(false)}
           onSelectFile={handleSelectTemplate}
         />
