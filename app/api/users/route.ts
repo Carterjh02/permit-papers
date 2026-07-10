@@ -1,4 +1,3 @@
-// app/api/users/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken, type GetTokenParams } from "next-auth/jwt";

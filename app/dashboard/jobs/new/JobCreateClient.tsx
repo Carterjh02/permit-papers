@@ -17,13 +17,18 @@ export default function JobCreateClient({
   const [showBrowser, setShowBrowser] = useState(false);
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
 
-  const handleSelectFile = (path: string) => {
+  const handleSelectFile = (paths: string[]) => {
+    const path = paths[0];
+    if (!path) return;
+  
     const safePath = path.replace(/\\/g, "/");
+  
     setSelectedTemplates((prev) =>
       prev.includes(safePath) ? prev : [...prev, safePath]
     );
+  
     setShowBrowser(false);
-  };
+  };  
 
   const handleRemoveTemplate = (path: string) => {
     setSelectedTemplates((prev) => prev.filter((p) => p !== path));

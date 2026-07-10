@@ -8,18 +8,18 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 
-  // ⭐ Force JWT sessions (no database sessions)
+  // Force JWT sessions (no database sessions)
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 2, // 2 hours
   },
 
-  // ⭐ Force re-authentication after browser close
+  // Force re-authentication after browser close
   jwt: {
     maxAge: 60 * 60 * 2, // 2 hours
   },
 
-  // ⭐ Secure cookies
+  // Secure cookies
   cookies: {
     sessionToken: {
       name: "next-auth.session-token",

@@ -70,7 +70,12 @@ export default async function MasterTemplatesPage() {
         </Link>
       </div>
 
-      <FolderTree root={root} variant="admin" />
+      <FolderTree
+        root={root}
+        variant="admin"
+        selectedFiles={[]}          // admin does not select files
+        onToggleFile={() => {}}     // no-op handler
+      />
     </div>
   );
 }

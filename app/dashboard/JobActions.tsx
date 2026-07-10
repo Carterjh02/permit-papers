@@ -29,8 +29,8 @@ export default function JobActions({ jobId, jobNumber }: JobActionsProps) {
   }, []);
 
   async function handleDelete() {
-    await deleteJobAction(jobId);   // ⭐ direct server action call
-    router.refresh();               // ⭐ instantly refresh dashboard
+    await deleteJobAction(jobId);   // direct server action call
+    router.refresh();               // instantly refresh dashboard
   }
 
   return (

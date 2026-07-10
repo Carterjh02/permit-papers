@@ -59,7 +59,7 @@ export default async function JobEditPage({ params }: PageProps) {
     createdBy: user.username,
   };
 
-  // ⭐ FIXED: templatePath is now nullable in Prisma, so normalize it
+  // FIXED: templatePath is now nullable in Prisma, so normalize it
   const initialTemplates = job.documents.map((d) => ({
     id: d.id,
     templateName: d.templateName ?? "",
@@ -98,10 +98,12 @@ export default async function JobEditPage({ params }: PageProps) {
           formData.set("route_job_id", id);
           await updateJobAction(formData);
         }}
-        onAddTemplate={async (path) => {
+        onAddTemplate={async (paths) => {
           "use server";
-          await addTemplateAction(id, path);
-        }}
+          for (const p of paths) {
+            await addTemplateAction(id, p);
+          }
+        }}        
         onRemoveTemplate={async (jobDocumentId) => {
           "use server";
           await removeTemplateAction(jobDocumentId);

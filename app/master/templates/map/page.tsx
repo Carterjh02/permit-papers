@@ -90,7 +90,7 @@ export default function TemplateMappingPage() {
       formData.set(`map_${f}`, mappings[f] || "");
     });
 
-    // ⭐ Correct Next.js 16 pattern — POST to API route
+    // Correct Next.js 16 pattern — POST to API route
     await fetch(`/api/forms/templates/${templateId}/mappings`, {
       method: "POST",
       body: formData,

@@ -3,23 +3,29 @@
 import { useEffect, useState, useCallback } from "react";
 import { listFolder } from "@/lib/supabase/listFolder";
 import { supabaseClient } from "@/lib/supabaseClient";
-import FolderTree, { FolderNode } from "@/app/components/FolderTree";
+
+import FolderTree, { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
+
+import { extractCountiesFromTree } from "@/lib/filters/extractCounties";
+import { extractCitiesFromTree } from "@/lib/filters/extractCities";
+import { filterTree } from "@/lib/filters/filterTree";
 
 interface FolderBrowserPanelProps {
   mode: "job" | "master";
   initialPath?: string;
   onClose: () => void;
   onUploadComplete?: (path: string) => void;
-  onSelectFile: (path: string) => void;
+
+  // MULTI-FILE SELECTION
+  onSelectFile: (paths: string[]) => void;
 }
 
 /* -----------------------------------------------------------
-   BUILD TREE DIRECTLY FROM BUCKET STRUCTURE
+     BuildTree
 ----------------------------------------------------------- */
 async function buildTree(path: string): Promise<FolderNode> {
-  const clean = path.replace(/\/+$/, ""); // normalize
+  const clean = path.replace(/\/+$/, "");
 
-  // read exactly from this path inside the bucket
   const { folders, files } = await listFolder(clean);
 
   const visibleFolders = folders.filter((f) => !f.name.startsWith("."));
@@ -33,7 +39,7 @@ async function buildTree(path: string): Promise<FolderNode> {
 
   return {
     name: clean ? clean.split("/").pop()! : "Templates",
-    fullPath: clean, // this is the real path inside the bucket
+    fullPath: clean,
     folders: children,
     files: visibleFiles,
   };
@@ -41,7 +47,7 @@ async function buildTree(path: string): Promise<FolderNode> {
 
 export default function FolderBrowserPanel({
   mode,
-  initialPath = "", // ⭐ start at bucket root
+  initialPath = "",
   onClose,
   onSelectFile,
   onUploadComplete,
@@ -49,7 +55,35 @@ export default function FolderBrowserPanel({
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [tree, setTree] = useState<FolderNode | null>(null);
+
+  /* -----------------------------------------------------------
+     FILTER STATE 
+  ----------------------------------------------------------- */
+  const [selectedCounty, setSelectedCounty] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+
+  const [counties, setCounties] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+
+  const [filteredTree, setFilteredTree] = useState<FolderNode | null>(null);
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+
+  /* -----------------------------------------------------------
+     MULTI-FILE SELECTION STATE 
+  ----------------------------------------------------------- */
+  const [selectedFiles, setSelectedFiles] = useState<SupabaseFile[]>([]);
+
+  const toggleFileSelection = (file: SupabaseFile) => {
+    setSelectedFiles((prev) => {
+      const exists = prev.some((f) => f.path === file.path);
+      if (exists) {
+        return prev.filter((f) => f.path !== file.path);
+      }
+      return [...prev, file];
+    });
+  };
 
   /* -----------------------------------------------------------
      LOAD TREE
@@ -64,19 +98,52 @@ export default function FolderBrowserPanel({
 
       const root = await buildTree(clean);
       setTree(root);
+
+      /* -----------------------------------------------------------
+         FIXED — use helper extractCountiesFromTree
+      ----------------------------------------------------------- */
+      const detectedCounties = extractCountiesFromTree(root);
+      setCounties(detectedCounties);
+
+      /* -----------------------------------------------------------
+         use helper extractCitiesFromTree
+      ----------------------------------------------------------- */
+      if (selectedCounty) {
+      const detectedCities = extractCitiesFromTree(root, selectedCounty);
+       setCities(detectedCities);
+      }   
+
+      /* -----------------------------------------------------------
+         FilterTree destructuring
+      ----------------------------------------------------------- */
+      if (selectedCounty || selectedCity) {
+        const { mergedTree, expandedPaths } = filterTree(
+          root,
+          selectedCounty,
+          selectedCity
+        );
+      
+        setFilteredTree(mergedTree);
+        setExpandedPaths(expandedPaths);
+      } else {
+        setFilteredTree(root);
+        setExpandedPaths(new Set([""]));
+      }
+      
+      setExpandedPaths((prev) => new Set([...prev, ""]));      
     } catch (err) {
       console.error("Folder load error:", err);
     }
 
     setLoading(false);
-  }, [currentPath]);
+  }, [currentPath, selectedCounty, selectedCity]);
 
   useEffect(() => {
     Promise.resolve().then(() => load());
   }, [load]);
 
   /* -----------------------------------------------------------
-     ESC CLOSE
+     ESC CLOSE (existing logic preserved)
   ----------------------------------------------------------- */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -87,7 +154,7 @@ export default function FolderBrowserPanel({
   }, [onClose]);
 
   /* -----------------------------------------------------------
-     MASTER MODE — CREATE FOLDER
+     MASTER MODE — CREATE FOLDER (existing logic preserved)
   ----------------------------------------------------------- */
   const createFolder = async (name: string) => {
     if (mode !== "master") return;
@@ -109,6 +176,7 @@ export default function FolderBrowserPanel({
 
   /* -----------------------------------------------------------
      MASTER MODE — UPLOAD FILE
+     FIXED: remove auto-select (rule #14)
   ----------------------------------------------------------- */
   const handleUpload = async (file: File) => {
     if (mode !== "master") return;
@@ -130,23 +198,47 @@ export default function FolderBrowserPanel({
 
     if (onUploadComplete) onUploadComplete(fullPath);
 
-    // return the real path inside the bucket
-    onSelectFile(fullPath);
+    // RULE #14 — DO NOT auto-select uploaded files
+    // (removed toggleFileSelection)
+
     await load();
   };
 
   /* -----------------------------------------------------------
-     RENDER
+     FILTER HANDLERS
   ----------------------------------------------------------- */
+  const handleCountyChange = (county: string) => {
+    setSelectedCounty(county);
+    setSelectedCity("");
+  
+    if (tree) {
+      const detectedCities = extractCitiesFromTree(tree, county);
+      setCities(detectedCities);
+  
+      const { mergedTree, expandedPaths } = filterTree(tree, county, "");
+      setFilteredTree(mergedTree);
+      setExpandedPaths(expandedPaths);
+    }
+  };  
+
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+  
+    if (tree) {
+      const { mergedTree, expandedPaths } = filterTree(
+        tree,
+        selectedCounty,
+        city
+      );
+      setFilteredTree(mergedTree);
+      setExpandedPaths(expandedPaths);
+    }
+  };
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div
-        className="
-          pointer-events-auto bg-white shadow-xl rounded-lg border border-gray-200
-          w-[75vw] h-[80vh] max-w-[1400px]
-          flex flex-col resize overflow-hidden
-        "
-      >
+      <div className="pointer-events-auto bg-white shadow-xl rounded-lg border border-gray-200 w-[75vw] h-[80vh] max-w-[1400px] flex flex-col resize overflow-hidden">
+
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <div className="font-semibold text-lg">Select Template</div>
@@ -154,6 +246,7 @@ export default function FolderBrowserPanel({
           <div className="flex items-center gap-3">
             {mode === "master" && (
               <>
+                {/* UPLOAD PDF */}
                 <label className="cursor-pointer text-blue-600 hover:underline">
                   Upload PDF
                   <input
@@ -167,6 +260,7 @@ export default function FolderBrowserPanel({
                   />
                 </label>
 
+                {/* NEW FOLDER */}
                 <button
                   onClick={() => {
                     const name = prompt("Folder name?");
@@ -177,22 +271,68 @@ export default function FolderBrowserPanel({
                   New Folder
                 </button>
 
-                <button
-                  onClick={load}
-                  className="text-blue-600 hover:underline"
-                >
+                {/* REFRESH */}
+                <button onClick={load} className="text-blue-600 hover:underline">
                   Refresh
                 </button>
               </>
             )}
 
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
+            {/* CLOSE */}
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               ✕
             </button>
           </div>
+        </div>
+
+        {/* FILTERS */}
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-4">
+          {/* COUNTY */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-600">County</label>
+            <select
+              value={selectedCounty}
+              onChange={(e) => handleCountyChange(e.target.value)}
+              className="select select-bordered w-64"
+            >
+              <option value="">All Counties</option>
+              {counties.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* CITY */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-600">City</label>
+            <select
+              value={selectedCity}
+              onChange={(e) => handleCityChange(e.target.value)}
+              className="select select-bordered w-64"
+              disabled={!selectedCounty}
+            >
+              <option value="">All Cities</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+          </div>
+            {/* CLEAR FILTER */}
+            <button
+              onClick={() => {
+              setSelectedCounty("");
+              setSelectedCity("");
+              setFilteredTree(tree);        // restore full tree
+              setExpandedPaths(new Set([""])); // keep root expanded
+            }}
+          className="btn btn-outline btn-sm"
+            >
+            Clear Filter
+          </button>
         </div>
 
         {/* BREADCRUMBS */}
@@ -207,6 +347,7 @@ export default function FolderBrowserPanel({
           {breadcrumbs.map((crumb, i) => (
             <span key={i} className="flex items-center">
               <span className="mx-1 text-gray-400">/</span>
+
               <button
                 onClick={() => {
                   const newPath = breadcrumbs
@@ -224,24 +365,40 @@ export default function FolderBrowserPanel({
         </div>
 
         {/* TREE */}
-        <div className="p-4 overflow-y-auto flex-1">
-          {loading || !tree ? (
-            <div className="text-center text-gray-500 py-10">Loading…</div>
-          ) : (
-            <FolderTree
-              root={tree}
-              variant="popup"
-              onSelectFolder={(path) => {
-                setCurrentPath(path);
-              }}
-              onSelectFile={(file) => {
-                // send the exact path inside the bucket
-                onSelectFile(file.path.replace(/\\/g, "/"));
+          <div className="p-4 overflow-y-auto flex-1">
+            {loading || !filteredTree ? (
+          <div className="text-center text-gray-500 py-10">Loading…</div>
+        ) : (
+          <FolderTree
+            root={filteredTree}
+            variant="popup"
+            expandedPaths={expandedPaths}
+            selectedFiles={selectedFiles}
+            onToggleFile={toggleFileSelection}
+            onSelectFolder={(path: string) => {
+            setCurrentPath(path);
+            }}
+          />
+        )}
+      </div>
+
+        {/* CONFIRM SELECTION */}
+        {selectedFiles.length > 0 && (
+          <div className="border-t border-gray-200 p-4 flex justify-end bg-gray-50">
+            <button
+              onClick={() => {
+                const paths = selectedFiles.map((f) =>
+                  f.path.replace(/\\/g, "/")
+                );
+                onSelectFile(paths);
                 onClose();
               }}
-            />
-          )}
-        </div>
+              className="btn btn-primary"
+            >
+              Confirm Selection ({selectedFiles.length})
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

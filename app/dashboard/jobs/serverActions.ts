@@ -32,7 +32,7 @@ export async function generatePreviews(jobId: string) {
         continue;
       }
 
-      // ⭐ CLEAN PATH — remove accidental "templates/" prefix
+      // CLEAN PATH — remove accidental "templates/" prefix
       const cleanSourcePath = doc.templateSourcePath.replace(/^templates\//, "");
 
       // 1. Download blank template
@@ -115,7 +115,7 @@ export async function generatePreviews(jobId: string) {
         job: jobData,
       });
 
-      // ⭐ 5. Build SAFE filename (matches uploadPdf)
+      // 5. Build SAFE filename (matches uploadPdf)
       let safeDocumentName = doc.templateName
         .replace(/\s+/g, "_")
         .replace(/[^a-zA-Z0-9._-]/g, "");
@@ -274,7 +274,7 @@ export async function updateJobAction(formData: FormData) {
     ? Number(formData.get("job_price"))
     : null;
 
-  // ⭐ ALWAYS use user-entered description
+  // ALWAYS use user-entered description
   const description =
     (formData.get("desc_of_improvement") as string | null)?.trim() ?? "";
 
@@ -325,7 +325,7 @@ export async function addTemplateAction(jobId: string, path: string) {
 
   if (!allowed) redirect("/dashboard");
 
-  // ⭐ CLEAN PATH — remove any accidental leading "templates/"
+  // CLEAN PATH — remove any accidental leading "templates/"
   const cleanPath = path.replace(/\\/g, "/").replace(/^templates\//, "");
 
   const template = await prisma.formTemplate.findFirst({
@@ -340,7 +340,7 @@ export async function addTemplateAction(jobId: string, path: string) {
         template?.name ??
         cleanPath.split("/").slice(-1)[0] ??
         cleanPath,
-      templateSourcePath: cleanPath, // ⭐ now always clean
+      templateSourcePath: cleanPath, // now always clean
       templateOutputPath: null,
     },
   });

@@ -4,10 +4,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
 import JobFormClient from "../JobFormClient";
 
+
 import {
   createJobAction,
   createMinimalJob,
   uploadSnippetImmediately,
+  addTemplateAction,
+  removeTemplateAction,
 } from "../serverActions";
 
 export default async function NewJobPage() {
@@ -51,15 +54,30 @@ export default async function NewJobPage() {
           "use server";
           await createJobAction(formData);
         }}
-        onCreateMinimalJob={async (companyId: string, createdBy: string) => {
+        onAddTemplate={async (paths) => {
           "use server";
-          return await createMinimalJob(companyId, createdBy);
-        }}
-        onUploadSnippet={async (jobId: string, file: File) => {
-          "use server";
-          return await uploadSnippetImmediately(jobId, file);
-        }}
-      />
+           const job = await prisma.job.findFirst({
+           where: { companyId, createdBy: user.username },
+           orderBy: { createdAt: "desc" },
+          });
+          if (!job) return;
+          for (const p of paths) {
+            await addTemplateAction(job.id, p);
+           }
+          }}
+          onRemoveTemplate={async (jobDocumentId) => {
+            "use server";
+             await removeTemplateAction(jobDocumentId);
+          }}
+          onCreateMinimalJob={async (companyId, createdBy) => {
+            "use server";
+            return await createMinimalJob(companyId, createdBy);
+          }}
+          onUploadSnippet={async (jobId, file) => {
+            "use server";
+             return await uploadSnippetImmediately(jobId, file);
+          }}
+        />
     </div>
   );
 }

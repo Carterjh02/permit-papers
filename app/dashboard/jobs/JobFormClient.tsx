@@ -36,7 +36,7 @@ interface JobFormClientProps {
   }[];
 
   onSave: (formData: FormData) => Promise<void>;
-  onAddTemplate?: (path: string) => Promise<void> | void;
+  onAddTemplate?: (paths: string[]) => Promise<void> | void;
   onRemoveTemplate?: (jobDocumentId: string) => Promise<void> | void;
 
   onCreateMinimalJob: (
@@ -154,29 +154,41 @@ export default function JobFormClient({
   /* ---------------------------------------------------------
      TEMPLATE SELECTION
   --------------------------------------------------------- */
-  const handleSelectTemplate = async (path: string) => {
-    // ⭐ CLEAN PATH — remove accidental "templates/" prefix
-    const cleanPath = path.replace(/\\/g, "/").replace(/^templates\//, "");
-
+  const handleSelectTemplate = async (paths: string[]) => {
+    // Normalize all paths
+    const cleanPaths = paths.map((p) =>
+      p.replace(/\\/g, "/").replace(/^templates\//, "")
+    );
+  
     await ensureJobExists();
-
-    if (onAddTemplate) await onAddTemplate(cleanPath);
-
+  
+    // If backend wants multiple templates, pass array
+    if (onAddTemplate) {
+      await onAddTemplate(cleanPaths);
+    }
+  
+    // Add each selected template individually
     setTemplates((prev) => {
-      if (prev.some((t) => t.templatePath === cleanPath)) return prev;
-
-      return [
-        ...prev,
-        {
+      const next = [...prev];
+  
+      for (const p of cleanPaths) {
+        // Avoid duplicates
+        if (next.some((t) => t.templatePath === p)) continue;
+  
+        const fileName = p.split("/").pop() || p;
+  
+        next.push({
           id: crypto.randomUUID(),
-          templateName: cleanPath.split("/").slice(-1)[0] || cleanPath,
-          templatePath: cleanPath,
-        },
-      ];
+          templateName: fileName,
+          templatePath: p,
+        });
+      }
+  
+      return next;
     });
-
+  
     setShowBrowser(false);
-  };
+  };  
 
   const handleRemove = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
@@ -193,7 +205,7 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   return (
     <div className="grid grid-cols-[2fr,1fr] gap-6">
-      {/* ⭐ FORM BINDS SERVER ACTION DIRECTLY */}
+      {/* FORM BINDS SERVER ACTION DIRECTLY */}
       <form className="space-y-6 card p-6">
         {/* Hidden fields required for server action */}
         <input
@@ -451,9 +463,9 @@ export default function JobFormClient({
       {showBrowser && (
         <FolderBrowserPanel
           mode="job"
-          initialPath=""   // ⭐ CLEAN ROOT — no "templates"
+          initialPath=""   // CLEAN ROOT — no "templates"
           onClose={() => setShowBrowser(false)}
-          onSelectFile={handleSelectTemplate}
+          onSelectFile={(paths) => handleSelectTemplate(paths)}
         />
       )}
     </div>
