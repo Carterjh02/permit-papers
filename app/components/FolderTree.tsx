@@ -33,9 +33,10 @@ interface FolderTreeProps {
   variant: Variant;
   expandedPaths?: Set<string>;
 
-  // NEW — multi-select support
-  selectedFiles: SupabaseFile[];
-  onToggleFile: (file: SupabaseFile) => void;
+  // Selection is optional now
+  selectedFiles?: SupabaseFile[];
+  onToggleFile?: (file: SupabaseFile) => void;
+  disableSelection?: boolean;
 
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
   onSelectFolder?: (path: string) => void;
@@ -47,6 +48,7 @@ export default function FolderTree({
   expandedPaths,
   selectedFiles,
   onToggleFile,
+  disableSelection,
   deleteTemplateAction,
   onSelectFolder,
 }: FolderTreeProps) {
@@ -101,17 +103,17 @@ export default function FolderTree({
 
     const sortNode = (node: FolderNode): FolderNode => {
       const sortedFolders = [...node.folders]
-      .sort((a, b) => {
-        const aIsNOC = a.name.toLowerCase() === "notice of commencement";
-        const bIsNOC = b.name.toLowerCase() === "notice of commencement";
-    
-        if (aIsNOC && !bIsNOC) return -1;
-        if (!aIsNOC && bIsNOC) return 1;
-    
-        return a.name.localeCompare(b.name);
-      })
-      .map(sortNode);
-    
+        .sort((a, b) => {
+          const aIsNOC = a.name.toLowerCase() === "notice of commencement";
+          const bIsNOC = b.name.toLowerCase() === "notice of commencement";
+
+          if (aIsNOC && !bIsNOC) return -1;
+          if (!aIsNOC && bIsNOC) return 1;
+
+          return a.name.localeCompare(b.name);
+        })
+        .map(sortNode);
+
       const sortedFiles = [...node.files].sort((a, b) =>
         a.name.localeCompare(b.name)
       );
@@ -134,7 +136,7 @@ export default function FolderTree({
   }, [root, term]);
 
   /* -----------------------------------------------------------
-     EXPANSION LOGIC (existing logic preserved)
+     EXPANSION LOGIC
      ----------------------------------------------------------- */
   const toggle = (path: string) => {
     setExpanded((prev) => {
@@ -164,16 +166,23 @@ export default function FolderTree({
   };
 
   /* -----------------------------------------------------------
-     NEW — Selected Files Section at Top
+     SELECTED FILES SECTION (disabled in admin mode)
      ----------------------------------------------------------- */
-     const selectedSection = buildSelectedFilesSection(
-      sortSelectedFilesInTreeOrder(selectedFiles, root)
-    );
-    
-    const treeWithSelected: FolderNode = {
-      ...displayRoot,
-      folders: [selectedSection, ...displayRoot.folders],
-    };
+  const selectionEnabled =
+    !disableSelection && selectedFiles && onToggleFile;
+
+  const selectedSection = selectionEnabled
+    ? buildSelectedFilesSection(
+        sortSelectedFilesInTreeOrder(selectedFiles!, root)
+      )
+    : null;
+
+  const treeWithSelected: FolderNode = {
+    ...displayRoot,
+    folders: selectedSection
+      ? [selectedSection, ...displayRoot.folders]
+      : displayRoot.folders,
+  };
 
   return (
     <div className="space-y-4">
@@ -185,11 +194,9 @@ export default function FolderTree({
           placeholder="Search folders and files…"
           className="input input-bordered w-64"
         />
-
         <button onClick={collapseAll} className="btn btn-outline btn-sm">
           Collapse All
         </button>
-
         <button onClick={expandAll} className="btn btn-outline btn-sm">
           Expand All
         </button>
@@ -212,11 +219,13 @@ export default function FolderTree({
           onToggleFile={onToggleFile}
           selectedFiles={selectedFiles}
           onSelectFolder={onSelectFolder}
+          disableSelection={disableSelection}
         />
       </div>
     </div>
   );
 }
+
 function FolderNodeView({
   node,
   variant,
@@ -226,21 +235,28 @@ function FolderNodeView({
   onToggleFile,
   selectedFiles,
   onSelectFolder,
+  disableSelection,
 }: {
   node: FolderNode;
   variant: Variant;
   isOpen: (path: string) => boolean;
   toggle: (path: string) => void;
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
-  onToggleFile: (file: SupabaseFile) => void;
-  selectedFiles: SupabaseFile[];
+  onToggleFile?: (file: SupabaseFile) => void;
+  selectedFiles?: SupabaseFile[];
   onSelectFolder?: (path: string) => void;
+  disableSelection?: boolean;
 }) {
   const path = node.fullPath;
   const open = isOpen(path);
 
+  const selectionEnabled =
+    !disableSelection && selectedFiles && onToggleFile;
+
   const isSelected = (file: SupabaseFile) =>
-    selectedFiles.some((f) => f.path === file.path);
+    selectionEnabled
+      ? selectedFiles!.some((f) => f.path === file.path)
+      : false;
 
   return (
     <div className="space-y-2">
@@ -296,24 +312,29 @@ function FolderNodeView({
                 return (
                   <li key={f.path}>
                     <button
-                      onClick={() => onToggleFile(f)}
-                      className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded 
-                        hover:bg-gray-100 ${
-                          selected ? "bg-blue-50 border-l-4 border-blue-600" : ""
-                        }`}
+                      onClick={() =>
+                        selectionEnabled && onToggleFile?.(f)
+                      }
+                      className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${
+                        selected
+                          ? "bg-blue-50 border-l-4 border-blue-600"
+                          : ""
+                      }`}
                     >
                       {/* Checkbox */}
-                      <div
-                        className={`w-4 h-4 rounded-sm border flex items-center justify-center ${
-                          selected
-                            ? "bg-blue-600 border-blue-600"
-                            : "border-gray-400"
-                        }`}
-                      >
-                        {selected && (
-                          <CheckIcon className="w-3 h-3 text-white" />
-                        )}
-                      </div>
+                      {selectionEnabled && (
+                        <div
+                          className={`w-4 h-4 rounded-sm border flex items-center justify-center ${
+                            selected
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {selected && (
+                            <CheckIcon className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                      )}
 
                       {/* File Icon */}
                       <DocumentIcon className="w-4 h-4 text-blue-500" />
@@ -341,6 +362,7 @@ function FolderNodeView({
                   onToggleFile={onToggleFile}
                   selectedFiles={selectedFiles}
                   onSelectFolder={onSelectFolder}
+                  disableSelection={disableSelection}
                 />
               ))}
             </div>

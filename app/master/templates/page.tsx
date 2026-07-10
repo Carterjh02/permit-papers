@@ -73,8 +73,7 @@ export default async function MasterTemplatesPage() {
       <FolderTree
         root={root}
         variant="admin"
-        selectedFiles={[]}          // admin does not select files
-        onToggleFile={() => {}}     // no-op handler
+        disableSelection={true}
       />
     </div>
   );
