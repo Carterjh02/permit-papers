@@ -1,11 +1,10 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "./api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 
-export default async function HomePage() {
+export default async function AuthRedirectPage() {
   const session = await getServerSession(authOptions);
 
-  // If session isn't ready yet, force login page
   if (!session?.user) {
     redirect("/login");
   }
@@ -16,6 +15,5 @@ export default async function HomePage() {
     redirect("/master");
   }
 
-  // Admin + User → dashboard
   redirect("/dashboard");
 }
