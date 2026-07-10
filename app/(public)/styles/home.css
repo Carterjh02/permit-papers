@@ -1,0 +1,534 @@
+/* ================================
+   SHELL + BACKGROUND
+================================ */
+.public-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #eef2ff 0, #f9fafb 40%, #f3f4f6 100%);
+}
+
+.public-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+  font-family: system-ui, sans-serif;
+  color: #1f2937;
+}
+
+/* ================================
+   NAVBAR
+================================ */
+.public-nav {
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.nav-links a {
+  font-weight: 500;
+  color: #1f2937;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #2563eb;
+}
+
+.nav-login {
+  padding: 0.45rem 1rem;
+  background: #2563eb;
+  color: white !important;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ================================
+   BUTTONS
+================================ */
+.btn-primary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #2563eb;
+  color: white;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background: #1e4fc7;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #2563eb;
+  border-radius: 999px;
+  border: 1px solid #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-secondary:hover {
+  background: #2563eb;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* ================================
+   HOMEPAGE
+================================ */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.hero {
+  display: flex;
+  justify-content: center;
+}
+
+.hero-content {
+  max-width: 700px;
+  text-align: center;
+  background: white;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.hero-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.hero-signup-text {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.hero-signup-button {
+  margin-top: 0.5rem;
+}
+
+/* FEATURES + HOW IT WORKS */
+.features,
+.how-it-works {
+  background: white;
+  padding: 1.75rem 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.feature-card {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.step-card {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.step-number {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+  line-height: 28px;
+  margin-bottom: 0.5rem;
+}
+
+/* ================================
+   DEMO / CONTACT / FORUMS CONTAINERS
+================================ */
+.demo-container,
+.contact-container,
+.forums-container {
+  background: white;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* ================================
+   DEMO PAGE REFINEMENTS
+================================ */
+
+.demo-box {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  padding: 2rem 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.demo-content {
+  margin-top: 1rem;
+}
+
+.demo-content.center {
+  text-align: center;
+}
+
+.demo-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.demo-list li {
+  margin: 0.5rem 0;
+  font-size: 1.05rem;
+  color: #374151;
+}
+
+.demo-text {
+  margin-top: 1rem;
+  font-size: 1.05rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* ================================
+   CONTACT FORM
+================================ */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+
+.contact-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  margin-top: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.contact-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* ================================
+   FORUMS ACCORDION
+================================ */
+.accordion-list {
+  margin-top: 0.75rem; /* balanced spacing above accordions */
+}
+
+.accordion-item {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  margin-bottom: 0.9rem; /* slightly reduced gap between items */
+  overflow: hidden;
+}
+
+.accordion-header {
+  width: 100%;
+  padding: 0.65rem 1rem; /* tighter vertical padding */
+  background: #f3f4f6;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.accordion-icon {
+  font-size: 1.2rem;
+  color: #4b5563;
+}
+
+.accordion-body {
+  padding: 0.4rem 1rem 0.85rem; /* reduced top padding for tighter connection */
+  font-size: 0.98rem;
+  color: #4b5563;
+  line-height: 1.55;
+  margin-top: 0.05rem; /* minimal gap between header and content */
+}
+
+/* ================================
+    FORUMS BUTTONS
+================================ */
+.forums-buttons {
+  display: flex;
+  justify-content: left;
+  gap: 1.5rem; /* increased horizontal spacing */
+  margin-top: 1rem;
+}
+
+/* ================================
+    FORUM SEARCH
+================================ */
+.forums-search-section {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.forums-search-section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.forums-search {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  display: block;
+  padding: 1rem 1.25rem;
+  border: 2px solid #2563eb;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 500;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ================================
+   LOGIN PAGE
+================================ */
+.login-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #eef2ff 0, #f9fafb 40%, #f3f4f6 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.login-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 1rem;
+}
+
+.login-card {
+  background: white;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-input {
+  margin-top: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.login-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  font-size: 0.95rem;
+}
+
+.login-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.nav-signup {
+  padding: 0.45rem 1rem;
+  background: #10b981;
+  color: white !important;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.nav-signup:hover {
+  background: #059669;
+}
+
+/* ================================
+   LOGIN POPUP
+================================ */
+
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.popup-card {
+  background: #ffffff;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.popup-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.popup-text {
+  font-size: 1.05rem;
+  color: #374151;
+  margin-bottom: 1rem;
+  line-height: 1.55;
+}
+
+.popup-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* ================================
+   FOOTER
+================================ */
+.footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-links a {
+  color: #4b5563;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #2563eb;
+}

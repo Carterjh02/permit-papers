@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import PublicNav from "../(public)/PublicNav";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [showCookiePopup, setShowCookiePopup] = useState(false);
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,21 +22,29 @@ export default function LoginPage() {
     const password = formData.get("password") as string;
     const company = formData.get("company") as string;
 
-    // Attempt login — FORCE callbackUrl to avoid NextAuth sending user to "/"
     const result = await signIn("credentials", {
       redirect: false,
       username,
       password,
       company,
-      callbackUrl: "/dashboard", // ← IMPORTANT FIX
+      callbackUrl: "/dashboard",
     });
 
     if (result?.error) {
       setError(result.error);
+
+      // Detect cookie/session issue
+      if (
+        result.error.toLowerCase().includes("session") ||
+        result.error.toLowerCase().includes("cookie") ||
+        result.error.toLowerCase().includes("callback")
+      ) {
+        setShowCookiePopup(true);
+      }
+
       return;
     }
 
-    // Fetch session to determine role
     const session = await fetch("/api/auth/session").then((res) => res.json());
 
     if (!session?.user) {
@@ -41,7 +52,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Role-based redirect
     if (session.user.role === "master") {
       router.push("/master");
     } else {
@@ -50,41 +60,77 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="page-container max-w-md mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-center">Login</h1>
+    <div className="login-shell">
+      <PublicNav />
 
-      <form onSubmit={handleLogin} className="card p-6 space-y-4">
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded border border-red-300">
-            {error}
+      <div className="login-container">
+        <div className="login-card">
+          <h1 className="login-title">Login</h1>
+
+          <form onSubmit={handleLogin} className="login-form">
+            {error && (
+              <div className="login-error">
+                {error}
+              </div>
+            )}
+
+            <label>
+              Username
+              <input name="username" className="login-input" required />
+            </label>
+
+            <label>
+              Password
+              <input name="password" type="password" className="login-input" required />
+            </label>
+
+            <label>
+              Company Code
+              <input name="company" className="login-input" placeholder="" />
+            </label>
+
+            <button type="submit" className="btn-primary w-full">
+              Login
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p>Don’t have an account?</p>
+            <Link href="/signup" className="btn-secondary w-full">
+              Sign Up
+            </Link>
           </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-medium">Username</label>
-          <input name="username" className="input" required />
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium">Password</label>
-          <input name="password" type="password" className="input" required />
+      {/* COOKIE POPUP */}
+      {showCookiePopup && (
+        <div className="popup-overlay">
+          <div className="popup-card">
+            <h2 className="popup-title">Login Issue Detected</h2>
+            <p className="popup-text">
+              Your browser is blocking secure cookies, which prevents Permit Papers from keeping you logged in.
+              This usually happens when strict tracking protection or privacy extensions are enabled.
+            </p>
+
+            <p className="popup-text">
+              You can fix this by allowing cookies, disabling strict tracking prevention, or trying another browser.
+            </p>
+
+            <div className="popup-buttons">
+              <Link href="/forums#login-cookies" className="btn-primary">
+                Learn More
+              </Link>
+              <button
+                className="btn-secondary"
+                onClick={() => setShowCookiePopup(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Company Code (leave blank if Master)
-          </label>
-          <input
-            name="company"
-            className="input"
-            placeholder="Guardian, Locktight, etc."
-          />
-        </div>
-
-        <button type="submit" className="btn btn-primary w-full">
-          Login
-        </button>
-      </form>
+      )}
     </div>
   );
 }
