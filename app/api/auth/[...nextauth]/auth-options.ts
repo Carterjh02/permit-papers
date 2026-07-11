@@ -8,26 +8,24 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 
-  // Force JWT sessions (no database sessions)
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 2, // 2 hours
   },
 
-  // Force re-authentication after browser close
   jwt: {
-    maxAge: 60 * 60 * 2, // 2 hours
+    maxAge: 60 * 60 * 2,
   },
 
-  // Secure cookies
+  // ⭐ CUSTOM COOKIE NAME — prevents NextAuth fallback cookies
   cookies: {
     sessionToken: {
-      name: "next-auth.session-token",
+      name: "__Secure-pp_session",
       options: {
         httpOnly: true,
+        secure: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
         domain: "www.permitpapers.com",
       },
     },

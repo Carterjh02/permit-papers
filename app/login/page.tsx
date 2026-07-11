@@ -8,22 +8,26 @@ import PublicNav from "../(public)/PublicNav";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [showCookiePopup, setShowCookiePopup] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [showCookiePopup, setShowCookiePopup] = useState<boolean>(false);
 
-  // ⭐ Redirect-loop detection (ESLint-safe)
+  // Detect redirect loop safely (ESLint-compliant)
   useEffect(() => {
-    if (window.location.search.includes("callbackUrl")) {
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("callbackUrl")
+    ) {
       Promise.resolve().then(() => setShowCookiePopup(true));
     }
   }, []);
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> {
     e.preventDefault();
     setError("");
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData(e.currentTarget);
 
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
@@ -40,10 +44,11 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error);
 
+      const lower = result.error.toLowerCase();
       if (
-        result.error.toLowerCase().includes("session") ||
-        result.error.toLowerCase().includes("cookie") ||
-        result.error.toLowerCase().includes("callback")
+        lower.includes("session") ||
+        lower.includes("cookie") ||
+        lower.includes("callback")
       ) {
         setShowCookiePopup(true);
       }
@@ -51,10 +56,11 @@ export default function LoginPage() {
       return;
     }
 
-    await new Promise((r) => setTimeout(r, 200));  
-    const session = await fetch("/api/auth/session").then((res) => res.json());
-    console.log("Session after login:", session); 
+    // Allow cookie to commit
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
+    const session = await fetch("/api/auth/session").then((res) => res.json());
+    console.log("Session after login:", session);
 
     if (!session?.user) {
       setError("Unexpected error. Please try again.");
@@ -86,12 +92,17 @@ export default function LoginPage() {
 
             <label>
               Password
-              <input name="password" type="password" className="login-input" required />
+              <input
+                name="password"
+                type="password"
+                className="login-input"
+                required
+              />
             </label>
 
             <label>
               Company Code
-              <input name="company" className="login-input" placeholder="" />
+              <input name="company" className="login-input" />
             </label>
 
             <button type="submit" className="btn-primary w-full">
@@ -114,12 +125,13 @@ export default function LoginPage() {
             <h2 className="popup-title">Login Issue Detected</h2>
 
             <p className="popup-text">
-              Your browser is blocking secure cookies, which prevents Permit Papers from keeping you logged in.
-              This usually happens when strict tracking prevention or privacy extensions are enabled.
+              Your browser is blocking secure cookies, which prevents Permit
+              Papers from keeping you logged in.
             </p>
 
             <p className="popup-text">
-              You can fix this by allowing cookies, disabling strict tracking prevention, or trying another browser.
+              You can fix this by allowing cookies, disabling strict tracking
+              prevention, or trying another browser.
             </p>
 
             <div className="popup-buttons">
