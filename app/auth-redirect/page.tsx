@@ -1,19 +1,28 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+"use client";
 
-export default async function AuthRedirectPage() {
-  const session = await getServerSession(authOptions);
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
-  if (!session?.user) {
-    redirect("/login");
-  }
+export default function AuthRedirectPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
 
-  const role = session.user.role;
+  useEffect(() => {
+    if (status === "loading") return;
 
-  if (role === "master") {
-    redirect("/master");
-  }
+    if (!session?.user) {
+      router.replace("/login");
+      return;
+    }
 
-  redirect("/dashboard");
+    if (session.user.role === "master") {
+      router.replace("/master");
+      return;
+    }
+
+    router.replace("/dashboard");
+  }, [session, status, router]);
+
+  return null;
 }
