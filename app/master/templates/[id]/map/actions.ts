@@ -2,11 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
 
 export async function saveMappings(formData: FormData) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session || session.user.role !== "master") redirect("/login");
 
   const templateId = formData.get("templateId") as string;

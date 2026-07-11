@@ -3,12 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
 
 export default async function AdminNewUserPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const admin = session.user;
@@ -18,7 +18,7 @@ export default async function AdminNewUserPage() {
   async function createUser(formData: FormData) {
     "use server";
 
-    const current = await getServerSession(authOptions);
+    const current = await getServerSession();
     if (!current || current.user.role !== "admin") redirect("/login");
 
     const username = (formData.get("username") as string)?.trim();

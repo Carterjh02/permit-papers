@@ -3,13 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import bcrypt from "bcryptjs";
 
 export async function updateUserAction(formData: FormData) {
   const id = formData.get("user_id") as string;
 
-  const current = await getServerSession(authOptions);
+  const current = await getServerSession();
   if (!current || current.user.role !== "admin") redirect("/login");
 
   const username = (formData.get("username") as string)?.trim();
@@ -42,7 +42,7 @@ export async function updateUserAction(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const id = formData.get("user_id") as string;
 
-  const current = await getServerSession(authOptions);
+  const current = await getServerSession();
   if (!current || current.user.role !== "admin") redirect("/login");
 
   await prisma.user.delete({

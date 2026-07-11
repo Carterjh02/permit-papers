@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -8,7 +8,7 @@ export default async function MasterLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   const user = session?.user;
 
   if (!user) redirect("/login");

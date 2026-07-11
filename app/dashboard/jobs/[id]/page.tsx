@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import JobFormClient from "../JobFormClient";
 import DeleteJobButton from "./DeleteJobButton";
@@ -22,7 +22,7 @@ interface PageProps {
 export default async function JobEditPage({ params }: PageProps) {
   const { id } = await params;
 
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const user = session.user;

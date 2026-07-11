@@ -7,7 +7,7 @@ import { fillPdf } from "@/lib/pdf/fillPdf";
 import { uploadPdf } from "@/lib/uploadPdf";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
 
@@ -225,7 +225,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
    UPDATE JOB
 ----------------------------------------------------------- */
 export async function updateJobAction(formData: FormData) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -306,7 +306,7 @@ export async function updateJobAction(formData: FormData) {
    ADD TEMPLATE TO JOB
 ----------------------------------------------------------- */
 export async function addTemplateAction(jobId: string, path: string) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -350,7 +350,7 @@ export async function addTemplateAction(jobId: string, path: string) {
    REMOVE TEMPLATE FROM JOB
 ----------------------------------------------------------- */
 export async function removeTemplateAction(jobDocumentId: string) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const doc = await prisma.jobDocument.findUnique({
@@ -378,7 +378,7 @@ export async function removeTemplateAction(jobDocumentId: string) {
    DELETE JOB
 ----------------------------------------------------------- */
 export async function deleteJobAction(jobId: string) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -428,7 +428,7 @@ export async function deleteJobAction(jobId: string) {
    CREATE JOB (FULL SAVE)
 ----------------------------------------------------------- */
 export async function createJobAction(formData: FormData) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
 
   const user = session.user;

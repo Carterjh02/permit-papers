@@ -3,14 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
 import { TypeAheadSelect } from "@/app/components/TypeAheadSelect";
 import { Prisma } from "@prisma/client";
 
 export default async function MasterNewUserPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   if (!session) redirect("/login");
   if (session.user.role !== "master") redirect("/dashboard");
 
@@ -21,7 +21,7 @@ export default async function MasterNewUserPage() {
   async function createUser(formData: FormData) {
     "use server";
 
-    const currentSession = await getServerSession(authOptions);
+    const currentSession = await getServerSession();
     if (!currentSession || currentSession.user.role !== "master") {
       redirect("/login");
     }
