@@ -34,7 +34,7 @@ export default function LoginPage() {
       username,
       password,
       company,
-      // callbackUrl: "/dashboard",
+      callbackUrl: "/dashboard",
     });
 
     if (result?.error) {
@@ -51,7 +51,10 @@ export default function LoginPage() {
       return;
     }
 
+    await new Promise((r) => setTimeout(r, 200));  
     const session = await fetch("/api/auth/session").then((res) => res.json());
+    console.log("Session after login:", session); 
+
 
     if (!session?.user) {
       setError("Unexpected error. Please try again.");
