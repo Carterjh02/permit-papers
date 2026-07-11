@@ -34,7 +34,7 @@ export default function LoginPage() {
       username,
       password,
       company,
-      callbackUrl: "/dashboard",
+      // callbackUrl: "/dashboard",
     });
 
     if (result?.error) {
