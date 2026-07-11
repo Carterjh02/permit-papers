@@ -1,6 +1,10 @@
 "use client";
 
+// Prevent ALL SSR and ALL prerendering
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+export const runtime = "edge";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
