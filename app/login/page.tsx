@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -10,6 +10,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [showCookiePopup, setShowCookiePopup] = useState(false);
+
+  // ⭐ Redirect-loop detection (ESLint-safe)
+  useEffect(() => {
+    if (window.location.search.includes("callbackUrl")) {
+      Promise.resolve().then(() => setShowCookiePopup(true));
+    }
+  }, []);
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,7 +40,6 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error);
 
-      // Detect cookie/session issue
       if (
         result.error.toLowerCase().includes("session") ||
         result.error.toLowerCase().includes("cookie") ||
@@ -68,11 +74,7 @@ export default function LoginPage() {
           <h1 className="login-title">Login</h1>
 
           <form onSubmit={handleLogin} className="login-form">
-            {error && (
-              <div className="login-error">
-                {error}
-              </div>
-            )}
+            {error && <div className="login-error">{error}</div>}
 
             <label>
               Username
@@ -103,14 +105,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* COOKIE POPUP */}
       {showCookiePopup && (
         <div className="popup-overlay">
           <div className="popup-card">
             <h2 className="popup-title">Login Issue Detected</h2>
+
             <p className="popup-text">
               Your browser is blocking secure cookies, which prevents Permit Papers from keeping you logged in.
-              This usually happens when strict tracking protection or privacy extensions are enabled.
+              This usually happens when strict tracking prevention or privacy extensions are enabled.
             </p>
 
             <p className="popup-text">
@@ -121,6 +123,11 @@ export default function LoginPage() {
               <Link href="/forums#login-cookies" className="btn-primary">
                 Learn More
               </Link>
+
+              <Link href="/fix-login" className="btn-secondary">
+                Fix My Login
+              </Link>
+
               <button
                 className="btn-secondary"
                 onClick={() => setShowCookiePopup(false)}
