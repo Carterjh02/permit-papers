@@ -3,7 +3,6 @@
 import Link from "next/link";
 import FolderTree, { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
 import { supabaseServer } from "@/lib/supabaseServer";
-import ClientDebug from "@/app/debug/ClientDebug";
 
 /* ---------------- SUPABASE LISTING ---------------- */
 
@@ -63,7 +62,6 @@ export default async function MasterTemplatesPage() {
 
   return (
     <div className="page-container space-y-6">
-      <ClientDebug serverSession={null} />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Master Templates</h1>
 

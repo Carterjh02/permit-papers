@@ -13,7 +13,6 @@ import { DataTable } from "@/app/components/DataTable";
 import { AddJobRow } from "@/app/components/AddJobRow";
 
 import JobActions from "./JobActions";
-import ClientDebug from "../debug/ClientDebug";
 
 type Role = "user" | "admin" | "master";
 
@@ -101,7 +100,6 @@ export default async function DashboardPage({
 
   return (
     <div className="page-container space-y-6">
-      <ClientDebug serverSession={session} />
       <h1 className="text-2xl font-bold">{company?.name} — Dashboard</h1>
 
       <FilterPanel>

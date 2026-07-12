@@ -9,7 +9,6 @@ import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
 import { DataTable } from "@/app/components/DataTable";
-import ClientDebug from "@/app/debug/ClientDebug";
 
 interface PageProps {
   searchParams: Promise<{
@@ -82,7 +81,6 @@ export default async function CompaniesPage({
 
   return (
     <div className="page-container space-y-6">
-      <ClientDebug serverSession={session} />
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Companies</h1>
         <Link href="/master/companies/new" className="btn btn-primary">
