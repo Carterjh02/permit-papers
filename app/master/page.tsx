@@ -2,11 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
 
 export default async function MasterHome() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
   if (!session?.user) redirect("/login");
 

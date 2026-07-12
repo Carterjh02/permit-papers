@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import JobFormClient from "../JobFormClient";
 import DeleteJobButton from "./DeleteJobButton";
@@ -22,7 +22,8 @@ interface PageProps {
 export default async function JobEditPage({ params }: PageProps) {
   const { id } = await params;
 
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
+  console.log("🔵 [JobEditPage] session from server:", session);
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -82,7 +83,7 @@ export default async function JobEditPage({ params }: PageProps) {
             jobNumber={job.jobNumber}
             action={async () => {
               "use server";
-              await deleteJobAction(id);
+              await deleteJobAction(job.id);
             }}
           />
         </div>
@@ -114,8 +115,14 @@ export default async function JobEditPage({ params }: PageProps) {
         }}
         onUploadSnippet={async (jobId, file) => {
           "use server";
-          return await uploadSnippetImmediately(jobId, file);
-        }}
+          const result = await uploadSnippetImmediately(jobId, file);
+          // Ensure the client receives all OCR data
+          return {
+            publicUrl: result.publicUrl,
+            ocrText: result.ocrText,
+            parsed: result.parsed,
+          };
+        }}        
       />
     </div>
   );

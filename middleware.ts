@@ -7,6 +7,7 @@ export default withAuth({
      * If token is missing → redirect to /login.
      */
     authorized: ({ token }) => {
+      console.log("🟠 [middleware] token:", token);
       return !!token;
     },
   },

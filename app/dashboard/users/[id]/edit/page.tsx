@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 
 import { updateUserAction, deleteUserAction } from "./actions";
@@ -15,7 +15,7 @@ export default async function AdminEditUserPage({
 }) {
   const { id } = await params;
 
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const admin = session.user;

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
 
@@ -16,7 +16,7 @@ export default async function MasterEditUserPage({
 }: PageProps) {
   const params = await paramsPromise;
 
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role !== "master") redirect("/dashboard");
 

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import Image from "next/image";
@@ -19,7 +19,7 @@ interface AuthUser {
 }
 
 export default async function CompanyAdminEditPage() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 
   const user = session.user as AuthUser;
@@ -50,7 +50,7 @@ export default async function CompanyAdminEditPage() {
   async function updateCompany(formData: FormData) {
     "use server";
 
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user) redirect("/login");
 
     const user = session.user as AuthUser;

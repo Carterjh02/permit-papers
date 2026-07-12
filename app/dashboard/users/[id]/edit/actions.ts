@@ -3,13 +3,13 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import bcrypt from "bcryptjs";
 
 export async function updateUserAction(formData: FormData) {
   const id = formData.get("user_id") as string;
 
-  const current = await getServerSession();
+  const current = await getServerSession(authOptions);
   if (!current || current.user.role !== "admin") redirect("/login");
 
   const username = (formData.get("username") as string)?.trim();

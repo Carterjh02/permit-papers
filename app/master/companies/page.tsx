@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
@@ -26,7 +26,7 @@ export default async function CompaniesPage({
 }: PageProps) {
   const searchParams = await searchParamsPromise;
 
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role !== "master") redirect("/dashboard");
 

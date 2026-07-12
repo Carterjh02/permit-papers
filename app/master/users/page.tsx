@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import type { User, Company } from "@prisma/client";
 
 interface PageProps {
@@ -18,7 +18,7 @@ const PAGE_SIZE = 20;
 export default async function MasterUsersPage({ searchParams: searchParamsPromise }: PageProps) {
   const searchParams = await searchParamsPromise;
 
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role !== "master") redirect("/dashboard");
 

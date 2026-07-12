@@ -47,7 +47,19 @@ interface JobFormClientProps {
   onUploadSnippet: (
     jobId: string,
     file: File
-  ) => Promise<{ publicUrl: string }>;
+  ) => Promise<{
+    publicUrl: string;
+    ocrText?: string;
+    parsed?: {
+      name?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      folio?: string;
+      subdivision?: string;
+    };
+  }>;  
 }
 
 export default function JobFormClient({
@@ -119,6 +131,22 @@ export default function JobFormClient({
   };
 
   /* ---------------------------------------------------------
+     OCR STATE
+  --------------------------------------------------------- */
+  const [ocrText, setOcrText] = useState<string | null>(null);
+  const [ocrParsed, setOcrParsed] = useState<{
+    name?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    folio?: string;
+    subdivision?: string;
+  } | null>(null);
+
+  const [showOcrModal, setShowOcrModal] = useState(false);
+
+  /* ---------------------------------------------------------
      SNIPPET UPLOAD
   --------------------------------------------------------- */
   const handleSnippetUpload = async (file: File | null) => {
@@ -133,8 +161,15 @@ export default function JobFormClient({
         </div>
       );
 
-      const { publicUrl } = await onUploadSnippet(id, file);
+      const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
+
       setSnippetUrl(publicUrl);
+      setOcrText(ocrText ?? null);
+      setOcrParsed(parsed ?? null);
+
+      if (parsed) {
+        setShowOcrModal(true);
+      }
 
       showToast(
         <div className="text-sm font-medium text-green-700">
@@ -155,40 +190,36 @@ export default function JobFormClient({
      TEMPLATE SELECTION
   --------------------------------------------------------- */
   const handleSelectTemplate = async (paths: string[]) => {
-    // Normalize all paths
     const cleanPaths = paths.map((p) =>
       p.replace(/\\/g, "/").replace(/^templates\//, "")
     );
-  
+
     await ensureJobExists();
-  
-    // If backend wants multiple templates, pass array
+
     if (onAddTemplate) {
       await onAddTemplate(cleanPaths);
     }
-  
-    // Add each selected template individually
+
     setTemplates((prev) => {
       const next = [...prev];
-  
+
       for (const p of cleanPaths) {
-        // Avoid duplicates
         if (next.some((t) => t.templatePath === p)) continue;
-  
+
         const fileName = p.split("/").pop() || p;
-  
+
         next.push({
           id: crypto.randomUUID(),
           templateName: fileName,
           templatePath: p,
         });
       }
-  
+
       return next;
     });
-  
+
     setShowBrowser(false);
-  };  
+  };
 
   const handleRemove = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
@@ -201,13 +232,74 @@ export default function JobFormClient({
   };
 
   /* ---------------------------------------------------------
-     RENDER
+     OCR CONFIRMATION MODAL
   --------------------------------------------------------- */
+  const applyOcrToForm = () => {
+    if (!ocrParsed) return;
+
+    const apply = (name: string, value?: string) => {
+      const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="${name}"]`
+      );
+      if (el && value) el.value = value;
+    };
+
+    apply("customer_name", ocrParsed.name);
+    apply("customer_address_full", ocrParsed.address);
+    apply("customer_address_city", ocrParsed.city);
+    apply("customer_address_state", ocrParsed.state);
+    apply("customer_address_zip", ocrParsed.zip);
+    apply("subdivision", ocrParsed.subdivision);
+    apply("customer_tax_folio", ocrParsed.folio);
+
+    setShowOcrModal(false);
+  };
+
   return (
     <div className="grid grid-cols-[2fr,1fr] gap-6">
+      {/* OCR MODAL */}
+      {showOcrModal && ocrParsed && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
+            <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
+            {ocrText && (
+              <pre className="text-xs bg-gray-100 p-2 rounded max-h-32 overflow-auto">
+                {ocrText}
+              </pre>
+            )}
+
+            <div className="space-y-2 text-sm">
+              <p><strong>Name:</strong> {ocrParsed.name ?? "—"}</p>
+              <p><strong>Address:</strong> {ocrParsed.address ?? "—"}</p>
+              <p><strong>City:</strong> {ocrParsed.city ?? "—"}</p>
+              <p><strong>State:</strong> {ocrParsed.state ?? "—"}</p>
+              <p><strong>ZIP:</strong> {ocrParsed.zip ?? "—"}</p>
+              <p><strong>Subdivision:</strong> {ocrParsed.subdivision ?? "—"}</p>
+              <p><strong>Folio:</strong> {ocrParsed.folio ?? "—"}</p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowOcrModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="btn btn-primary"
+                onClick={applyOcrToForm}
+              >
+                Apply to Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FORM BINDS SERVER ACTION DIRECTLY */}
       <form className="space-y-6 card p-6">
-        {/* Hidden fields required for server action */}
+      {/* Hidden fields required for server action */}
         <input
           type="hidden"
           name="job_price"
@@ -392,9 +484,7 @@ export default function JobFormClient({
             </div>
 
             <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium">
-                Description of Improvement
-              </label>
+              <label className="text-sm font-medium">Description of Improvement</label>
               <textarea
                 name="desc_of_improvement"
                 className="textarea textarea-bordered"
@@ -463,7 +553,7 @@ export default function JobFormClient({
       {showBrowser && (
         <FolderBrowserPanel
           mode="job"
-          initialPath=""   // CLEAN ROOT — no "templates"
+          initialPath=""
           onClose={() => setShowBrowser(false)}
           onSelectFile={(paths) => handleSelectTemplate(paths)}
         />

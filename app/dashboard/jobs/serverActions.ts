@@ -7,9 +7,21 @@ import { fillPdf } from "@/lib/pdf/fillPdf";
 import { uploadPdf } from "@/lib/uploadPdf";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
+
+// OCR imports
+import vision from "@google-cloud/vision";
+
+// OCR client
+const visionClient = new vision.ImageAnnotatorClient({
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL!,
+    private_key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+  },
+  projectId: process.env.GOOGLE_PROJECT_ID!,
+});
 
 /* -----------------------------------------------------------
    GENERATE PREVIEWS
@@ -189,6 +201,68 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
   return job;
 }
 
+// OCR name normalizer (ONLY applied to OCR-extracted names)
+function normalizeOCRName(name: string | undefined): string | undefined {
+  if (!name) return name;
+
+  // If OCR gives "Last, First", flip it
+  if (name.includes(",")) {
+    const [last, first] = name.split(",").map((s) => s.trim());
+    return `${first} ${last}`.trim();
+  }
+
+  return name.trim();
+}
+
+// Simple OCR text parser
+function parseCustomerInfo(text: string) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  const result: {
+    name?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    folio?: string;
+    subdivision?: string;
+  } = {};  
+
+  // Name: first non-empty line (apply OCR name normalization)
+  if (lines.length > 0) {
+    result.name = normalizeOCRName(lines[0]);
+  }
+
+  // Address: second line
+  if (lines.length > 1) result.address = lines[1];
+
+  // City, State, Zip
+  const csz = lines.find(l => /,\s*[A-Z]{2}\s+\d{5}/.test(l));
+  if (csz) {
+    const m = csz.match(/^(.+),\s*([A-Z]{2})\s+(\d{5})/);
+    if (m) {
+      result.city = m[1].trim();
+      result.state = m[2].trim();
+      result.zip = m[3].trim();
+    }
+  }
+
+  // Folio
+  const folioLine = lines.find(l => /folio|parcel/i.test(l));
+  if (folioLine) {
+    const m = folioLine.match(/(\d[\d\-]+)/);
+    if (m) result.folio = m[1].trim();
+  }
+
+  // Subdivision
+  const subdivisionLine = lines.find(l => /subdivision/i.test(l));
+  if (subdivisionLine) {
+    result.subdivision = subdivisionLine.replace(/.*subdivision[:\s]*/i, "").trim();
+  }
+
+  return result;
+}
+
 /* -----------------------------------------------------------
    UPLOAD SNIPPET
 ----------------------------------------------------------- */
@@ -199,6 +273,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   });
   if (!job) throw new Error("Job not found.");
 
+  // 1. Upload snippet to Supabase
   const buffer = Buffer.from(await file.arrayBuffer());
   const path = `${job.company.companyCode}/jobs/${job.jobNumber}/snippet.png`;
 
@@ -211,13 +286,44 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   if (error) throw new Error("Failed to upload snippet.");
 
+  // 2. Download snippet for OCR
+  const { data: downloaded, error: downloadError } = await supabaseServer.storage
+    .from("companies")
+    .download(path);
+
+  if (downloadError || !downloaded) {
+    throw new Error("Failed to download snippet for OCR.");
+  }
+
+  const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
+
+  // 3. Run OCR
+  const [result] = await visionClient.textDetection(downloadedBuffer);
+  const fullText = result.fullTextAnnotation?.text ?? "";
+
+  // 4. Parse OCR text
+  const parsed = parseCustomerInfo(fullText);
+
+  // 5. Update job with parsed fields
   await prisma.job.update({
     where: { id: jobId },
-    data: { snippetPath: path },
+    data: {
+      snippetPath: path,
+      customerName: parsed.name ?? job.customerName,
+      customerAddress: parsed.address ?? job.customerAddress,
+      customerCity: parsed.city ?? job.customerCity,
+      customerState: parsed.state ?? job.customerState,
+      customerZip: parsed.zip ?? job.customerZip,
+      taxFolioNumber: parsed.folio ?? job.taxFolioNumber,
+      subdivision: parsed.subdivision ?? job.subdivision,
+    },
   });
 
+  // 6. Return OCR text + parsed fields + public URL
   return {
     publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${path}`,
+    ocrText: fullText,
+    parsed,
   };
 }
 
@@ -225,7 +331,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
    UPDATE JOB
 ----------------------------------------------------------- */
 export async function updateJobAction(formData: FormData) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -378,51 +484,76 @@ export async function removeTemplateAction(jobDocumentId: string) {
    DELETE JOB
 ----------------------------------------------------------- */
 export async function deleteJobAction(jobId: string) {
-  const session = await getServerSession();
-  if (!session) redirect("/login");
+  const session = await getServerSession(authOptions);
+  if (!session) throw new Error("Not authenticated");
 
-  const user = session.user;
+  const supabase = supabaseServer;
 
-  // 1️⃣ Load job + company
-  const job = await prisma.job.findUnique({
-    where: { id: jobId },
-    include: { company: true },
-  });
+  try {
+    // 1. Fetch job + company
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: { company: true },
+    });
 
-  if (!job) notFound();
+    if (!job) throw new Error("Job not found");
 
-  const allowed =
-    user.role === "master" ||
-    user.companyId === job.companyId ||
-    user.activeCompanyId === job.companyId;
+    const companyCode = job.company.companyCode;
+    const jobNumber = job.jobNumber;
 
-  if (!allowed) redirect("/dashboard");
+    // 2. Correct Supabase folder path (NO 'companies' folder — bucket root)
+    const folderPath = `${companyCode}/jobs/${jobNumber}`;
 
-  const companyCode = job.company.companyCode;
-  const jobNumber = job.jobNumber;
+    // 3. List files inside the folder
+    const { data: list, error: listError } = await supabase.storage
+      .from("companies")
+      .list(folderPath);
 
-  // 2️⃣ Delete Supabase folder recursively
-  const folderPath = `${companyCode}/jobs/${jobNumber}`;
-  const { error: storageError } = await supabaseServer.storage
-    .from("companies")
-    .remove([folderPath]);
+    if (listError) {
+      console.error("❌ Supabase list error:", listError);
+    }
 
-  if (storageError) {
-    console.log("⚠️ Failed to delete Supabase folder:", storageError);
+    // 4. Delete files if any exist
+    if (list && list.length > 0) {
+      const filesToDelete = list.map((f: { name: string }) => `${folderPath}/${f.name}`);
+
+      const { error: deleteFilesError } = await supabase.storage
+        .from("companies")
+        .remove(filesToDelete);
+
+      if (deleteFilesError) {
+        console.error("❌ Supabase delete files error:", deleteFilesError);
+      }
+    }
+
+    // 5. Attempt to delete the folder itself
+    const { error: deleteFolderError } = await supabase.storage
+      .from("companies")
+      .remove([`${folderPath}/`]);
+
+    if (deleteFolderError) {
+      console.error("❌ Supabase delete folder error:", deleteFolderError);
+    }
+
+    // 6. Delete job documents
+    await prisma.jobDocument.deleteMany({
+      where: { jobId },
+    });
+
+    // 7. Delete job row
+    await prisma.job.delete({
+      where: { id: jobId },
+    });
+
+    // 8. Refresh dashboard
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (err) {
+    console.error("❌ deleteJobAction error:", err);
+    throw err;
   }
-
-  // 3️⃣ Delete related DB rows
-  await prisma.jobDocument.deleteMany({ where: { jobId } });
-  await prisma.jobFile.deleteMany({ where: { jobId } });
-  await prisma.job.delete({ where: { id: jobId } });
-
-  // 4️⃣ Revalidate dashboard route so list updates immediately
-  revalidatePath("/dashboard");
-
-  // 5️⃣ Redirect back to dashboard
-  redirect("/dashboard");
 }
-
 
 /* -----------------------------------------------------------
    CREATE JOB (FULL SAVE)
