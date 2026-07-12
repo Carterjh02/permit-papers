@@ -14,6 +14,7 @@ import {
   createMinimalJob,
   uploadSnippetImmediately,
 } from "../serverActions";
+import type { JobDocument } from "@prisma/client";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -61,7 +62,7 @@ export default async function JobEditPage({ params }: PageProps) {
   };
 
   // FIXED: templatePath is now nullable in Prisma, so normalize it
-  const initialTemplates = job.documents.map((d) => ({
+  const initialTemplates = job.documents.map((d: JobDocument) => ({
     id: d.id,
     templateName: d.templateName ?? "",
     templatePath: d.templatePath ?? "",
