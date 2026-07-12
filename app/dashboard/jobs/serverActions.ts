@@ -188,8 +188,8 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
     },
   });
 
-  const safeCompany = company.companyCode.replace(/[^a-zA-Z0-9-_]/g, "");
-  const safeJobNumber = String(nextJobNumber).replace(/[^0-9]/g, "");
+  const safeCompany = company?.companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
+  const safeJobNumber = String(nextJobNumber ?? "").replace(/[^0-9]/g, "");
 
   await supabaseServer.storage
     .from("companies")

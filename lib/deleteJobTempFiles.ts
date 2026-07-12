@@ -12,8 +12,8 @@ import { supabaseServer } from "@/lib/supabaseServer";
  * - Safe for repeated calls
  */
 export async function deleteJobTempFiles(companyCode: string, jobNumber: string) {
-  const safeCompany = companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "");
-  const safeJobNumber = jobNumber.replace(/[^a-zA-Z0-9-_ ]/g, "");
+  const safeCompany = companyCode?.replace(/[^a-zA-Z0-9-_ ]/g, "") ?? "";
+  const safeJobNumber = jobNumber?.replace(/[^a-zA-Z0-9-_ ]/g, "") ?? "";
 
   const folder = `companies/${safeCompany}/jobs/${safeJobNumber}/temp`;
 
