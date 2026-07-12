@@ -76,20 +76,36 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell">
+      {/* Browser-only debug logger */}
+      {typeof window !== "undefined" && (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              console.group("🔵 LOGIN DEBUG");
+              console.log("🌐 URL:", window.location.href);
+              console.log("🍪 Cookies:", document.cookie);
+              console.log("🔧 Cookie Enabled:", navigator.cookieEnabled);
+              console.log("📦 LocalStorage Keys:", Object.keys(localStorage));
+              console.groupEnd();
+            `,
+          }}
+        />
+      )}
+  
       <PublicNav />
-
+  
       <div className="login-container">
         <div className="login-card">
           <h1 className="login-title">Login</h1>
-
+  
           <form onSubmit={handleLogin} className="login-form">
             {error && <div className="login-error">{error}</div>}
-
+  
             <label>
               Username
               <input name="username" className="login-input" required />
             </label>
-
+  
             <label>
               Password
               <input
@@ -99,17 +115,17 @@ export default function LoginPage() {
                 required
               />
             </label>
-
+  
             <label>
               Company Code
               <input name="company" className="login-input" />
             </label>
-
+  
             <button type="submit" className="btn-primary w-full">
               Login
             </button>
           </form>
-
+  
           <div className="login-footer">
             <p>Don’t have an account?</p>
             <Link href="/signup" className="btn-secondary w-full">
@@ -118,31 +134,31 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
+  
       {showCookiePopup && (
         <div className="popup-overlay">
           <div className="popup-card">
             <h2 className="popup-title">Login Issue Detected</h2>
-
+  
             <p className="popup-text">
               Your browser is blocking secure cookies, which prevents Permit
               Papers from keeping you logged in.
             </p>
-
+  
             <p className="popup-text">
               You can fix this by allowing cookies, disabling strict tracking
               prevention, or trying another browser.
             </p>
-
+  
             <div className="popup-buttons">
               <Link href="/forums#login-cookies" className="btn-primary">
                 Learn More
               </Link>
-
+  
               <Link href="/fix-login" className="btn-secondary">
                 Fix My Login
               </Link>
-
+  
               <button
                 className="btn-secondary"
                 onClick={() => setShowCookiePopup(false)}
@@ -155,4 +171,4 @@ export default function LoginPage() {
       )}
     </div>
   );
-}
+}  

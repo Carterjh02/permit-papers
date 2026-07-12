@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import ClientDebug from "../debug/ClientDebug";
 
 export default async function DashboardLayout({
   children,
@@ -15,6 +16,8 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
+      {typeof window !== "undefined" && (
+      <ClientDebug serverSession={session} /> )}
       {/* NAV BAR */}
       <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">

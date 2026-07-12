@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import ClientDebug from "../debug/ClientDebug";
 
 export default async function MasterLayout({
   children,
@@ -16,6 +17,8 @@ export default async function MasterLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
+      {typeof window !== "undefined" && (
+      <ClientDebug serverSession={session} /> )}
       <nav className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link href="/" className="text-xl font-bold text-gray-900">

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import type { User, Company } from "@prisma/client";
+import ClientDebug from "@/app/debug/ClientDebug";
 
 interface PageProps {
   searchParams: Promise<{
@@ -40,6 +41,7 @@ export default async function MasterUsersPage({ searchParams: searchParamsPromis
 
   return (
     <div className="page-container space-y-6">
+      <ClientDebug serverSession={session} />
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Users</h1>
         <Link href="/master/users/new" className="btn btn-primary">
