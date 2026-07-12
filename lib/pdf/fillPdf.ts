@@ -27,8 +27,9 @@ interface FillPdfOptions {
   job: JobData;
 }
 
-function normalize(name: string): string {
-  return name.replace(/\s+/g, "").trim().toLowerCase();
+function normalize(name: string | null | undefined): string {
+  if (!name) return "";
+  return String(name).replace(/\s+/g, "").trim().toLowerCase();
 }
 
 export async function fillPdf({

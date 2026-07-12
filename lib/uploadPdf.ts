@@ -15,13 +15,13 @@ export async function uploadPdf(options: UploadPdfOptions) {
   }
 
   // Sanitize company code
-  const safeCompany = companyCode.replace(/[^a-zA-Z0-9-_]/g, "");
+  const safeCompany = companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
 
   // Sanitize job number folder
-  const safeJobNumber = String(jobNumber).replace(/[^0-9]/g, "");
+  const safeJobNumber = String(jobNumber ?? "").replace(/[^0-9]/g, "");
 
   // Sanitize filename (spaces → underscores, remove unsafe chars)
-  let safeDocumentName = documentName
+  let safeDocumentName = (documentName ?? "")
   .replace(/\s+/g, "_")
   .replace(/[^a-zA-Z0-9._-]/g, "");
 
