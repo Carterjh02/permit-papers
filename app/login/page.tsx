@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useState, useEffect, SyntheticEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +13,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string>("");
   const [showCookiePopup, setShowCookiePopup] = useState<boolean>(false);
 
-  // Detect redirect loop safely (ESLint-compliant)
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -21,9 +22,7 @@ export default function LoginPage() {
     }
   }, []);
 
-  async function handleLogin(
-    e: React.FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  async function handleLogin(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
@@ -56,11 +55,9 @@ export default function LoginPage() {
       return;
     }
 
-    // Allow cookie to commit
     await new Promise((resolve) => setTimeout(resolve, 250));
 
     const session = await fetch("/api/auth/session").then((res) => res.json());
-    console.log("Session after login:", session);
 
     if (!session?.user) {
       setError("Unexpected error. Please try again.");
@@ -76,36 +73,20 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell">
-      {/* Browser-only debug logger */}
-      {typeof window !== "undefined" && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              console.group("🔵 LOGIN DEBUG");
-              console.log("🌐 URL:", window.location.href);
-              console.log("🍪 Cookies:", document.cookie);
-              console.log("🔧 Cookie Enabled:", navigator.cookieEnabled);
-              console.log("📦 LocalStorage Keys:", Object.keys(localStorage));
-              console.groupEnd();
-            `,
-          }}
-        />
-      )}
-  
       <PublicNav />
-  
+
       <div className="login-container">
         <div className="login-card">
           <h1 className="login-title">Login</h1>
-  
+
           <form onSubmit={handleLogin} className="login-form">
             {error && <div className="login-error">{error}</div>}
-  
+
             <label>
               Username
               <input name="username" className="login-input" required />
             </label>
-  
+
             <label>
               Password
               <input
@@ -115,17 +96,17 @@ export default function LoginPage() {
                 required
               />
             </label>
-  
+
             <label>
               Company Code
               <input name="company" className="login-input" />
             </label>
-  
+
             <button type="submit" className="btn-primary w-full">
               Login
             </button>
           </form>
-  
+
           <div className="login-footer">
             <p>Don’t have an account?</p>
             <Link href="/signup" className="btn-secondary w-full">
@@ -134,31 +115,31 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-  
+
       {showCookiePopup && (
         <div className="popup-overlay">
           <div className="popup-card">
             <h2 className="popup-title">Login Issue Detected</h2>
-  
+
             <p className="popup-text">
               Your browser is blocking secure cookies, which prevents Permit
               Papers from keeping you logged in.
             </p>
-  
+
             <p className="popup-text">
               You can fix this by allowing cookies, disabling strict tracking
               prevention, or trying another browser.
             </p>
-  
+
             <div className="popup-buttons">
               <Link href="/forums#login-cookies" className="btn-primary">
                 Learn More
               </Link>
-  
+
               <Link href="/fix-login" className="btn-secondary">
                 Fix My Login
               </Link>
-  
+
               <button
                 className="btn-secondary"
                 onClick={() => setShowCookiePopup(false)}
@@ -171,4 +152,4 @@ export default function LoginPage() {
       )}
     </div>
   );
-}  
+}
