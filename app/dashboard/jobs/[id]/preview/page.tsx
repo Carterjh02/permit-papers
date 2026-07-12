@@ -48,7 +48,9 @@ export default async function JobPreviewPage({ params }: PageProps) {
     });
 
   // Permanent files (unchanged)
-  const safeCompany = job.company.companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "");
+  const safeCompany = job.company?.companyCode
+  ? job.company.companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "")
+  : "";
   const jobNumber = job.jobNumber;
 
   const permanentFiles = await prisma.jobFile.findMany({
