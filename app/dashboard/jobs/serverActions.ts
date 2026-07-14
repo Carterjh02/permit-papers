@@ -188,8 +188,8 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
     },
   });
 
-  const safeCompany = company?.companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
-  const safeJobNumber = String(nextJobNumber ?? "").replace(/[^0-9]/g, "");
+  const safeCompany = company.companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
+  const safeJobNumber = String(nextJobNumber).replace(/[^0-9]/g, "");
 
   await supabaseServer.storage
     .from("companies")
@@ -201,7 +201,31 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
   return job;
 }
 
-// OCR name normalizer (ONLY applied to OCR-extracted names)
+// ------------------------------------------------------------
+// FIELD CLEANERS
+// ------------------------------------------------------------
+function cleanField(value: string | undefined): string | undefined {
+  if (!value) return value;
+  return value.replace(/[:]/g, "").trim();
+}
+
+function normalizePhone(phone: string | undefined): string | undefined {
+  if (!phone) return phone;
+
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, "");
+
+  // If 10 digits, format as xxx-xxx-xxxx
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  return phone.trim();
+}
+
+// ------------------------------------------------------------
+// OCR NAME NORMALIZER
+// ------------------------------------------------------------
 function normalizeOCRName(name: string | undefined): string | undefined {
   if (!name) return name;
 
@@ -214,9 +238,11 @@ function normalizeOCRName(name: string | undefined): string | undefined {
   return name.trim();
 }
 
-// Simple OCR text parser
+// ------------------------------------------------------------
+// FULL OCR PARSER
+// ------------------------------------------------------------
 function parseCustomerInfo(text: string) {
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
   const result: {
     name?: string;
@@ -226,38 +252,67 @@ function parseCustomerInfo(text: string) {
     zip?: string;
     folio?: string;
     subdivision?: string;
-  } = {};  
+    phone?: string;
+  } = {};
 
-  // Name: first non-empty line (apply OCR name normalization)
+  // -------------------------
+  // NAME
+  // -------------------------
   if (lines.length > 0) {
-    result.name = normalizeOCRName(lines[0]);
+    result.name = cleanField(normalizeOCRName(lines[0]));
   }
 
-  // Address: second line
-  if (lines.length > 1) result.address = lines[1];
+  // -------------------------
+  // ADDRESS
+  // -------------------------
+  if (lines.length > 1) {
+    result.address = cleanField(lines[1]);
+  }
 
-  // City, State, Zip
-  const csz = lines.find(l => /,\s*[A-Z]{2}\s+\d{5}/.test(l));
+  // -------------------------
+  // CITY / STATE / ZIP
+  // -------------------------
+  const csz = lines.find((l) => /,\s*[A-Z]{2}\s+\d{5}/.test(l));
   if (csz) {
     const m = csz.match(/^(.+),\s*([A-Z]{2})\s+(\d{5})/);
     if (m) {
-      result.city = m[1].trim();
-      result.state = m[2].trim();
-      result.zip = m[3].trim();
+      result.city = cleanField(m[1]);
+      result.state = cleanField(m[2]);
+      result.zip = cleanField(m[3]);
     }
   }
 
-  // Folio
-  const folioLine = lines.find(l => /folio|parcel/i.test(l));
-  if (folioLine) {
-    const m = folioLine.match(/(\d[\d\-]+)/);
-    if (m) result.folio = m[1].trim();
+  // -------------------------
+  // PHONE
+  // -------------------------
+  const phoneLine =
+    lines.find((l) => /(phone|tel|cell|mobile|contact)/i.test(l)) ||
+    lines.find((l) => /\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}/.test(l)); // standalone number
+
+  if (phoneLine) {
+    const m = phoneLine.match(/\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}/);
+    if (m) {
+      result.phone = normalizePhone(m[0]);
+    }
   }
 
-  // Subdivision
-  const subdivisionLine = lines.find(l => /subdivision/i.test(l));
+  // -------------------------
+  // FOLIO
+  // -------------------------
+  const folioLine = lines.find((l) => /folio|parcel/i.test(l));
+  if (folioLine) {
+    const m = folioLine.match(/(\d[\d\-]+)/);
+    if (m) result.folio = cleanField(m[1]);
+  }
+
+  // -------------------------
+  // SUBDIVISION
+  // -------------------------
+  const subdivisionLine = lines.find((l) => /subdivision/i.test(l));
   if (subdivisionLine) {
-    result.subdivision = subdivisionLine.replace(/.*subdivision[:\s]*/i, "").trim();
+    result.subdivision = cleanField(
+      subdivisionLine.replace(/.*subdivision[:\s]*/i, "")
+    );
   }
 
   return result;
@@ -273,7 +328,9 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   });
   if (!job) throw new Error("Job not found.");
 
+  // ------------------------------------------------------------
   // 1. Upload snippet to Supabase
+  // ------------------------------------------------------------
   const buffer = Buffer.from(await file.arrayBuffer());
   const path = `${job.company.companyCode}/jobs/${job.jobNumber}/snippet.png`;
 
@@ -286,7 +343,9 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   if (error) throw new Error("Failed to upload snippet.");
 
+  // ------------------------------------------------------------
   // 2. Download snippet for OCR
+  // ------------------------------------------------------------
   const { data: downloaded, error: downloadError } = await supabaseServer.storage
     .from("companies")
     .download(path);
@@ -297,33 +356,44 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
 
+  // ------------------------------------------------------------
   // 3. Run OCR
+  // ------------------------------------------------------------
   const [result] = await visionClient.textDetection(downloadedBuffer);
   const fullText = result.fullTextAnnotation?.text ?? "";
 
-  // 4. Parse OCR text
+  // ------------------------------------------------------------
+  // 4. Parse OCR text (now includes phone + cleaned fields)
+  // ------------------------------------------------------------
   const parsed = parseCustomerInfo(fullText);
 
-  // 5. Update job with parsed fields
+  // ------------------------------------------------------------
+  // 5. Update job with parsed fields (including phone)
+  // ------------------------------------------------------------
   await prisma.job.update({
     where: { id: jobId },
     data: {
       snippetPath: path,
+
       customerName: parsed.name ?? job.customerName,
+      customerPhone: parsed.phone ?? job.customerPhone,
       customerAddress: parsed.address ?? job.customerAddress,
       customerCity: parsed.city ?? job.customerCity,
       customerState: parsed.state ?? job.customerState,
       customerZip: parsed.zip ?? job.customerZip,
+
       taxFolioNumber: parsed.folio ?? job.taxFolioNumber,
       subdivision: parsed.subdivision ?? job.subdivision,
     },
   });
 
+  // ------------------------------------------------------------
   // 6. Return OCR text + parsed fields + public URL
+  // ------------------------------------------------------------
   return {
     publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${path}`,
     ocrText: fullText,
-    parsed,
+    parsed, // includes cleaned + normalized fields
   };
 }
 
@@ -412,7 +482,7 @@ export async function updateJobAction(formData: FormData) {
    ADD TEMPLATE TO JOB
 ----------------------------------------------------------- */
 export async function addTemplateAction(jobId: string, path: string) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -456,7 +526,7 @@ export async function addTemplateAction(jobId: string, path: string) {
    REMOVE TEMPLATE FROM JOB
 ----------------------------------------------------------- */
 export async function removeTemplateAction(jobDocumentId: string) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const doc = await prisma.jobDocument.findUnique({
@@ -559,7 +629,7 @@ export async function deleteJobAction(jobId: string) {
    CREATE JOB (FULL SAVE)
 ----------------------------------------------------------- */
 export async function createJobAction(formData: FormData) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const user = session.user;

@@ -382,10 +382,11 @@ export default function FolderBrowserPanel({
         )}
       </div>
 
-        {/* CONFIRM SELECTION */}
+      {/* CONFIRM SELECTION */}
         {selectedFiles.length > 0 && (
           <div className="border-t border-gray-200 p-4 flex justify-end bg-gray-50">
             <button
+              type="button"
               onClick={() => {
                 const paths = selectedFiles.map((f) =>
                   f.path.replace(/\\/g, "/")

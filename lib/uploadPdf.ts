@@ -31,8 +31,7 @@ if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
 
 const filePath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
 
-  // DEBUG LOGS — these will tell us EXACTLY what's happening
-  console.log("📁 Uploading PDF...");
+  // DEBUG LOGS
   console.log("companyCode:", companyCode);
   console.log("safeCompany:", safeCompany);
   console.log("jobNumber:", jobNumber);

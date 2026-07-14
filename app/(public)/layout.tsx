@@ -1,5 +1,6 @@
 import "./styles/home.css";
 import PublicNav from "./PublicNav";
+import "../globals.css";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (

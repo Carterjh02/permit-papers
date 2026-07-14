@@ -24,7 +24,6 @@ export default async function JobEditPage({ params }: PageProps) {
   const { id } = await params;
 
   const session = await getServerSession(authOptions);
-  console.log("🔵 [JobEditPage] session from server:", session);
   if (!session) redirect("/login");
 
   const user = session.user;

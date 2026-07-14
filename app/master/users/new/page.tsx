@@ -21,7 +21,7 @@ export default async function MasterNewUserPage() {
   async function createUser(formData: FormData) {
     "use server";
 
-    const currentSession = await getServerSession();
+    const currentSession = await getServerSession(authOptions);
     if (!currentSession || currentSession.user.role !== "master") {
       redirect("/login");
     }

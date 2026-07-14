@@ -1,17 +1,13 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function DashboardLayout({
+import { signOut } from "next-auth/react";
+import Link from "next/link";
+
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-  const user = session?.user;
-
-  if (!user) redirect("/login");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -23,51 +19,28 @@ export default async function DashboardLayout({
           </Link>
 
           <div className="flex items-center gap-6">
-            {/* MASTER NAV */}
-            {user.role === "master" && (
-              <>
-                <Link href="/master" className="hover:text-blue-600">
-                  Dashboard
-                </Link>
-                <Link href="/master/companies" className="hover:text-blue-600">
-                  Companies
-                </Link>
-                <Link href="/master/users" className="hover:text-blue-600">
-                  Users
-                </Link>
-                <Link href="/master/settings" className="hover:text-blue-600">
-                  Settings
-                </Link>
-              </>
-            )}
+            {/* These links still work because the pages themselves check auth server-side */}
+            <Link href="/dashboard" className="hover:text-blue-600">
+              Dashboard
+            </Link>
+            <Link href="/dashboard/company" className="hover:text-blue-600">
+              Company
+            </Link>
+            <Link href="/dashboard/users" className="hover:text-blue-600">
+              Users
+            </Link>
 
-            {/* ADMIN NAV */}
-            {user.role === "admin" && (
-              <>
-                <Link href="/dashboard" className="hover:text-blue-600">
-                  Dashboard
-                </Link>
-                <Link href="/dashboard/company" className="hover:text-blue-600">
-                  Company
-                </Link>
-                <Link href="/dashboard/users" className="hover:text-blue-600">
-                  Users
-                </Link>
-              </>
-            )}
-
-            {/* USER NAV */}
-            {user.role === "user" && (
-              <>
-                <Link href="/dashboard" className="hover:text-blue-600">
-                  Dashboard
-                </Link>
-              </>
-            )}
-
-            <form action="/api/auth/signout" method="POST">
-              <button className="btn btn-secondary">Logout</button>
-            </form>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setTimeout(() => {
+                signOut({ callbackUrl: "/login" });
+              }, 50);
+            }}
+          >
+            Logout
+          </button>
           </div>
         </div>
       </nav>

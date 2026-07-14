@@ -46,7 +46,7 @@ export default async function MasterEditUserPage({
   async function updateUser(formData: FormData) {
     "use server";
 
-    const currentSession = await getServerSession();
+    const currentSession = await getServerSession(authOptions);
     if (!currentSession || currentSession.user.role !== "master") {
       redirect("/login");
     }
@@ -81,7 +81,7 @@ export default async function MasterEditUserPage({
   async function deleteUser() {
     "use server";
 
-    const currentSession = await getServerSession();
+    const currentSession = await getServerSession(authOptions);
     if (!currentSession || currentSession.user.role !== "master") {
       redirect("/login");
     }

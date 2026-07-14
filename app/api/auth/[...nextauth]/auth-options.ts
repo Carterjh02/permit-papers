@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
+    signOut: "/login",
   },
 
   session: {
@@ -20,14 +21,11 @@ export const authOptions: NextAuthOptions = {
   debug: true,
 
   events: {
-    async signIn(message) {
-      console.log("🟢 [event:signIn]", message);
+    async signIn() {
     },
-    async signOut(message) {
-      console.log("🟠 [event:signOut]", message);
+    async signOut() {
     },
-    async session(message) {
-      console.log("🔵 [event:session]", message);
+    async session() {
     },
   },
   
@@ -41,9 +39,7 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
-        console.log("🟡 [authorize] incoming credentials:", credentials);
         if (!credentials) { 
-          console.log("🔴 [authorize] credentials missing");
           return null;
         }
 
@@ -52,23 +48,18 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await prisma.user.findUnique({
           where: { username },
         });
-        console.log("🟡 [authorize] dbUser:", dbUser);
 
         if (!dbUser) {
-          console.log("🔴 [authorize] user not found");
           return null;
         }
 
         const valid = await bcrypt.compare(password, dbUser.passwordHash);
-        console.log("🟡 [authorize] password valid:", valid);
 
         if (!valid) {
-          console.log("🔴 [authorize] invalid password");
           return null;
         }
 
         const role = dbUser.role.toLowerCase() as "user" | "admin" | "master";
-        console.log("🟡 [authorize] role:", role);
 
         if (role === "master") {
           const result = {
@@ -78,12 +69,10 @@ export const authOptions: NextAuthOptions = {
             companyId: null,
             activeCompanyId: null,
           };
-          console.log("🟢 [authorize] master result:", result);
           return result;
         }
 
         if (!company || company.trim() === "") {
-          console.log("🔴 [authorize] missing company code");
           throw new Error("Company code is required.");
         }
 
@@ -92,18 +81,12 @@ export const authOptions: NextAuthOptions = {
             companyCode: { equals: company.trim(), mode: "insensitive" },
           },
         });
-        console.log("🟡 [authorize] companyRecord:", companyRecord);
 
         if (!companyRecord) {
-          console.log("🔴 [authorize] company not found");
           throw new Error("Company not found.");
         }
 
         if (dbUser.companyId !== companyRecord.id) {
-          console.log("🔴 [authorize] company mismatch:", {
-            userCompanyId: dbUser.companyId,
-            recordCompanyId: companyRecord.id,
-          });
           throw new Error("Incorrect company for this user.");
         }
 
@@ -114,7 +97,6 @@ export const authOptions: NextAuthOptions = {
           companyId: dbUser.companyId,
           activeCompanyId: dbUser.companyId,
         };
-        console.log("🟢 [authorize] success result:", result);
 
         return result;
       },
@@ -123,7 +105,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      console.log("🟣 [jwt] before:", { token, user });
 
       if (user) {
         token.id = user.id;
@@ -132,14 +113,10 @@ export const authOptions: NextAuthOptions = {
         token.companyId = user.companyId;
         token.activeCompanyId = user.activeCompanyId;
       }
-
-      console.log("🟣 [jwt] after:", token);
       return token;
     },
 
     async session({ session, token }) {
-      console.log("🟢 [session] before:", { session, token });
-
       session.user = {
         id: token.id as string,
         username: token.username as string,
@@ -147,8 +124,6 @@ export const authOptions: NextAuthOptions = {
         companyId: token.companyId as string | null,
         activeCompanyId: token.activeCompanyId as string | null,
       };
-
-      console.log("🟢 [session] after:", session);
       return session;
     },
 

@@ -18,7 +18,7 @@ export default async function AdminNewUserPage() {
   async function createUser(formData: FormData) {
     "use server";
 
-    const current = await getServerSession();
+    const current = await getServerSession(authOptions);
     if (!current || current.user.role !== "admin") redirect("/login");
 
     const username = (formData.get("username") as string)?.trim();

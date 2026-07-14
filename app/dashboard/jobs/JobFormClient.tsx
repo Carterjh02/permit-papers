@@ -10,7 +10,6 @@ type JobFormMode = "create" | "edit";
 interface JobFormClientProps {
   mode: JobFormMode;
   jobId?: string;
-
   initialJob?: {
     customerName?: string | null;
     customerPhone?: string | null;
@@ -28,22 +27,18 @@ interface JobFormClientProps {
     companyId?: string;
     createdBy?: string;
   };
-
   initialTemplates: {
     id: string;
     templateName: string;
     templatePath: string;
   }[];
-
   onSave: (formData: FormData) => Promise<void>;
   onAddTemplate?: (paths: string[]) => Promise<void> | void;
   onRemoveTemplate?: (jobDocumentId: string) => Promise<void> | void;
-
   onCreateMinimalJob: (
     companyId: string,
     createdBy: string
   ) => Promise<{ id: string }>;
-
   onUploadSnippet: (
     jobId: string,
     file: File
@@ -52,6 +47,7 @@ interface JobFormClientProps {
     ocrText?: string;
     parsed?: {
       name?: string;
+      phone?: string; 
       address?: string;
       city?: string;
       state?: string;
@@ -59,7 +55,7 @@ interface JobFormClientProps {
       folio?: string;
       subdivision?: string;
     };
-  }>;  
+  }>;
 }
 
 export default function JobFormClient({
@@ -136,6 +132,7 @@ export default function JobFormClient({
   const [ocrText, setOcrText] = useState<string | null>(null);
   const [ocrParsed, setOcrParsed] = useState<{
     name?: string;
+    phone?: string;
     address?: string;
     city?: string;
     state?: string;
@@ -143,7 +140,6 @@ export default function JobFormClient({
     folio?: string;
     subdivision?: string;
   } | null>(null);
-
   const [showOcrModal, setShowOcrModal] = useState(false);
 
   /* ---------------------------------------------------------
@@ -163,12 +159,17 @@ export default function JobFormClient({
 
       const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
 
-      setSnippetUrl(publicUrl);
+      // add cache-busting so preview updates
+      setSnippetUrl(`${publicUrl}?t=${Date.now()}`);
+
       setOcrText(ocrText ?? null);
       setOcrParsed(parsed ?? null);
 
       if (parsed) {
-        setShowOcrModal(true);
+        setOcrParsed(parsed);
+        requestAnimationFrame(() => setShowOcrModal(true));
+      } else {
+        setOcrParsed(null);
       }
 
       showToast(
@@ -202,19 +203,15 @@ export default function JobFormClient({
 
     setTemplates((prev) => {
       const next = [...prev];
-
       for (const p of cleanPaths) {
         if (next.some((t) => t.templatePath === p)) continue;
-
         const fileName = p.split("/").pop() || p;
-
         next.push({
           id: crypto.randomUUID(),
           templateName: fileName,
           templatePath: p,
         });
       }
-
       return next;
     });
 
@@ -223,11 +220,9 @@ export default function JobFormClient({
 
   const handleRemove = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
-
     if (onRemoveTemplate && template) {
       await onRemoveTemplate(templateId);
     }
-
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
   };
 
@@ -245,6 +240,7 @@ export default function JobFormClient({
     };
 
     apply("customer_name", ocrParsed.name);
+    apply("customer_phone", ocrParsed.phone); // ⭐ added
     apply("customer_address_full", ocrParsed.address);
     apply("customer_address_city", ocrParsed.city);
     apply("customer_address_state", ocrParsed.state);
@@ -262,6 +258,7 @@ export default function JobFormClient({
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
             <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
+
             {ocrText && (
               <pre className="text-xs bg-gray-100 p-2 rounded max-h-32 overflow-auto">
                 {ocrText}
@@ -270,6 +267,7 @@ export default function JobFormClient({
 
             <div className="space-y-2 text-sm">
               <p><strong>Name:</strong> {ocrParsed.name ?? "—"}</p>
+              <p><strong>Phone:</strong> {ocrParsed.phone ?? "—"}</p>
               <p><strong>Address:</strong> {ocrParsed.address ?? "—"}</p>
               <p><strong>City:</strong> {ocrParsed.city ?? "—"}</p>
               <p><strong>State:</strong> {ocrParsed.state ?? "—"}</p>
@@ -299,7 +297,7 @@ export default function JobFormClient({
 
       {/* FORM BINDS SERVER ACTION DIRECTLY */}
       <form className="space-y-6 card p-6">
-      {/* Hidden fields required for server action */}
+        {/* Hidden fields required for server action */}
         <input
           type="hidden"
           name="job_price"
@@ -314,14 +312,17 @@ export default function JobFormClient({
           <input type="hidden" name="job_id" value={localJobId} />
         )}
         {initialJob?.companyId && (
-          <input type="hidden" name="company_id" value={initialJob.companyId} />
+          <input
+            type="hidden"
+            name="company_id"
+            value={initialJob.companyId}
+          />
         )}
         <input
           type="hidden"
           name="description"
           value={initialJob?.description ?? ""}
         />
-
         {/* ---------------------------------------------------------
            SNIPPET UPLOAD
         --------------------------------------------------------- */}
@@ -514,6 +515,7 @@ export default function JobFormClient({
       <div className="card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Documents</h2>
+
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -537,6 +539,7 @@ export default function JobFormClient({
                 className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded"
               >
                 <span className="font-medium">{t.templateName}</span>
+
                 <button
                   type="button"
                   className="text-red-600 text-xs font-semibold"

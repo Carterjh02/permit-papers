@@ -1,26 +1,15 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useState, useEffect, SyntheticEvent } from "react";
+import { useState, SyntheticEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PublicNav from "../(public)/PublicNav";
+import "../globals.css";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string>("");
-  const [showCookiePopup, setShowCookiePopup] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.location.search.includes("callbackUrl")
-    ) {
-      Promise.resolve().then(() => setShowCookiePopup(true));
-    }
-  }, []);
 
   async function handleLogin(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,19 +31,10 @@ export default function LoginPage() {
 
     if (result?.error) {
       setError(result.error);
-
-      const lower = result.error.toLowerCase();
-      if (
-        lower.includes("session") ||
-        lower.includes("cookie") ||
-        lower.includes("callback")
-      ) {
-        setShowCookiePopup(true);
-      }
-
       return;
     }
 
+    // Allow cookie to commit
     await new Promise((resolve) => setTimeout(resolve, 250));
 
     const session = await fetch("/api/auth/session").then((res) => res.json());
@@ -115,41 +95,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {showCookiePopup && (
-        <div className="popup-overlay">
-          <div className="popup-card">
-            <h2 className="popup-title">Login Issue Detected</h2>
-
-            <p className="popup-text">
-              Your browser is blocking secure cookies, which prevents Permit
-              Papers from keeping you logged in.
-            </p>
-
-            <p className="popup-text">
-              You can fix this by allowing cookies, disabling strict tracking
-              prevention, or trying another browser.
-            </p>
-
-            <div className="popup-buttons">
-              <Link href="/forums#login-cookies" className="btn-primary">
-                Learn More
-              </Link>
-
-              <Link href="/fix-login" className="btn-secondary">
-                Fix My Login
-              </Link>
-
-              <button
-                className="btn-secondary"
-                onClick={() => setShowCookiePopup(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

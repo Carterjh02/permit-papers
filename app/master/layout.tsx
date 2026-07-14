@@ -1,18 +1,14 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function MasterLayout({
+import { signOut } from "next-auth/react";
+import Link from "next/link";
+
+export default function MasterLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-  const user = session?.user;
-
-  if (!user) redirect("/login");
-  if (user.role !== "master") redirect("/dashboard");
+  // Server-side protection is already handled in the master pages.
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,9 +35,17 @@ export default async function MasterLayout({
               Settings
             </Link>
 
-            <form action="/api/auth/signout" method="POST">
-              <button className="btn btn-secondary">Logout</button>
-            </form>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setTimeout(() => {
+                signOut({ callbackUrl: "/login" });
+              }, 50);
+            }}
+          >
+            Logout
+          </button>
           </div>
         </div>
       </nav>

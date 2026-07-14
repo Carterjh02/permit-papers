@@ -42,7 +42,7 @@ export async function updateUserAction(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const id = formData.get("user_id") as string;
 
-  const current = await getServerSession();
+  const current = await getServerSession(authOptions);
   if (!current || current.user.role !== "admin") redirect("/login");
 
   await prisma.user.delete({

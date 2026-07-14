@@ -336,14 +336,16 @@ export async function applyDynamicShrink(
   // ============================================================
   // DEBUG: Field identity + meta
   // ============================================================
-  const name = field.getName();
-  const normalized = name ? name.replace(/\s+/g, "").trim().toLowerCase() : "";
+  //const name = field.getName();
+  // const normalized = field.getName()
+  // ? field.getName().replace(/\s+/g, "").trim().toLowerCase()
+  // : "";
 
-  console.log("=== APPLY SHRINK ===");
+  /* DEBUG LOGS
   console.log("Field Name:", name);
   console.log("Normalized:", normalized);
   console.log("Meta:", meta);
-  console.log("Value:", text);
+  console.log("Value:", text); */
 
   const rule = getShrinkRule(meta);
   const acro = field.acroField;
@@ -356,7 +358,7 @@ export async function applyDynamicShrink(
   if (!widgets || widgets.length === 0) {
     console.log("NO WIDGETS FOUND — setting text directly");
     field.setText(text);
-    console.log("=== END SHRINK ===");
+    // console.log("=== END SHRINK ===");
     return;
   }
 
@@ -371,9 +373,9 @@ export async function applyDynamicShrink(
     console.log("Using cached layout for:", meta.normalizedName);
     layout = sharedLayoutCache.get(meta.normalizedName)!;
   } else {
-    console.log("Computing NEW layout:");
-    console.log("  meta.width:", meta.width);
-    console.log("  meta.height:", meta.height);
+    // console.log("Computing NEW layout:");
+    // console.log("  meta.width:", meta.width);
+    // console.log("  meta.height:", meta.height);
 
     layout = computeLayoutWithRule(
       text,
@@ -389,9 +391,9 @@ export async function applyDynamicShrink(
   // ============================================================
   // Apply layout (pdf-lib will propagate to widgets via appearances)
   // ============================================================
-  console.log("Final Font Size:", layout.fontSize);
-  console.log("Final Lines:", layout.lines);
-  console.log("=== END SHRINK ===");
+  // console.log("Final Font Size:", layout.fontSize);
+  // console.log("Final Lines:", layout.lines);
+  // console.log("=== END SHRINK ===");
 
   field.setFontSize(layout.fontSize);
   field.setText(layout.lines.join("\n"));
@@ -416,33 +418,32 @@ export function createShrinker(
 
     const meta = fieldMetaMap[normalized];
 
-    console.log("=== SHRINK DEBUG ===");
-    console.log("Field Name:", name);
+    // console.log("=== SHRINK DEBUG ===");
+    // console.log("Field Name:", name);
     console.log("Normalized:", normalized);
 
-    if (meta) {
-      console.log("META FOUND:");
-      console.log("  meta.width:", meta.width);
-      console.log("  meta.height:", meta.height);
-      console.log("  meta.multiline:", meta.multiline);
-    } else {
-      console.log("NO META FOUND — FALLBACK MODE");
-    }
+    // if (meta) {
+      // console.log("META FOUND:");
+      // console.log("  meta.width:", meta.width);
+      // console.log("  meta.height:", meta.height);
+      // console.log("  meta.multiline:", meta.multiline);
+    // } else {
+      // console.log("NO META FOUND — FALLBACK MODE");
+    // }
 
     const acro = field.acroField;
     const widgets = acro.getWidgets();
 
     if (widgets && widgets.length > 0) {
-      const rect = widgets[0].getRectangle();
-      console.log("Widget Rect:");
-      console.log("  rect.width:", rect.width);
-      console.log("  rect.height:", rect.height);
-    } else {
-      console.log("NO WIDGETS FOUND");
-    }
+      // console.log("Widget Rect:");
+      // console.log("  rect.width:", rect.width);
+      // console.log("  rect.height:", rect.height);
+    // } else {
+      // console.log("NO WIDGETS FOUND");
+    // }
 
-    console.log("Value:", value);
-    console.log("====================");
+    // console.log("Value:", value);
+    // console.log("====================");
 
     // ---------------------------------------------------------
     // FALLBACK (no meta found)
@@ -497,4 +498,5 @@ export function createShrinker(
       sharedLayoutCache
     );
   };
+ }
 }
