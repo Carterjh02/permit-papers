@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DashboardLayout({
   children,
@@ -12,12 +13,19 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen flex flex-col">
       {/* NAV BAR */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <nav className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 shadow-sm sticky top-0 z-50 py-4 sm:py-5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold text-gray-900">
-            Permit Papers
+        {/* Logo */}
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logos/logo-permitpapers-plain.png"
+              alt="Permit Papers"
+              width={320}
+              height={85}
+              className="h-20 w-auto sm:h-16"
+              priority
+            />
           </Link>
-
           <div className="flex items-center gap-6">
             {/* These links still work because the pages themselves check auth server-side */}
             <Link href="/dashboard" className="hover:text-blue-600">

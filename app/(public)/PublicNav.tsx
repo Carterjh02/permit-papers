@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function PublicNav() {
   return (
-    <nav className="public-nav">
+    <nav className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 shadow-sm sticky top-0 z-50 py-4 sm:py-5">
       <div className="nav-inner">
 
         {/* Logo */}
-        <Link href="/" className="nav-logo">
-          Permit Papers
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logos/logo-permitpapers-plain.png"
+            alt="Permit Papers"
+            width={320}
+            height={85}
+            className="h-20 w-auto sm:h-16"
+            priority
+          />
         </Link>
 
         {/* Links */}
