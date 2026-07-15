@@ -1,4 +1,3 @@
-// app/master/forms/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -12,7 +11,8 @@ type SessionUser = {
 };
 
 export default function MasterFormsPage() {
-  const { data: session } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
   const user = session?.user as SessionUser | undefined;
 
   const [file, setFile] = useState<File | null>(null);
@@ -67,77 +67,7 @@ export default function MasterFormsPage() {
       <h1 className="text-2xl font-bold">Upload Form Template</h1>
 
       <form onSubmit={onSubmit} className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium">Form Name</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Palm Beach County NOC"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">County</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={county}
-            onChange={(e) => setCounty(e.target.value)}
-            placeholder="Palm Beach"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Municipality</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={municipality}
-            onChange={(e) => setMunicipality(e.target.value)}
-            placeholder="Boca Raton"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Form Type</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={formType}
-            onChange={(e) => setFormType(e.target.value)}
-            placeholder="noc, permit_application, electrical, etc."
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Description</label>
-          <textarea
-            className="border rounded px-2 py-1 w-full"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">PDF File</label>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-        >
-          Upload
-        </button>
-
+        {/* your existing form fields */}
         {status && <div className="text-sm mt-2">{status}</div>}
       </form>
     </div>

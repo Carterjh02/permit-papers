@@ -96,12 +96,16 @@ export interface JobFields {
   companyCity?: string;
   companyState?: string;
   companyPhone?: string;
-
+  jobValue?: number;
   legalDescription?: string;
 }
 
 export function formatJobFields(job: JobFields): JobFields {
-  return {
+  // console.log("=== FORMAT JOB FIELDS INPUT ===");
+  // console.log("Raw job.jobValue:", job.jobValue);
+  // console.log("Raw job fields:", job);
+
+  const result = {
     ...job,
 
     customerName: toTitleCase(job.customerName),
@@ -118,7 +122,13 @@ export function formatJobFields(job: JobFields): JobFields {
     companyCity: toTitleCase(job.companyCity),
     companyState: toUpper(job.companyState),
     companyPhone: normalizePhone(job.companyPhone),
-
+    jobValue: job.jobValue != null ? Number(job.jobValue) : 0,
     legalDescription: job.legalDescription?.trim() || "",
   };
+
+  // console.log("=== FORMAT JOB FIELDS OUTPUT ===");
+  // console.log("Formatted job.jobValue:", result.jobValue);
+  // console.log("Formatted job fields:", result);
+
+  return result;
 }

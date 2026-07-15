@@ -109,7 +109,7 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const [jobPrice, setJobPrice] = useState(
     initialJob?.jobValue != null
-      ? new Intl.NumberFormat("en-US").format(initialJob.jobValue)
+      ? `$ ${new Intl.NumberFormat("en-US").format(initialJob.jobValue)}`
       : ""
   );
 
@@ -118,7 +118,7 @@ export default function JobFormClient({
     if (!numeric) return "";
     const parts = numeric.split(".");
     parts[0] = Number(parts[0]).toLocaleString("en-US");
-    return parts.join(".");
+    return `$ ${parts.join(".")}`;
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,7 +301,7 @@ export default function JobFormClient({
         <input
           type="hidden"
           name="job_price"
-          value={jobPrice.replace(/,/g, "")}
+          value={jobPrice}
         />
         <input
           type="hidden"

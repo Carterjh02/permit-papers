@@ -95,6 +95,9 @@ export async function generatePreviews(jobId: string) {
         desc_of_improv: job.company.descOfImprov ?? "",
       };
 
+      // console.log("=== GENERATE PREVIEWS ===");
+      // console.log("job.jobValue from DB:", job.jobValue);
+
       const jobData = {
         customer_name: job.customerName ?? "",
         customer_phone: job.customerPhone ?? "",
@@ -114,10 +117,17 @@ export async function generatePreviews(jobId: string) {
         customer_tax_folio: job.taxFolioNumber ?? "",
         legal_description: job.legalDescription ?? "",
         subdivision: job.subdivision ?? "",
-        job_price: job.jobValue ?? "",
+        job_price:
+          typeof job.jobValue === "number"
+            ? `$ ${job.jobValue.toLocaleString("en-US")}`
+            : "",
         job_number: job.jobNumber ?? "",
         desc_of_improv: job.description ?? "",
       };
+
+      // console.log("jobData.job_price:", jobData.job_price);
+      // console.log("Full jobData:", jobData);
+      
 
       // 4. Fill PDF
       const filled = await fillPdf({
@@ -446,13 +456,36 @@ export async function updateJobAction(formData: FormData) {
 
   const subdivision = formData.get("subdivision") as string | null;
   const taxFolioNumber = formData.get("customer_tax_folio") as string | null;
-  const jobValue = formData.get("job_price")
-    ? Number(formData.get("job_price"))
-    : null;
+  const rawPrice = formData.get("job_price") as string | null;
+
+  // console.log("=== UPDATE JOB ACTION ===");
+  // console.log("rawPrice:", rawPrice);
+  /* console.log(
+    "rawPrice stripped:",
+    rawPrice
+      ?.replace(/\$/g, "")
+      .replace(/\s/g, "")
+      .replace(/,/g, "")
+    ); 
+  */
+
+  const jobValue = rawPrice
+    ? Number(
+      rawPrice
+        .replace(/\$/g, "")
+        .replace(/\s/g, "")
+        .replace(/,/g, "")
+    )
+  : 0;
+
+  // console.log("Computed jobValue:", jobValue);
 
   // ALWAYS use user-entered description
   const description =
     (formData.get("desc_of_improvement") as string | null)?.trim() ?? "";
+
+  // console.log("Final jobValue passed to Prisma (UPDATE):", jobValue);
+  // console.log("Formatted fields (UPDATE):", formatted);
 
   await prisma.job.update({
     where: { id: targetId },
@@ -643,6 +676,30 @@ export async function createJobAction(formData: FormData) {
     return await updateJobAction(formData);
   }
 
+  const rawPrice = formData.get("job_price") as string | null;
+
+  /* console.log("=== CREATE JOB ACTION ===");
+  console.log("rawPrice:", rawPrice);
+  console.log(
+    "rawPrice stripped:",
+    rawPrice
+      ?.replace(/\$/g, "")
+      .replace(/\s/g, "")
+      .replace(/,/g, "")
+  );
+  */
+
+  const jobValue = rawPrice
+    ? Number(
+      rawPrice
+        .replace(/\$/g, "")
+        .replace(/\s/g, "")
+        .replace(/,/g, "")
+    )
+  : 0;
+
+  // console.log("Computed jobValue (CREATE):", jobValue);
+
   // Otherwise create a new job (first save)
   const raw = {
     customerName: formData.get("customer_name") as string | null,
@@ -655,9 +712,7 @@ export async function createJobAction(formData: FormData) {
     legalDescription: formData.get("legal_description") as string | null,
     subdivision: formData.get("subdivision") as string | null,
     taxFolioNumber: formData.get("customer_tax_folio") as string | null,
-    jobValue: formData.get("job_price")
-      ? Number(formData.get("job_price"))
-      : null,
+    jobValue: jobValue,
   };
 
   const formatted = formatJobFields({
@@ -668,6 +723,7 @@ export async function createJobAction(formData: FormData) {
     customerState: raw.customerState ?? undefined,
     customerZip: raw.customerZip ?? undefined,
     legalDescription: raw.legalDescription ?? undefined,
+    jobValue,
   });
 
   const templatePaths = JSON.parse(
@@ -681,6 +737,9 @@ export async function createJobAction(formData: FormData) {
   });
 
   const nextJobNumber = lastJob ? lastJob.jobNumber + 1 : 1;
+
+  // console.log("Final jobValue passed to Prisma (CREATE):", jobValue);
+  // console.log("Formatted fields (CREATE):", formatted);
 
   // Create new job
   const job = await prisma.job.create({
@@ -701,7 +760,7 @@ export async function createJobAction(formData: FormData) {
         formatted.legalDescription ?? raw.legalDescription ?? undefined,
       subdivision: raw.subdivision ?? undefined,
       taxFolioNumber: raw.taxFolioNumber ?? undefined,
-      jobValue: raw.jobValue ?? undefined,
+      jobValue: jobValue,
     },
   });
 

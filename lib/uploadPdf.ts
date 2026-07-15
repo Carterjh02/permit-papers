@@ -15,10 +15,10 @@ export async function uploadPdf(options: UploadPdfOptions) {
   }
 
   // Sanitize company code
-  const safeCompany = companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
+  // const safeCompany = companyCode?.replace(/[^a-zA-Z0-9-_]/g, "") ?? "";
 
   // Sanitize job number folder
-  const safeJobNumber = String(jobNumber ?? "").replace(/[^0-9]/g, "");
+  // const safeJobNumber = String(jobNumber ?? "").replace(/[^0-9]/g, "");
 
   // Sanitize filename (spaces → underscores, remove unsafe chars)
   let safeDocumentName = (documentName ?? "")
@@ -31,7 +31,7 @@ if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
 
 const filePath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
 
-  // DEBUG LOGS
+  /* DEBUG LOGS
   console.log("companyCode:", companyCode);
   console.log("safeCompany:", safeCompany);
   console.log("jobNumber:", jobNumber);
@@ -41,6 +41,7 @@ const filePath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
   console.log("filePath:", filePath);
   console.log("pdfBytes length:", pdfBytes?.length);
   console.log("Bucket: companies");
+  */
 
   // Upload (overwrite enabled)
   const { error: uploadError } = await supabaseServer.storage

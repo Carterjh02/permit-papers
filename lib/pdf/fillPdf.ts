@@ -38,6 +38,11 @@ export async function fillPdf({
   company,
   job,
 }: FillPdfOptions): Promise<Uint8Array> {
+
+  // console.log("=== FILL PDF START ===");
+  // console.log("Company data received:", company);
+  // console.log("Job data received:", job);
+
   const pdfDoc = await PDFDocument.load(templateBuffer);
   const form = pdfDoc.getForm();
 
@@ -152,6 +157,11 @@ export async function fillPdf({
     if (!allowedKeys.has(normalizedName)) continue;
 
     let value: string | number | null | undefined = null;
+
+    // console.log("=== STRICT AUTO-FILL FIELD ===");
+    // console.log("Field name:", name);
+    // console.log("Normalized name:", normalizedName);
+    // console.log("Initial value (before logic):", value);
 
     // -------------------------
     // Company Contact Full
@@ -271,8 +281,10 @@ export async function fillPdf({
     // Job Price
     // -------------------------
     else if (normalizedName === "job_price") {
-      const raw = Number(job["job_price"] ?? 0);
-      value = new Intl.NumberFormat("en-US").format(raw);
+      // job_price is already formatted (e.g., "$ 17,963")
+      // so we pass it directly to the PDF
+      value = String(job["job_price"] ?? "");
+      // console.log("job_price (PASSED THROUGH):", value);
     }
 
     // -------------------------
@@ -306,10 +318,16 @@ export async function fillPdf({
 
     if (value == null || value === "") continue;
 
+    // console.log("Shrink input value:", value);
+    // console.log("Shrink input field:", normalizedName);
+
     if (field instanceof PDFTextField) {
       await shrinker(field, String(value));
     }
   }
+
+  // console.log("=== FILL PDF END ===");
+  // console.log("PDF fields processed:", pdfFields.map(f => f.name));  
 
   return await pdfDoc.save();
 }
