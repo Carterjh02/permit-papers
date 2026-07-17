@@ -29,8 +29,33 @@ model Company {
   qualifierName      String?
   businessTaxReceipt String?
 
+  subscriptionTier   SubscriptionTier @default(free)
+
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+
   jobs  Job[]
   users User[]
+}
+
+enum SubscriptionTier {
+  free
+  basic
+  pro
+  enterprise
+}
+
+model SubscriptionPlan {
+  id              String   @id @default(cuid())
+  code            String   @unique        // e.g. "free", "basic", "pro", "enterprise"
+  name            String                 // display name
+  description     String?                // optional description
+  maxJobsPerMonth Int?                   // optional limits
+  maxActiveJobs   Int?                   // optional limits
+  priceMonthly    Float?                 // optional pricing
+  features        Json?                  // optional feature flags
+
+  companies       Company[]
 }
 
 model User {

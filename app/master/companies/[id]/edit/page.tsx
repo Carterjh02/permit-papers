@@ -20,7 +20,7 @@ export default async function CompanyEditPage({
   if (!company) notFound();
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Edit Company</h1>
 
@@ -32,7 +32,7 @@ export default async function CompanyEditPage({
         </form>
       </div>
 
-      <form action={updateCompanyAction} className="space-y-4 card p-6">
+      <form action={updateCompanyAction} className="space-y-8 card p-6">
         <input type="hidden" name="company_id" value={company.id} />
         <input
           type="hidden"
@@ -40,151 +40,163 @@ export default async function CompanyEditPage({
           value={company.companyCode ?? ""}
         />
 
-        {company.logoUrl && (
-          <div className="mb-4">
-            <p className="text-sm font-medium mb-1">Current Logo</p>
-            <Image
-              src={company.logoUrl}
-              alt="Company Logo"
-              width={200}
-              height={200}
-              className="h-20 w-auto rounded border object-contain"
-            />
+        {/* Company Info */}
+        <Section title="Company Info">
+          {company.logoUrl && (
+            <div className="mb-4">
+              <p className="text-sm font-medium mb-1">Current Logo</p>
+              <Image
+                src={company.logoUrl}
+                alt="Company Logo"
+                width={200}
+                height={200}
+                className="h-20 w-auto rounded border object-contain"
+              />
+            </div>
+          )}
+
+          <InputFile label="Upload New Logo" name="logo" />
+
+          <Input label="Company Name" name="company_name" defaultValue={company.name} />
+          <Input label="Company Code" name="company_code" defaultValue={company.companyCode ?? ""} />
+          <Input label="Email" name="email" defaultValue={company.email ?? ""} />
+          <Input label="Phone" name="phone" defaultValue={company.phone ?? ""} />
+
+          {/* Subscription Tier */}
+          <div>
+            <label className="block text-sm font-medium">Subscription Tier</label>
+            <select
+              name="subscriptionTier"
+              defaultValue={company.subscriptionTier ?? "free"}
+              className="input"
+            >
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium">Upload New Logo</label>
-          <input type="file" name="logo" accept="image/*" className="input" />
-        </div>
+          <Input label="Website" name="website" defaultValue={company.website ?? ""} />
+        </Section>
 
-        <div>
-          <label className="block text-sm font-medium">Company Name</label>
-          <input
-            name="company_name"
-            defaultValue={company.name}
-            className="input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Company Code</label>
-          <input
-            name="company_code"
-            defaultValue={company.companyCode ?? ""}
-            className="input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Qualifier Name</label>
-          <input
-            name="qualifier_name"
-            defaultValue={company.qualifierName ?? ""}
-            className="input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input
-            name="email"
-            defaultValue={company.email ?? ""}
-            className="input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Phone</label>
-          <input
-            name="phone"
-            defaultValue={company.phone ?? ""}
-            className="input"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Address Street</label>
-          <input
+        {/* Address Info */}
+        <Section title="Address Info">
+          <Input
+            label="Street"
             name="addressStreet"
             defaultValue={company.addressStreet ?? ""}
-            className="input"
           />
-        </div>
+          <Input
+            label="City"
+            name="addressCity"
+            defaultValue={company.addressCity ?? ""}
+          />
+          <Input
+            label="State"
+            name="addressState"
+            defaultValue={company.addressState ?? ""}
+          />
+          <Input
+            label="Zip"
+            name="addressZip"
+            defaultValue={company.addressZip ?? ""}
+          />
+        </Section>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium">City</label>
-            <input
-              name="addressCity"
-              defaultValue={company.addressCity ?? ""}
-              className="input"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">State</label>
-            <input
-              name="addressState"
-              defaultValue={company.addressState ?? ""}
-              className="input"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Zip</label>
-            <input
-              name="addressZip"
-              defaultValue={company.addressZip ?? ""}
-              className="input"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">License Number</label>
-          <input
+        {/* Contractor Info */}
+        <Section title="Contractor Info">
+          <Input
+            label="License Number"
             name="licenseNumber"
             defaultValue={company.licenseNumber ?? ""}
-            className="input"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">Website</label>
-          <input
-            name="website"
-            defaultValue={company.website ?? ""}
-            className="input"
+          <Input
+            label="Qualifier Name"
+            name="qualifier_name"
+            defaultValue={company.qualifierName ?? ""}
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Description of Improvements
-          </label>
-          <textarea
+          <Textarea
+            label="Description of Improvements"
             name="desc_of_improv"
             defaultValue={company.descOfImprov ?? ""}
-            className="input"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Business Tax Receipt Number
-          </label>
-          <input
+          <Input
+            label="Business Tax Receipt Number"
             name="businessTaxReceipt"
             defaultValue={company.businessTaxReceipt ?? ""}
-            className="input"
           />
-        </div>
+        </Section>
 
         <button className="btn btn-primary" type="submit">
           Save Changes
         </button>
       </form>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-4 border border-gray-200 rounded-lg p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+        {title}
+      </h2>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function Input({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium">{label}</label>
+      <input name={name} defaultValue={defaultValue} className="input" />
+    </div>
+  );
+}
+
+function InputFile({
+  label,
+  name,
+}: {
+  label: string;
+  name: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium">{label}</label>
+      <input type="file" name={name} accept="image/*" className="input" />
+    </div>
+  );
+}
+
+function Textarea({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium">{label}</label>
+      <textarea
+        name={name}
+        defaultValue={defaultValue}
+        className="input"
+        rows={4}
+      />
     </div>
   );
 }

@@ -36,7 +36,7 @@ export default function JobCreateClient({
 
   return (
     <div className="space-y-4 card p-6">
-      <form action={createJob} className="space-y-4">
+      <form action={createJob} className="space-y-4" encType="multipart/form-data">
         <input type="hidden" name="company_id" value={companyId} />
         <input type="hidden" name="description" value={defaultDescription} />
 

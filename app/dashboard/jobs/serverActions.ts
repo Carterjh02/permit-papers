@@ -329,7 +329,7 @@ function parseCustomerInfo(text: string) {
 }
 
 /* -----------------------------------------------------------
-   UPLOAD SNIPPET
+   UPLOAD SNIPPET (supports drag-drop, paste, file upload)
 ----------------------------------------------------------- */
 export async function uploadSnippetImmediately(jobId: string, file: File) {
   const job = await prisma.job.findUnique({
@@ -339,46 +339,62 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   if (!job) throw new Error("Job not found.");
 
   // ------------------------------------------------------------
-  // 1. Upload snippet to Supabase
+  // 0. Normalize MIME type (pasted images often have empty type)
+  // ------------------------------------------------------------
+  const mime = file.type && file.type.startsWith("image/")
+    ? file.type
+    : "image/png";
+
+  // ------------------------------------------------------------
+  // 1. Convert file to buffer
   // ------------------------------------------------------------
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Always save as snippet.png
   const path = `${job.company.companyCode}/jobs/${job.jobNumber}/snippet.png`;
 
+  // ------------------------------------------------------------
+  // 2. Upload snippet to Supabase
+  // ------------------------------------------------------------
   const { error } = await supabaseServer.storage
     .from("companies")
     .upload(path, buffer, {
       upsert: true,
-      contentType: file.type || "image/png",
+      contentType: mime,
     });
 
-  if (error) throw new Error("Failed to upload snippet.");
+  if (error) {
+    console.error("❌ Supabase upload error:", error);
+    throw new Error("Failed to upload snippet.");
+  }
 
   // ------------------------------------------------------------
-  // 2. Download snippet for OCR
+  // 3. Download snippet for OCR
   // ------------------------------------------------------------
   const { data: downloaded, error: downloadError } = await supabaseServer.storage
     .from("companies")
     .download(path);
 
   if (downloadError || !downloaded) {
+    console.error("❌ Supabase download error:", downloadError);
     throw new Error("Failed to download snippet for OCR.");
   }
 
   const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
 
   // ------------------------------------------------------------
-  // 3. Run OCR
+  // 4. Run OCR
   // ------------------------------------------------------------
   const [result] = await visionClient.textDetection(downloadedBuffer);
   const fullText = result.fullTextAnnotation?.text ?? "";
 
   // ------------------------------------------------------------
-  // 4. Parse OCR text (now includes phone + cleaned fields)
+  // 5. Parse OCR text
   // ------------------------------------------------------------
   const parsed = parseCustomerInfo(fullText);
 
   // ------------------------------------------------------------
-  // 5. Update job with parsed fields (including phone)
+  // 6. Update job with parsed fields
   // ------------------------------------------------------------
   await prisma.job.update({
     where: { id: jobId },
@@ -398,12 +414,12 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   });
 
   // ------------------------------------------------------------
-  // 6. Return OCR text + parsed fields + public URL
+  // 7. Return OCR text + parsed fields + public URL
   // ------------------------------------------------------------
   return {
     publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${path}`,
     ocrText: fullText,
-    parsed, // includes cleaned + normalized fields
+    parsed,
   };
 }
 

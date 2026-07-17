@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
 import Image from "next/image";
@@ -58,6 +58,24 @@ interface JobFormClientProps {
   }>;
 }
 
+interface PaSearchPayload {
+  name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  folio?: string;
+  subdivision?: string;
+}
+
+interface PaResult {
+  ownerName?: string;
+  siteAddress?: string;
+  mailingAddress?: string;
+  legalDescription?: string;
+  folio?: string;
+}
+
 export default function JobFormClient({
   mode,
   jobId,
@@ -72,9 +90,39 @@ export default function JobFormClient({
   const { showToast } = useToast();
 
   /* ---------------------------------------------------------
-     LOCAL JOB ID (supports new jobs)
+     LOCAL JOB ID 
   --------------------------------------------------------- */
   const [localJobId, setLocalJobId] = useState(jobId ?? null);
+  const [showPasteHint, setShowPasteHint] = useState(false);
+
+  const [showSnippetConfirm, setShowSnippetConfirm] = useState(false);
+  
+  const [showPaSearch, setShowPaSearch] = useState(false);
+  const [showPaConfirm, setShowPaConfirm] = useState(false);
+  
+  const [paSearchPayload, setPaSearchPayload] = useState<PaSearchPayload | null>(null);
+  const [paResult, setPaResult] = useState<PaResult | null>(null);
+
+  function runPaSearch(payload: PaSearchPayload | null) {
+    console.log("Running PA search with:", payload);
+  
+    // TEMP MOCK RESULT
+    setPaResult({
+      ownerName: "John Doe",
+      siteAddress: "123 Main St",
+      mailingAddress: "PO Box 456",
+      legalDescription: "LOT 12 BLK 3",
+      folio: "1234-5678",
+    });
+  }
+  
+  function applyPaToForm(result: PaResult | null) {
+    if (!result) return;
+  
+    console.log("Applying PA result to form:", result);
+  
+    // TODO: Map PA result into your job form fields
+  }
 
   const ensureJobExists = async () => {
     if (localJobId) return localJobId;
@@ -97,6 +145,8 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const [showBrowser, setShowBrowser] = useState(false);
   const [templates, setTemplates] = useState(initialTemplates);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [snippetUrl, setSnippetUrl] = useState<string | null>(
     initialJob?.snippetPath
@@ -323,40 +373,245 @@ export default function JobFormClient({
           name="description"
           value={initialJob?.description ?? ""}
         />
-        {/* ---------------------------------------------------------
-           SNIPPET UPLOAD
-        --------------------------------------------------------- */}
-        <div className="space-y-3 pb-4 border-b">
-          <h3 className="text-md font-semibold">Snippet Upload</h3>
 
-          <div className="flex flex-col gap-3">
-            <label className="block text-sm font-medium">
-              Upload Customer Snippet (PNG/JPEG)
-            </label>
+{/* ---------------------------------------------------------
+  SNIPPET UPLOAD
+--------------------------------------------------------- */}
+<div className="space-y-4 pb-6 border-b">
+<h3 className="text-md font-semibold">Customer Snippet</h3>
 
-            <input
-              type="file"
-              accept="image/png, image/jpeg"
-              onChange={(e) => {
-                const file = e.target.files ? e.target.files[0] : null;
-                handleSnippetUpload(file);
-              }}
-              className="file-input file-input-bordered w-full"
-            />
+{/* DRAG + DROP + PASTE AREA */}
+<div
+  tabIndex={0}
+  className="border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
+  onFocus={() => setShowPasteHint(true)}
+  onBlur={() => setShowPasteHint(false)}
+  onDragOver={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }}
+  onDrop={(e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleSnippetUpload(file);
+  }}
+  onPaste={(e) => {
+    if (document.activeElement !== e.currentTarget) return;
+    e.preventDefault();
 
-            {snippetUrl && (
-              <div className="mt-2">
-                <Image
-                  src={snippetUrl}
-                  alt="Snippet Preview"
-                  width={300}
-                  height={200}
-                  className="rounded border object-contain"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+    if (e.clipboardData.files?.length > 0) {
+      const file = e.clipboardData.files[0];
+      if (file) handleSnippetUpload(file);
+      return;
+    }
+
+    const item = Array.from(e.clipboardData.items).find((i) =>
+      i.type.startsWith("image/")
+    );
+    if (item) {
+      const file = item.getAsFile();
+      if (file) handleSnippetUpload(file);
+    }
+  }}
+>
+  {/* CLICKABLE TEXT (opens file picker) */}
+  <p
+    className="text-sm text-gray-600 underline decoration-dotted cursor-pointer inline-block"
+    onClick={(e) => {
+      e.stopPropagation();
+      fileInputRef.current?.click();
+    }}
+  >
+    Drag & drop, paste, or click to upload a snippet (PNG/JPEG)
+  </p>
+
+  {/* POP-UP MESSAGE WHEN FOCUSED */}
+  {showPasteHint && (
+    <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md animate-fadeIn">
+      Press Ctrl+V to paste an image
+    </div>
+  )}
+</div>
+
+{/* HIDDEN FILE INPUT */}
+<input
+  ref={fileInputRef}
+  type="file"
+  accept="image/png, image/jpeg"
+  className="hidden"
+  onChange={(e) => {
+    const file = e.target.files?.[0] ?? null;
+    if (file) handleSnippetUpload(file);
+  }}
+/>
+
+{/* PREVIEW + REMOVE */}
+{snippetUrl && (
+  <div className="mt-4 space-y-3">
+    <Image
+      src={snippetUrl}
+      alt="Snippet Preview"
+      width={300}
+      height={200}
+      className="rounded border object-contain"
+    />
+
+    <button
+      type="button"
+      className="btn btn-secondary btn-sm"
+      onClick={() => setSnippetUrl(null)}
+    >
+      Remove Snippet
+    </button>
+  </div>
+)}
+</div>
+
+{/* ---------------------------------------------------------
+    SNIPPET CONFIRMATION MODAL (OCR RESULTS)
+--------------------------------------------------------- */}
+{showSnippetConfirm && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded shadow-xl w-[450px] space-y-4">
+      <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
+
+      <p className="text-sm text-gray-600">
+        Review the extracted fields below. You may confirm them or search the Property Appraiser.
+      </p>
+
+      <div className="space-y-3">
+        <input className="input input-bordered w-full" defaultValue={ocrParsed?.name ?? ""} placeholder="Customer Name" />
+        <input className="input input-bordered w-full" defaultValue={ocrParsed?.address ?? ""} placeholder="Address" />
+        <input className="input input-bordered w-full" defaultValue={ocrParsed?.city ?? ""} placeholder="City" />
+        <input className="input input-bordered w-full" defaultValue={ocrParsed?.state ?? ""} placeholder="State" />
+        <input className="input input-bordered w-full" defaultValue={ocrParsed?.zip ?? ""} placeholder="ZIP" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4">
+        <button className="btn btn-secondary" onClick={() => setShowSnippetConfirm(false)}>
+          Cancel
+        </button>
+
+        <button className="btn btn-primary" onClick={() => {
+          applyOcrToForm();
+          setShowSnippetConfirm(false);
+        }}>
+          Confirm
+        </button>
+
+        <button className="btn btn-accent" onClick={() => {
+          setPaSearchPayload({
+            name: ocrParsed?.name ?? "",
+            address: ocrParsed?.address,
+            city: ocrParsed?.city,
+            state: ocrParsed?.state,
+            zip: ocrParsed?.zip
+          });
+          setShowSnippetConfirm(false);
+          setShowPaSearch(true);
+        }}>
+          Search Property Appraiser
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ---------------------------------------------------------
+  PROPERTY APPRAISER SEARCH (MANUAL)
+--------------------------------------------------------- */}
+<div className="space-y-4 pb-6 border-b">
+<h3 className="text-md font-semibold">Property Appraiser Search</h3>
+
+<p className="text-sm text-gray-600">
+  Search the county property appraiser using customer name, address, folio, or subdivision.
+</p>
+
+<button
+  type="button"
+  className="btn btn-primary btn-sm"
+  onClick={() => {
+    setPaSearchPayload(null);
+    setShowPaSearch(true);
+  }}
+>
+  Search Property Appraiser
+</button>
+</div>
+
+{/* ---------------------------------------------------------
+    PROPERTY APPRAISER SEARCH MODAL (SHARED)
+--------------------------------------------------------- */}
+{showPaSearch && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded shadow-xl w-[450px] space-y-4">
+      <h2 className="text-lg font-semibold">Property Appraiser Search</h2>
+
+      <p className="text-sm text-gray-600">
+        Enter any information you have — or use the extracted snippet values.
+      </p>
+
+      <div className="space-y-3">
+        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.name ?? ""} placeholder="Customer Name" />
+        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.address ?? ""} placeholder="Address" />
+        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.city ?? ""} placeholder="City" />
+        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.state ?? ""} placeholder="State" />
+        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.zip ?? ""} placeholder="ZIP" />
+        <input className="input input-bordered w-full" placeholder="Folio / Parcel Number" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4">
+        <button className="btn btn-secondary" onClick={() => setShowPaSearch(false)}>
+          Cancel
+        </button>
+
+        <button className="btn btn-primary" onClick={() => {
+          runPaSearch(paSearchPayload);
+          setShowPaSearch(false);
+          setShowPaConfirm(true);
+        }}>
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ---------------------------------------------------------
+    PROPERTY APPRAISER CONFIRMATION MODAL
+--------------------------------------------------------- */}
+{showPaConfirm && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
+      <h2 className="text-lg font-semibold">Confirm Property Appraiser Data</h2>
+
+      <p className="text-sm text-gray-600">
+        Review the extracted property appraiser information.
+      </p>
+
+      <div className="space-y-3">
+        <input className="input input-bordered w-full" defaultValue={paResult?.ownerName ?? ""} placeholder="Owner Name" />
+        <input className="input input-bordered w-full" defaultValue={paResult?.siteAddress ?? ""} placeholder="Site Address" />
+        <input className="input input-bordered w-full" defaultValue={paResult?.mailingAddress ?? ""} placeholder="Mailing Address" />
+        <input className="input input-bordered w-full" defaultValue={paResult?.legalDescription ?? ""} placeholder="Legal Description" />
+        <input className="input input-bordered w-full" defaultValue={paResult?.folio ?? ""} placeholder="Folio / Parcel Number" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4">
+        <button className="btn btn-secondary" onClick={() => setShowPaConfirm(false)}>
+          Cancel
+        </button>
+
+        <button className="btn btn-primary" onClick={() => {
+          applyPaToForm(paResult);
+          setShowPaConfirm(false);
+        }}>
+          Populate Form
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* ---------------------------------------------------------
            CUSTOMER INFORMATION

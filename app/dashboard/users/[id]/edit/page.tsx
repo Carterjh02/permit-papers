@@ -5,7 +5,6 @@ import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import Link from "next/link";
-
 import { updateUserAction, deleteUserAction } from "./actions";
 
 export default async function AdminEditUserPage({
@@ -15,19 +14,29 @@ export default async function AdminEditUserPage({
 }) {
   const { id } = await params;
 
+  // Get session
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const admin = session.user;
+  const currentUser = session.user;
 
-  if (admin.role !== "admin") redirect("/dashboard");
-
+  // Fetch user being edited
   const user = await prisma.user.findUnique({
     where: { id },
   });
 
   if (!user) notFound();
-  if (user.companyId !== admin.companyId) redirect("/dashboard");
+
+  // ROLE LOGIC
+  // Admins can edit any user in their company
+  if (currentUser.role === "admin") {
+    if (user.companyId !== currentUser.companyId) redirect("/dashboard");
+  }
+
+  // Users can ONLY edit themselves
+  if (currentUser.role === "user") {
+    if (user.id !== currentUser.id) redirect("/dashboard");
+  }
 
   const typedUser = user;
 
@@ -35,11 +44,13 @@ export default async function AdminEditUserPage({
     <div className="page-container space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit User</h1>
+
         <Link href="/dashboard/users" className="btn btn-secondary">
           Back to Users
         </Link>
       </div>
 
+      {/* UPDATE USER FORM */}
       <form action={updateUserAction} className="card p-6 space-y-4 max-w-xl">
         <input type="hidden" name="user_id" value={typedUser.id} />
 
@@ -70,28 +81,34 @@ export default async function AdminEditUserPage({
           <input name="password" type="password" className="input" />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium">Company</label>
-          <input
-            className="input bg-gray-100"
-            value={admin.companyId ?? ""}
-            disabled
-          />
-        </div>
+        {/* Only admins should see company info */}
+        {currentUser.role === "admin" && (
+          <div>
+            <label className="block text-sm font-medium">Company</label>
+            <input
+              className="input bg-gray-100"
+              value={typedUser.companyId ?? ""}
+              disabled
+            />
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-4">
           <button type="submit" className="btn btn-primary">
             Save Changes
           </button>
-
-          <form action={deleteUserAction}>
-            <input type="hidden" name="user_id" value={typedUser.id} />
-            <button type="submit" className="btn btn-danger">
-              Delete User
-            </button>
-          </form>
         </div>
       </form>
+
+      {/* DELETE USER FORM — only admins can delete */}
+      {currentUser.role === "admin" && (
+        <form action={deleteUserAction} className="mt-6 max-w-xl">
+          <input type="hidden" name="user_id" value={typedUser.id} />
+          <button type="submit" className="btn btn-danger">
+            Delete User
+          </button>
+        </form>
+      )}
     </div>
   );
 }
