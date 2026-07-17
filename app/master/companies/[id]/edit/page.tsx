@@ -15,34 +15,9 @@ export default async function CompanyEditPage({
 
   const company = await prisma.company.findUnique({
     where: { id },
-    select: {
-      id: true,
-      companyCode: true,
-      name: true,
-      email: true,
-      phone: true,
-      address: true,
-      addressStreet: true,
-      addressCity: true,
-      addressState: true,
-      addressZip: true,
-      licenseNumber: true,
-      website: true,
-      logoUrl: true,
-      createdAt: true,
-      updatedAt: true,
-      descOfImprov: true,
-      qualifierName: true,
-      businessTaxReceipt: true,
-      subscriptionTier: true,
-    },
   });
 
-  if (!company) {
-    notFound();
-  }
-
-  const safeCompany = company;
+  if (!company) notFound();
 
   return (
     <div className="page-container space-y-8">
@@ -50,7 +25,7 @@ export default async function CompanyEditPage({
         <h1 className="text-2xl font-bold">Edit Company</h1>
 
         <form action={deleteCompanyAction}>
-          <input type="hidden" name="company_id" value={safeCompany.id} />
+          <input type="hidden" name="company_id" value={company.id} />
           <button className="btn btn-danger" type="submit">
             Delete Company
           </button>
@@ -58,20 +33,20 @@ export default async function CompanyEditPage({
       </div>
 
       <form action={updateCompanyAction} className="space-y-8 card p-6">
-        <input type="hidden" name="company_id" value={safeCompany.id} />
+        <input type="hidden" name="company_id" value={company.id} />
         <input
           type="hidden"
           name="existing_company_code"
-          value={safeCompany.companyCode ?? ""}
+          value={company.companyCode ?? ""}
         />
 
         {/* Company Info */}
         <Section title="Company Info">
-          {safeCompany.logoUrl && (
+          {company.logoUrl && (
             <div className="mb-4">
               <p className="text-sm font-medium mb-1">Current Logo</p>
               <Image
-                src={safeCompany.logoUrl}
+                src={company.logoUrl}
                 alt="Company Logo"
                 width={200}
                 height={200}
@@ -85,43 +60,28 @@ export default async function CompanyEditPage({
           <Input
             label="Company Name"
             name="company_name"
-            defaultValue={safeCompany.name}
+            defaultValue={company.name}
           />
           <Input
             label="Company Code"
             name="company_code"
-            defaultValue={safeCompany.companyCode ?? ""}
+            defaultValue={company.companyCode ?? ""}
           />
           <Input
             label="Email"
             name="email"
-            defaultValue={safeCompany.email ?? ""}
+            defaultValue={company.email ?? ""}
           />
           <Input
             label="Phone"
             name="phone"
-            defaultValue={safeCompany.phone ?? ""}
+            defaultValue={company.phone ?? ""}
           />
-
-          {/* Subscription Tier */}
-          <div>
-            <label className="block text-sm font-medium">Subscription Tier</label>
-            <select
-              name="subscriptionTier"
-              defaultValue={safeCompany.subscriptionTier ?? "free"}
-              className="input"
-            >
-              <option value="free">Free</option>
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-          </div>
 
           <Input
             label="Website"
             name="website"
-            defaultValue={safeCompany.website ?? ""}
+            defaultValue={company.website ?? ""}
           />
         </Section>
 
@@ -130,22 +90,22 @@ export default async function CompanyEditPage({
           <Input
             label="Street"
             name="addressStreet"
-            defaultValue={safeCompany.addressStreet ?? ""}
+            defaultValue={company.addressStreet ?? ""}
           />
           <Input
             label="City"
             name="addressCity"
-            defaultValue={safeCompany.addressCity ?? ""}
+            defaultValue={company.addressCity ?? ""}
           />
           <Input
             label="State"
             name="addressState"
-            defaultValue={safeCompany.addressState ?? ""}
+            defaultValue={company.addressState ?? ""}
           />
           <Input
             label="Zip"
             name="addressZip"
-            defaultValue={safeCompany.addressZip ?? ""}
+            defaultValue={company.addressZip ?? ""}
           />
         </Section>
 
@@ -154,22 +114,22 @@ export default async function CompanyEditPage({
           <Input
             label="License Number"
             name="licenseNumber"
-            defaultValue={safeCompany.licenseNumber ?? ""}
+            defaultValue={company.licenseNumber ?? ""}
           />
           <Input
             label="Qualifier Name"
             name="qualifier_name"
-            defaultValue={safeCompany.qualifierName ?? ""}
+            defaultValue={company.qualifierName ?? ""}
           />
           <Textarea
             label="Description of Improvements"
             name="desc_of_improv"
-            defaultValue={safeCompany.descOfImprov ?? ""}
+            defaultValue={company.descOfImprov ?? ""}
           />
           <Input
             label="Business Tax Receipt Number"
             name="businessTaxReceipt"
-            defaultValue={safeCompany.businessTaxReceipt ?? ""}
+            defaultValue={company.businessTaxReceipt ?? ""}
           />
         </Section>
 
