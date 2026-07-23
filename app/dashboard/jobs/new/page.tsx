@@ -24,7 +24,6 @@ async function cleanupOldTempJobs(companyId: string) {
   const oldTempJobs = await prisma.job.findMany({
     where: {
       companyId,
-      isTemp: true,
       createdAt: { lt: cutoff },
     },
   });
