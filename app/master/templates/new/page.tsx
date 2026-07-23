@@ -12,8 +12,6 @@ export default function NewTemplatePage() {
   // Track uploaded templates for batch mapping
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
 
-  const [outputType, setOutputType] = useState<"temp" | "permanent">("temp");
-
   /* ---------------------------------------------------------
      HANDLE UPLOAD COMPLETE (from FolderBrowserPanel)
   --------------------------------------------------------- */
@@ -36,25 +34,9 @@ export default function NewTemplatePage() {
       <h1 className="text-2xl font-semibold">Upload New Templates</h1>
 
       <p className="text-gray-600">
-        Upload multiple templates into <b>temp</b> or <b>permanent</b> folders.
+        Upload multiple templates into the master template library.
         After uploading, you can map them all at once.
       </p>
-
-      {/* Output type selector */}
-      <div className="flex gap-4 items-center">
-        <label className="font-medium">Template Output Type:</label>
-
-        <select
-          value={outputType}
-          onChange={(e) =>
-            setOutputType(e.target.value as "temp" | "permanent")
-          }
-          className="input w-48"
-        >
-          <option value="temp">Temporary (Regeneratable)</option>
-          <option value="permanent">Permanent (Stored Per Job)</option>
-        </select>
-      </div>
 
       {/* Uploaded templates list */}
       {uploadedPaths.length > 0 && (
@@ -80,7 +62,7 @@ export default function NewTemplatePage() {
       {showBrowser && (
         <FolderBrowserPanel
           mode="master"
-          initialPath={`templates/${outputType}`}
+          initialPath={""}   // ⭐ open at root of templates bucket
           onClose={() => setShowBrowser(false)}
           onSelectFile={() => {}}
           onUploadComplete={handleUploadComplete}

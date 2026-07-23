@@ -183,6 +183,7 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
       jobNumber: nextJobNumber,
       createdBy,
       description: "",
+      isTemp: true,
     },
   });
 
@@ -746,6 +747,7 @@ export async function createJobAction(formData: FormData) {
       subdivision: raw.subdivision ?? undefined,
       taxFolioNumber: raw.taxFolioNumber ?? undefined,
       jobValue: jobValue,
+      isTemp: false,
     },
   });
 

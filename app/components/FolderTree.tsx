@@ -247,16 +247,16 @@ function FolderNodeView({
   onSelectFolder?: (path: string) => void;
   disableSelection?: boolean;
 }) {
-  const path = node.fullPath;
+  const normalizedPath = 
+    variant === "popup"
+      ? node.fullPath.replace(/^templates\/?/, "")
+      : node.fullPath; 
+
+  const path = normalizedPath;
   const open = isOpen(path);
 
   const selectionEnabled =
     !disableSelection && selectedFiles && onToggleFile;
-
-  const isSelected = (file: SupabaseFile) =>
-    selectionEnabled
-      ? selectedFiles!.some((f) => f.path === file.path)
-      : false;
 
   return (
     <div className="space-y-2">
@@ -275,7 +275,15 @@ function FolderNodeView({
           {/* Navigate into folder */}
           <button
             type="button"
-            onClick={() => onSelectFolder?.(path)}
+            onClick={() => {
+              // ⭐ Normalize folder path for master mode
+              const normalizedPath =
+                variant === "popup"
+                  ? path.replace(/^templates\/?/, "")
+                  : path;
+
+              onSelectFolder?.(normalizedPath);
+            }}
             className="flex items-center gap-2 flex-1 text-left"
           >
             <FolderIcon className="w-5 h-5 text-yellow-500" />
@@ -307,13 +315,25 @@ function FolderNodeView({
           {node.files.length > 0 && (
             <ul className="space-y-1">
               {node.files.map((f) => {
-                const selected = isSelected(f);
+                // ⭐ Normalize file path for master mode (strip "templates/")
+                const normalizedFilePath =
+                  variant === "popup"
+                    ? f.path.replace(/^templates\/?/, "")
+                    : f.path;
+
+                 const selected = selectionEnabled
+                    ? selectedFiles!.some((sf) => sf.path === normalizedFilePath)
+                    : false;
 
                 return (
-                  <li key={f.path}>
+                  <li key={normalizedFilePath}>
                     <button
                       onClick={() =>
-                        selectionEnabled && onToggleFile?.(f)
+                        selectionEnabled &&
+                        onToggleFile?.({
+                          ...f,
+                          path: normalizedFilePath, // ⭐ pass normalized path
+                        })
                       }
                       className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${
                         selected
@@ -351,20 +371,31 @@ function FolderNodeView({
           {/* Child Folders */}
           {node.folders.length > 0 && (
             <div className="space-y-2">
-              {node.folders.map((child) => (
-                <FolderNodeView
-                  key={child.fullPath}
-                  node={child}
-                  variant={variant}
-                  isOpen={isOpen}
-                  toggle={toggle}
-                  deleteTemplateAction={deleteTemplateAction}
-                  onToggleFile={onToggleFile}
-                  selectedFiles={selectedFiles}
-                  onSelectFolder={onSelectFolder}
-                  disableSelection={disableSelection}
-                />
-              ))}
+              {node.folders.map((child) => {
+                // ⭐ Normalize child folder fullPath for master mode
+                const normalizedChild = {
+                  ...child,
+                fullPath:
+                  variant === "popup"
+                    ? child.fullPath.replace(/^templates\/?/, "")
+                    : child.fullPath,
+                };
+
+                return (
+                  <FolderNodeView
+                    key={normalizedChild.fullPath}
+                    node={normalizedChild}
+                    variant={variant}
+                    isOpen={isOpen}
+                    toggle={toggle}
+                    deleteTemplateAction={deleteTemplateAction}
+                    onToggleFile={onToggleFile}
+                    selectedFiles={selectedFiles}
+                    onSelectFolder={onSelectFolder}
+                    disableSelection={disableSelection}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

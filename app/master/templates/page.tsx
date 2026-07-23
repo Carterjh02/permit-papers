@@ -1,7 +1,8 @@
 "use server";
 
 import Link from "next/link";
-import FolderTree, { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
+import TreeWrapper from "./TreeWrapper";
+import { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
 import { supabaseServer } from "@/lib/supabaseServer";
 
 /* ---------------- SUPABASE LISTING ---------------- */
@@ -23,8 +24,9 @@ async function listFolder(path: string) {
   const files: SupabaseFile[] = [];
 
   for (const item of data || []) {
-    if (item.name === ".") continue;
-
+    // Hide ALL dot-files and dot-folders (".keep", ".DS_Store", ".gitignore", etc.)
+    if (item.name.startsWith(".")) continue;
+  
     if (item.metadata === null) {
       folders.push({ name: item.name });
     } else {
@@ -38,6 +40,8 @@ async function listFolder(path: string) {
   return { folders, files };
 }
 
+/* ---------------- BUILD TREE ---------------- */
+
 async function buildTree(path: string): Promise<FolderNode> {
   const { folders, files } = await listFolder(path);
 
@@ -49,7 +53,7 @@ async function buildTree(path: string): Promise<FolderNode> {
 
   return {
     name: path === "" ? "templates" : path.split("/").pop()!,
-    fullPath: path,
+    fullPath: path === '' ? "templates" :path,
     folders: children,
     files,
   };
@@ -58,7 +62,7 @@ async function buildTree(path: string): Promise<FolderNode> {
 /* ---------------- PAGE ---------------- */
 
 export default async function MasterTemplatesPage() {
-  const root = await buildTree("templates");
+  const root = await buildTree("");
 
   return (
     <div className="page-container space-y-6">
@@ -70,10 +74,10 @@ export default async function MasterTemplatesPage() {
         </Link>
       </div>
 
-      <FolderTree
+      {/* Client wrapper handles navigation + interactivity */}
+      <TreeWrapper
         root={root}
-        variant="admin"
-        disableSelection={true}
+        expandedPaths={new Set(["", "templates"])}
       />
     </div>
   );

@@ -79,6 +79,8 @@ model Job {
   documents   JobDocument[]
   jobFiles    JobFile[]
   snippetPath String?       @db.Text
+
+  isTemp Boolean? @default(true)
 }
 
 model FormTemplate {

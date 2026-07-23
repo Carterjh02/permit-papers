@@ -116,21 +116,17 @@ export default function FolderBrowserPanel({
       /* -----------------------------------------------------------
          FilterTree destructuring
       ----------------------------------------------------------- */
-      if (selectedCounty || selectedCity) {
-        const { mergedTree, expandedPaths } = filterTree(
-          root,
-          selectedCounty,
-          selectedCity
-        );
+      // Always reapply filters after tree rebuild
+      const { mergedTree, expandedPaths } = filterTree(
+        root,
+        selectedCounty,
+        selectedCity
+      );
+
+      expandedPaths.add("");
       
-        setFilteredTree(mergedTree);
-        setExpandedPaths(expandedPaths);
-      } else {
-        setFilteredTree(root);
-        setExpandedPaths(new Set([""]));
-      }
-      
-      setExpandedPaths((prev) => new Set([...prev, ""]));      
+      setFilteredTree(mergedTree);
+      setExpandedPaths(expandedPaths);         
     } catch (err) {
       console.error("Folder load error:", err);
     }
@@ -143,7 +139,7 @@ export default function FolderBrowserPanel({
   }, [load]);
 
   /* -----------------------------------------------------------
-     ESC CLOSE (existing logic preserved)
+     ESC CLOSE 
   ----------------------------------------------------------- */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -154,7 +150,7 @@ export default function FolderBrowserPanel({
   }, [onClose]);
 
   /* -----------------------------------------------------------
-     MASTER MODE — CREATE FOLDER (existing logic preserved)
+     MASTER MODE 
   ----------------------------------------------------------- */
   const createFolder = async (name: string) => {
     if (mode !== "master") return;
@@ -176,7 +172,6 @@ export default function FolderBrowserPanel({
 
   /* -----------------------------------------------------------
      MASTER MODE — UPLOAD FILE
-     FIXED: remove auto-select (rule #14)
   ----------------------------------------------------------- */
   const handleUpload = async (file: File) => {
     if (mode !== "master") return;
@@ -224,16 +219,18 @@ export default function FolderBrowserPanel({
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
   
-    if (tree) {
-      const { mergedTree, expandedPaths } = filterTree(
-        tree,
-        selectedCounty,
-        city
-      );
-      setFilteredTree(mergedTree);
-      setExpandedPaths(expandedPaths);
+    setTimeout(() => {
+      if (tree) {
+        const { mergedTree, expandedPaths } = filterTree(
+          tree,
+          selectedCounty,
+          city
+        );
+        setFilteredTree(mergedTree);
+        setExpandedPaths(expandedPaths);
     }
-  };
+    }, 0);
+  }
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -326,8 +323,11 @@ export default function FolderBrowserPanel({
               onClick={() => {
               setSelectedCounty("");
               setSelectedCity("");
-              setFilteredTree(tree);        // restore full tree
-              setExpandedPaths(new Set([""])); // keep root expanded
+
+              if (tree) {
+                setFilteredTree(tree);        // restore full tree
+                setExpandedPaths(new Set([""])); // keep root expanded
+              }
             }}
           className="btn btn-outline btn-sm"
             >

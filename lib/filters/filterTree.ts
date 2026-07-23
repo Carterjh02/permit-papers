@@ -100,20 +100,22 @@ function cityFilter(
     return { tree: null, expandedPaths };
   }
 
-  const normalizedCounty = normalizeCityName(selectedCounty);
-
   function walk(node: FolderNode, depth: number): FolderNode | null {
     const matchingFiles = [];
     const matchingFolders = [];
 
     const nodeNameNormalized = normalizeCityName(node.name);
-    const isCountyLevel = depth === 2;
+
+    console.log("CITY FILTER NODE:", {
+      name: node.name,
+      normalized: nodeNameNormalized,
+      depth,
+      fullPath: node.fullPath
+    });
+
     const isNOC = nodeNameNormalized === NOC_NORMALIZED;
 
-    const countyMatches =
-      !isCountyLevel ||
-      nodeNameNormalized === normalizedCounty ||
-      isNOC;
+    const countyMatches = true;
 
     for (const file of node.files) {
       if (isNOC) continue;
@@ -128,6 +130,14 @@ function cityFilter(
     for (const folder of node.folders) {
       const child = walk(folder, depth + 1);
       if (child) matchingFolders.push(child);
+    }
+
+    if (selectedCity) {
+      const hasCityMatches = 
+        matchingFiles.length > 0 ||
+        matchingFolders.length > 0;
+
+        if (!hasCityMatches) return null;
     }
 
     const hasMatches =
@@ -157,7 +167,7 @@ function cityFilter(
  */
 function mergeTrees(
   countyResult: { tree: FolderNode | null; expandedPaths: Set<string> },
-  cityResult: { tree: FolderNode | null; expandedPaths: Set<string> }
+  cityResult: { tree: FolderNode | null; expandedPaths: Set<string> },
 ): { mergedTree: FolderNode | null; expandedPaths: Set<string> } {
   const { tree: countyTree, expandedPaths: countyPaths } = countyResult;
   const { tree: cityTree, expandedPaths: cityPaths } = cityResult;
@@ -172,7 +182,25 @@ function mergeTrees(
   }
 
   if (countyTree && !cityTree) {
-    return { mergedTree: countyTree, expandedPaths: mergedPaths };
+    // Detect whether city filtering is active:
+    // - If expandedPaths is empty → no city filter (initial load)
+    // - If expandedPaths has entries → city filter active but no matches
+    const cityFilterActive = cityPaths.size > 0;
+  
+    if (!cityFilterActive) {
+      // Initial load → show ALL form types (NOC, Roofing, Window-Door)
+      return { mergedTree: countyTree, expandedPaths: mergedPaths };
+    }
+  
+    // City filter active but no matches → keep ONLY NOC
+    const nocOnly = countyTree.folders.filter(
+      (f) => normalizeCityName(f.name) === NOC_NORMALIZED
+    );
+  
+    return {
+      mergedTree: { ...countyTree, folders: nocOnly },
+      expandedPaths: mergedPaths,
+    };
   }
 
   if (!countyTree && cityTree) {
@@ -192,7 +220,7 @@ function mergeTrees(
  */
 function mergeFormTypes(
   countyTree: FolderNode,
-  cityTree: FolderNode
+  cityTree: FolderNode,
 ): FolderNode[] {
   const result: FolderNode[] = [];
 
@@ -217,20 +245,28 @@ function mergeFormTypes(
   }>) {
     const countyFormType = pair.county;
     const cityFormType = pair.city;
-
+  
     if (countyFormType && cityFormType) {
       result.push({
         ...countyFormType,
         folders: mergeCounties(countyFormType, cityFormType),
       });
     } else if (countyFormType) {
-      result.push(countyFormType);
+      // Keep NOC even if it has no city matches; drop other form types
+      const isNOCFormType =
+        normalizeCityName(countyFormType.name) === NOC_NORMALIZED;
+  
+      if (isNOCFormType) {
+        result.push(countyFormType);
+      } else {
+        continue;
+      }
     } else if (cityFormType) {
       result.push(cityFormType);
     }
   }
 
-  // ⭐ ALWAYS pin NOC globally
+  // ALWAYS pin NOC globally
   result.sort((a, b) => {
     const aIsNOC = normalizeCityName(a.name) === NOC_NORMALIZED;
     const bIsNOC = normalizeCityName(b.name) === NOC_NORMALIZED;
@@ -251,7 +287,7 @@ function mergeFormTypes(
  */
 function mergeCounties(
   countyFormType: FolderNode,
-  cityFormType: FolderNode
+  cityFormType: FolderNode,
 ): FolderNode[] {
   const byName = new Map<string, { county?: FolderNode; city?: FolderNode }>();
 
@@ -277,30 +313,31 @@ function mergeCounties(
   }>) {
     const countyFolder = pair.county;
     const cityFolder = pair.city;
-
     let merged: FolderNode;
+
+    console.log("MERGE COUNTIES PAIR:", {
+      county: countyFolder?.name,
+      city: cityFolder?.name,
+    });
 
     if (countyFolder && cityFolder) {
       merged = {
         ...countyFolder,
-        files: cityFolder.files.length
-          ? cityFolder.files
-          : countyFolder.files,
+        // City filter controls files; no fallback to county files
+        files: cityFolder.files,
         folders: cityFolder.folders.length
           ? cityFolder.folders
           : countyFolder.folders,
       };
-    } else if (countyFolder) {
-      merged = countyFolder;
     } else if (cityFolder) {
       merged = cityFolder;
+    } else if (countyFolder) {
+        continue;
     } else {
       continue;
     }
 
-    const isNOC =
-      normalizeCityName(merged.name) === NOC_NORMALIZED;
-
+    const isNOC = normalizeCityName(merged.name) === NOC_NORMALIZED;
     if (isNOC) {
       nocFolders.push(merged);
     } else {
@@ -309,7 +346,6 @@ function mergeCounties(
   }
 
   otherFolders.sort((a, b) => a.name.localeCompare(b.name));
-
   return [...nocFolders, ...otherFolders];
 }
 

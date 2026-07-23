@@ -17,7 +17,8 @@ export function normalizeCityName(input: string): string {
   // Lowercase + remove punctuation
   const clean = input
     .toLowerCase()
-    .replace(/[^\w\s]/g, "") // remove punctuation
+    .replace(/[-]/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
     .trim();
 
   // Split into words
