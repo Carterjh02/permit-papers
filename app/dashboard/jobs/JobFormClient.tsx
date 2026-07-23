@@ -5,6 +5,78 @@ import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
 import Image from "next/image";
 
+/* ---------------------------------------------------------
+   EditableField
+--------------------------------------------------------- */
+type JobFormState = {
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  customer_address_full: string;
+  customer_address_city: string;
+  customer_address_state: string;
+  customer_address_zip: string;
+  subdivision: string;
+  customer_tax_folio: string;
+  legal_description: string;
+};
+
+const EditableField = ({
+  label,
+  ocrValue,
+  name,
+  form,
+  setForm,
+}: {
+  label: string;
+  ocrValue?: string;
+  name: keyof JobFormState;
+  form: JobFormState;
+  setForm: React.Dispatch<React.SetStateAction<JobFormState>>;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [manualValue, setManualValue] = useState(form[name] ?? "");
+
+  return (
+    <div className="border rounded-md">
+      <div className="flex justify-between items-center px-3 py-2 bg-gray-50">
+        <div>
+          <strong>{label}:</strong>{" "}
+          <span className="text-gray-700">{ocrValue || "—"}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          {open ? "Close" : "Edit"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="p-3">
+          <input
+            type="text"
+            name={name}
+            value={manualValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              setManualValue(v);
+
+              setForm((prev) => ({
+                ...prev,
+                [name]: v,
+              }));
+            }}
+            placeholder={`Enter ${label.toLowerCase()}`}
+            className="w-full border rounded p-2"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 type JobFormMode = "create" | "edit";
 
 interface JobFormClientProps {
@@ -94,8 +166,6 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const [localJobId, setLocalJobId] = useState(jobId ?? null);
   const [showPasteHint, setShowPasteHint] = useState(false);
-
-  const [showSnippetConfirm, setShowSnippetConfirm] = useState(false);
   
   const [showPaSearch, setShowPaSearch] = useState(false);
   const [showPaConfirm, setShowPaConfirm] = useState(false);
@@ -191,6 +261,18 @@ export default function JobFormClient({
     subdivision?: string;
   } | null>(null);
   const [showOcrModal, setShowOcrModal] = useState(false);
+  const [form, setForm] = useState({
+    customer_name: initialJob?.customerName ?? "",
+    customer_phone: initialJob?.customerPhone ?? "",
+    customer_email: initialJob?.customerEmail ?? "",
+    customer_address_full: initialJob?.customerAddress ?? "",
+    customer_address_city: initialJob?.customerCity ?? "",
+    customer_address_state: initialJob?.customerState ?? "",
+    customer_address_zip: initialJob?.customerZip ?? "",
+    subdivision: initialJob?.subdivision ?? "",
+    customer_tax_folio: initialJob?.taxFolioNumber ?? "",
+    legal_description: initialJob?.legalDescription ?? "",
+  });
 
   /* ---------------------------------------------------------
      SNIPPET UPLOAD
@@ -204,7 +286,8 @@ export default function JobFormClient({
       showToast(
         <div className="text-sm font-medium text-gray-700">
           Uploading snippet…
-        </div>
+        </div>,
+        { duration: 3000 }
       );
 
       const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
@@ -225,14 +308,16 @@ export default function JobFormClient({
       showToast(
         <div className="text-sm font-medium text-green-700">
           Snippet uploaded successfully.
-        </div>
+        </div>,
+        { duration: 3000 }
       );
     } catch (err) {
       console.error(err);
       showToast(
         <div className="text-sm font-medium text-red-700">
           Failed to upload snippet.
-        </div>
+        </div>,
+        { duration: 3000 }
       );
     }
   };
@@ -277,102 +362,93 @@ export default function JobFormClient({
   };
 
   /* ---------------------------------------------------------
-     OCR CONFIRMATION MODAL
-  --------------------------------------------------------- */
-  const applyOcrToForm = () => {
-    if (!ocrParsed) return;
+  OCR CONFIRMATION MODAL (Editable Fields)
+--------------------------------------------------------- */
+const applyOcrToForm = () => {
+  if (!ocrParsed) return;
 
-    const apply = (name: string, value?: string) => {
-      const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-        `[name="${name}"]`
-      );
-      if (el && value) el.value = value;
-    };
+  setForm((prev) => ({
+    ...prev,
+    customer_name: prev.customer_name || ocrParsed.name || "",
+    customer_phone: prev.customer_phone || ocrParsed.phone || "",
+    customer_address_full: prev.customer_address_full || ocrParsed.address || "",
+    customer_address_city: prev.customer_address_city || ocrParsed.city || "",
+    customer_address_state: prev.customer_address_state || ocrParsed.state || "",
+    customer_address_zip: prev.customer_address_zip || ocrParsed.zip || "",
+    subdivision: prev.subdivision || ocrParsed.subdivision || "",
+    customer_tax_folio: prev.customer_tax_folio || ocrParsed.folio || "",
+  }));
 
-    apply("customer_name", ocrParsed.name);
-    apply("customer_phone", ocrParsed.phone); // ⭐ added
-    apply("customer_address_full", ocrParsed.address);
-    apply("customer_address_city", ocrParsed.city);
-    apply("customer_address_state", ocrParsed.state);
-    apply("customer_address_zip", ocrParsed.zip);
-    apply("subdivision", ocrParsed.subdivision);
-    apply("customer_tax_folio", ocrParsed.folio);
+  setShowOcrModal(false);
+};
 
-    setShowOcrModal(false);
-  };
+return (
+  <>
+    {/* ---------------------------------------------------------
+        OCR MODAL (MUST BE OUTSIDE THE GRID)
+    --------------------------------------------------------- */}
+    {showOcrModal && ocrParsed && (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
+          <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
 
-  return (
-    <div className="grid grid-cols-[2fr,1fr] gap-6">
-      {/* OCR MODAL */}
-      {showOcrModal && ocrParsed && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
-            <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
+          {ocrText && (
+            <pre className="text-xs bg-gray-100 p-2 rounded max-h-32 overflow-auto">
+              {ocrText}
+            </pre>
+          )}
 
-            {ocrText && (
-              <pre className="text-xs bg-gray-100 p-2 rounded max-h-32 overflow-auto">
-                {ocrText}
-              </pre>
-            )}
+          <div className="space-y-3 text-sm">
+            <EditableField label="Name" ocrValue={ocrParsed.name} name="customer_name" form={form} setForm={setForm} />
+            <EditableField label="Phone" ocrValue={ocrParsed.phone} name="customer_phone" form={form} setForm={setForm} />
+            <EditableField label="Address" ocrValue={ocrParsed.address} name="customer_address_full" form={form} setForm={setForm} />
+            <EditableField label="City" ocrValue={ocrParsed.city} name="customer_address_city" form={form} setForm={setForm} />
+            <EditableField label="State" ocrValue={ocrParsed.state} name="customer_address_state" form={form} setForm={setForm} />
+            <EditableField label="ZIP" ocrValue={ocrParsed.zip} name="customer_address_zip" form={form} setForm={setForm} />
+            <EditableField label="Subdivision" ocrValue={ocrParsed.subdivision} name="subdivision" form={form} setForm={setForm} />
+            <EditableField label="Folio" ocrValue={ocrParsed.folio} name="customer_tax_folio" form={form} setForm={setForm} />
+          </div>
 
-            <div className="space-y-2 text-sm">
-              <p><strong>Name:</strong> {ocrParsed.name ?? "—"}</p>
-              <p><strong>Phone:</strong> {ocrParsed.phone ?? "—"}</p>
-              <p><strong>Address:</strong> {ocrParsed.address ?? "—"}</p>
-              <p><strong>City:</strong> {ocrParsed.city ?? "—"}</p>
-              <p><strong>State:</strong> {ocrParsed.state ?? "—"}</p>
-              <p><strong>ZIP:</strong> {ocrParsed.zip ?? "—"}</p>
-              <p><strong>Subdivision:</strong> {ocrParsed.subdivision ?? "—"}</p>
-              <p><strong>Folio:</strong> {ocrParsed.folio ?? "—"}</p>
-            </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn btn-secondary" onClick={() => setShowOcrModal(false)}>
+              Cancel
+            </button>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowOcrModal(false)}
-              >
-                Cancel
-              </button>
-
-              <button
-                className="btn btn-primary"
-                onClick={applyOcrToForm}
-              >
-                Apply to Form
-              </button>
-            </div>
+            <button className="btn btn-primary" onClick={applyOcrToForm}>
+              Apply to Form
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* FORM BINDS SERVER ACTION DIRECTLY */}
-      <form className="space-y-6 card p-6">
-        {/* Hidden fields required for server action */}
+    {/* ---------------------------------------------------------
+      FORM BINDS SERVER ACTION DIRECTLY
+  --------------------------------------------------------- */}
+  <div className="grid grid-cols-[2fr,1fr] gap-6">
+    <form className="space-y-6 card p-6">
+      {/* Hidden fields required for server action */}
+      <input type="hidden" name="job_price" value={jobPrice} />
+      <input
+        type="hidden"
+        name="template_paths"
+        value={JSON.stringify(templates.map((t) => t.templatePath))}
+      />
+      {localJobId && (
+        <input type="hidden" name="job_id" value={localJobId} />
+      )}
+      {initialJob?.companyId && (
         <input
           type="hidden"
-          name="job_price"
-          value={jobPrice}
+          name="company_id"
+          value={initialJob.companyId}
         />
-        <input
-          type="hidden"
-          name="template_paths"
-          value={JSON.stringify(templates.map((t) => t.templatePath))}
-        />
-        {localJobId && (
-          <input type="hidden" name="job_id" value={localJobId} />
-        )}
-        {initialJob?.companyId && (
-          <input
-            type="hidden"
-            name="company_id"
-            value={initialJob.companyId}
-          />
-        )}
-        <input
-          type="hidden"
-          name="description"
-          value={initialJob?.description ?? ""}
-        />
+      )}
+      <input
+        type="hidden"
+        name="description"
+        value={initialJob?.description ?? ""}
+      />
 
 {/* ---------------------------------------------------------
   SNIPPET UPLOAD
@@ -466,56 +542,6 @@ export default function JobFormClient({
   </div>
 )}
 </div>
-
-{/* ---------------------------------------------------------
-    SNIPPET CONFIRMATION MODAL (OCR RESULTS)
---------------------------------------------------------- */}
-{showSnippetConfirm && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded shadow-xl w-[450px] space-y-4">
-      <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
-
-      <p className="text-sm text-gray-600">
-        Review the extracted fields below. You may confirm them or search the Property Appraiser.
-      </p>
-
-      <div className="space-y-3">
-        <input className="input input-bordered w-full" defaultValue={ocrParsed?.name ?? ""} placeholder="Customer Name" />
-        <input className="input input-bordered w-full" defaultValue={ocrParsed?.address ?? ""} placeholder="Address" />
-        <input className="input input-bordered w-full" defaultValue={ocrParsed?.city ?? ""} placeholder="City" />
-        <input className="input input-bordered w-full" defaultValue={ocrParsed?.state ?? ""} placeholder="State" />
-        <input className="input input-bordered w-full" defaultValue={ocrParsed?.zip ?? ""} placeholder="ZIP" />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <button className="btn btn-secondary" onClick={() => setShowSnippetConfirm(false)}>
-          Cancel
-        </button>
-
-        <button className="btn btn-primary" onClick={() => {
-          applyOcrToForm();
-          setShowSnippetConfirm(false);
-        }}>
-          Confirm
-        </button>
-
-        <button className="btn btn-accent" onClick={() => {
-          setPaSearchPayload({
-            name: ocrParsed?.name ?? "",
-            address: ocrParsed?.address,
-            city: ocrParsed?.city,
-            state: ocrParsed?.state,
-            zip: ocrParsed?.zip
-          });
-          setShowSnippetConfirm(false);
-          setShowPaSearch(true);
-        }}>
-          Search Property Appraiser
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
 {/* ---------------------------------------------------------
   PROPERTY APPRAISER SEARCH (MANUAL)
@@ -625,7 +651,10 @@ export default function JobFormClient({
               <input
                 name="customer_name"
                 className="input input-bordered"
-                defaultValue={initialJob?.customerName ?? ""}
+                value={form.customer_name}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, customer_name: e.target.value }))
+                }
               />
             </div>
 
@@ -634,7 +663,10 @@ export default function JobFormClient({
               <input
                 name="customer_phone"
                 className="input input-bordered"
-                defaultValue={initialJob?.customerPhone ?? ""}
+                value={form.customer_phone}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, customer_phone: e.target.value }))
+                }
               />
             </div>
 
@@ -661,35 +693,47 @@ export default function JobFormClient({
               <input
                 name="customer_address_full"
                 className="input input-bordered"
-                defaultValue={initialJob?.customerAddress ?? ""}
+                value={form.customer_address_full}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, customer_address_full: e.target.value }))
+                }
               />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">City</label>
               <input
-                name="customer_address_city"
-                className="input input-bordered"
-                defaultValue={initialJob?.customerCity ?? ""}
-              />
+              name="customer_address_city"
+              className="input input-bordered"
+              value={form.customer_address_city}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, customer_address_city: e.target.value }))
+              }
+            />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">State</label>
               <input
-                name="customer_address_state"
-                className="input input-bordered"
-                defaultValue={initialJob?.customerState ?? ""}
-              />
+              name="customer_address_state"
+              className="input input-bordered"
+              value={form.customer_address_state}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, customer_address_state: e.target.value }))
+              }
+            />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">ZIP</label>
               <input
-                name="customer_address_zip"
-                className="input input-bordered"
-                defaultValue={initialJob?.customerZip ?? ""}
-              />
+              name="customer_address_zip"
+              className="input input-bordered"
+              value={form.customer_address_zip}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, customer_address_zip: e.target.value }))
+              }
+            />
             </div>
 
             <div className="flex flex-col gap-1">
@@ -697,7 +741,10 @@ export default function JobFormClient({
               <input
                 name="subdivision"
                 className="input input-bordered"
-                defaultValue={initialJob?.subdivision ?? ""}
+                value={form.subdivision}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, subdivision: e.target.value }))
+                }
               />
             </div>
 
@@ -706,7 +753,10 @@ export default function JobFormClient({
               <input
                 name="customer_tax_folio"
                 className="input input-bordered"
-                defaultValue={initialJob?.taxFolioNumber ?? ""}
+                value={form.customer_tax_folio}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, customer_tax_folio: e.target.value }))
+                }
               />
             </div>
 
@@ -817,5 +867,6 @@ export default function JobFormClient({
         />
       )}
     </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { prisma } from "@/lib/prisma";
 import { extractPdfFieldNames } from "@/lib/pdf/fieldExtractor";
-import { autoMapFields } from "@/lib/autoMapping";
+import { autoMapFields } from "@/lib/mapping/autoMapping";
 
 export async function POST(req: Request) {
   try {

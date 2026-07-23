@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { autoMapFields } from "@/lib/autoMapping";
+import { autoMapFields } from "@/lib/mapping/autoMapping";
 import { fillPdf } from "@/lib/pdf/fillPdf";
 import { bufferToBase64 } from "@/lib/pdf/pdfUtils";
 

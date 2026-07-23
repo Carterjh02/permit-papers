@@ -9,13 +9,18 @@ import {
 } from "react";
 import { X } from "lucide-react";
 
+interface ToastOptions {
+  duration?: number;
+}
+
 interface Toast {
   id: string;
   content: ReactNode;
+  duration?: number;
 }
 
 interface ToastContextValue {
-  showToast: (content: ReactNode) => void;
+  showToast: (content: ReactNode, options?: ToastOptions) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -29,26 +34,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const showToast = useCallback(
-    (content: ReactNode) => {
+    (content: ReactNode, options?: ToastOptions) => {
       const id = crypto.randomUUID();
-      setToasts((prev) => [...prev, { id, content }]);
-      // No auto‑dismiss — user must close manually
+      const duration = options?.duration;
+
+      setToasts((prev) => [...prev, { id, content, duration }]);
+
+      if (duration && duration > 0) {
+        setTimeout(() => {
+          dismissToast(id);
+        }, duration);
+      }
     },
-    []
+    [dismissToast]
   );
 
   return (
     <ToastContext.Provider value={{ showToast, dismissToast }}>
       {children}
 
-      {/* Toast Container — bottom center */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] space-y-4 w-full flex flex-col items-center pointer-events-none">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             className="pointer-events-auto bg-white shadow-xl rounded-lg border border-gray-200 w-[600px] animate-fadeIn relative"
           >
-            {/* Dismiss Button */}
             <button
               onClick={() => dismissToast(toast.id)}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -56,13 +66,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <X size={18} />
             </button>
 
-            {/* Toast Content */}
             <div className="p-4">{toast.content}</div>
           </div>
         ))}
       </div>
 
-      {/* Animations */}
       <style jsx global>{`
         @keyframes fadeIn {
           from {

@@ -4,7 +4,7 @@ import {
   StandardFonts,
 } from "pdf-lib";
 
-import { AutoMappedField } from "@/lib/autoMapping";
+import { AutoMappedField } from "@/lib/mapping/autoMapping";
 import { parseLegalDescription } from "@/lib/utils/parseLegalDescription";
 
 import {

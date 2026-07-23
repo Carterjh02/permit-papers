@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { autoMapFields } from "@/lib/autoMapping";
+import { autoMapFields } from "@/lib/mapping/autoMapping";
 import { fillPdf } from "@/lib/pdf/fillPdf";
 import { uploadPdf } from "@/lib/uploadPdf";
 import { getServerSession } from "next-auth";
@@ -10,18 +10,6 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
-
-// OCR imports
-import vision from "@google-cloud/vision";
-
-// OCR client
-const visionClient = new vision.ImageAnnotatorClient({
-  credentials: {
-    client_email: process.env.GOOGLE_CLIENT_EMAIL!,
-    private_key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-  },
-  projectId: process.env.GOOGLE_PROJECT_ID!,
-});
 
 /* -----------------------------------------------------------
    GENERATE PREVIEWS
@@ -216,16 +204,19 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
 // ------------------------------------------------------------
 function cleanField(value: string | undefined): string | undefined {
   if (!value) return value;
-  return value.replace(/[:]/g, "").trim();
+
+  // Remove stray punctuation except allowed characters
+  return value
+    .replace(/[;:]+/g, " ")                // remove semicolons/colons
+    .replace(/[^\w\s@.,/#-]/g, "")         // strip stray symbols except allowed ones
+    .replace(/\s{2,}/g, " ")               // collapse multiple spaces
+    .trim();
 }
 
 function normalizePhone(phone: string | undefined): string | undefined {
   if (!phone) return phone;
 
-  // Remove all non-digits
   const digits = phone.replace(/\D/g, "");
-
-  // If 10 digits, format as xxx-xxx-xxxx
   if (digits.length === 10) {
     return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
@@ -239,7 +230,6 @@ function normalizePhone(phone: string | undefined): string | undefined {
 function normalizeOCRName(name: string | undefined): string | undefined {
   if (!name) return name;
 
-  // If OCR gives "Last, First", flip it
   if (name.includes(",")) {
     const [last, first] = name.split(",").map((s) => s.trim());
     return `${first} ${last}`.trim();
@@ -249,10 +239,26 @@ function normalizeOCRName(name: string | undefined): string | undefined {
 }
 
 // ------------------------------------------------------------
-// FULL OCR PARSER
+// FULL OCR PARSER (UPDATED)
 // ------------------------------------------------------------
-function parseCustomerInfo(text: string) {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+export async function parseCustomerInfo(text: string) {
+  // Pre-clean text
+  const cleaned = text
+    .replace(/[;:]+/g, " ")                // remove semicolons/colons
+    .replace(/[^\w\s@.,/#-]/g, "")         // strip stray symbols except allowed ones
+    .replace(/\s{2,}/g, " ")               // collapse multiple spaces
+    .trim();
+
+  // 2️⃣ Split and filter lines
+  const blacklist = ["customer", "address", "info", "email", "phone", "section"];
+  const lines = cleaned
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(
+      (l) =>
+        l &&
+        !blacklist.some((word) => l.toLowerCase().includes(word))
+    );
 
   const result: {
     name?: string;
@@ -265,64 +271,35 @@ function parseCustomerInfo(text: string) {
     phone?: string;
   } = {};
 
-  // -------------------------
-  // NAME
-  // -------------------------
-  if (lines.length > 0) {
-    result.name = cleanField(normalizeOCRName(lines[0]));
-  }
+  // 3️⃣ Regex patterns
+  const nameRegex = /^[A-Z][a-z]+[, ]+[A-Z][a-z]+/i;
+  const phoneRegex = /\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}/;
+  const cityStateZipRegex = /([A-Z\s]+),?\s*([A-Z]{2})\s*(\d{5})/;
+  const folioRegex = /\b\d{4,}[-]?\d*\b/;
+  const subdivisionRegex = /(SU|Subdivision|Quinnstreet)/i;
 
-  // -------------------------
-  // ADDRESS
-  // -------------------------
-  if (lines.length > 1) {
-    result.address = cleanField(lines[1]);
-  }
-
-  // -------------------------
-  // CITY / STATE / ZIP
-  // -------------------------
-  const csz = lines.find((l) => /,\s*[A-Z]{2}\s+\d{5}/.test(l));
-  if (csz) {
-    const m = csz.match(/^(.+),\s*([A-Z]{2})\s+(\d{5})/);
-    if (m) {
-      result.city = cleanField(m[1]);
-      result.state = cleanField(m[2]);
-      result.zip = cleanField(m[3]);
+  // 4️⃣ Detect fields
+  for (const line of lines) {
+    if (!result.name && nameRegex.test(line)) {
+      result.name = cleanField(normalizeOCRName(line));
+    } else if (!result.phone && phoneRegex.test(line)) {
+      const m = line.match(phoneRegex);
+      if (m) result.phone = normalizePhone(m[0]);
+    } else if (!result.address && /\d{2,}\s+[A-Z0-9\s]+/i.test(line)) {
+      result.address = cleanField(line);
+    } else if (!result.city && cityStateZipRegex.test(line)) {
+      const m = line.match(cityStateZipRegex);
+      if (m) {
+        result.city = cleanField(m[1]);
+        result.state = cleanField(m[2]);
+        result.zip = cleanField(m[3]);
+      }
+    } else if (!result.folio && folioRegex.test(line)) {
+      const m = line.match(folioRegex);
+      if (m) result.folio = cleanField(m[0]);
+    } else if (!result.subdivision && subdivisionRegex.test(line)) {
+      result.subdivision = cleanField(line);
     }
-  }
-
-  // -------------------------
-  // PHONE
-  // -------------------------
-  const phoneLine =
-    lines.find((l) => /(phone|tel|cell|mobile|contact)/i.test(l)) ||
-    lines.find((l) => /\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}/.test(l)); // standalone number
-
-  if (phoneLine) {
-    const m = phoneLine.match(/\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}/);
-    if (m) {
-      result.phone = normalizePhone(m[0]);
-    }
-  }
-
-  // -------------------------
-  // FOLIO
-  // -------------------------
-  const folioLine = lines.find((l) => /folio|parcel/i.test(l));
-  if (folioLine) {
-    const m = folioLine.match(/(\d[\d\-]+)/);
-    if (m) result.folio = cleanField(m[1]);
-  }
-
-  // -------------------------
-  // SUBDIVISION
-  // -------------------------
-  const subdivisionLine = lines.find((l) => /subdivision/i.test(l));
-  if (subdivisionLine) {
-    result.subdivision = cleanField(
-      subdivisionLine.replace(/.*subdivision[:\s]*/i, "")
-    );
   }
 
   return result;
@@ -338,24 +315,17 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   });
   if (!job) throw new Error("Job not found.");
 
-  // ------------------------------------------------------------
   // 0. Normalize MIME type (pasted images often have empty type)
-  // ------------------------------------------------------------
-  const mime = file.type && file.type.startsWith("image/")
-    ? file.type
-    : "image/png";
+  const mime =
+    file.type && file.type.startsWith("image/") ? file.type : "image/png";
 
-  // ------------------------------------------------------------
   // 1. Convert file to buffer
-  // ------------------------------------------------------------
   const buffer = Buffer.from(await file.arrayBuffer());
 
   // Always save as snippet.png
   const path = `${job.company.companyCode}/jobs/${job.jobNumber}/snippet.png`;
 
-  // ------------------------------------------------------------
   // 2. Upload snippet to Supabase
-  // ------------------------------------------------------------
   const { error } = await supabaseServer.storage
     .from("companies")
     .upload(path, buffer, {
@@ -368,9 +338,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     throw new Error("Failed to upload snippet.");
   }
 
-  // ------------------------------------------------------------
   // 3. Download snippet for OCR
-  // ------------------------------------------------------------
   const { data: downloaded, error: downloadError } = await supabaseServer.storage
     .from("companies")
     .download(path);
@@ -382,20 +350,23 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
 
-  // ------------------------------------------------------------
   // 4. Run OCR
-  // ------------------------------------------------------------
+  const vision = await import("@google-cloud/vision");
+  const visionClient = new vision.ImageAnnotatorClient({
+    credentials: {
+      client_email: process.env.GOOGLE_CLIENT_EMAIL!,
+      private_key: process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+    },
+    projectId: process.env.GOOGLE_PROJECT_ID!,
+  });
+
   const [result] = await visionClient.textDetection(downloadedBuffer);
   const fullText = result.fullTextAnnotation?.text ?? "";
 
-  // ------------------------------------------------------------
-  // 5. Parse OCR text
-  // ------------------------------------------------------------
-  const parsed = parseCustomerInfo(fullText);
+  // 5. Parse OCR text (using your updated strict parser)
+  const parsed = await parseCustomerInfo(fullText);
 
-  // ------------------------------------------------------------
   // 6. Update job with parsed fields
-  // ------------------------------------------------------------
   await prisma.job.update({
     where: { id: jobId },
     data: {
@@ -413,9 +384,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     },
   });
 
-  // ------------------------------------------------------------
   // 7. Return OCR text + parsed fields + public URL
-  // ------------------------------------------------------------
   return {
     publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${path}`,
     ocrText: fullText,
