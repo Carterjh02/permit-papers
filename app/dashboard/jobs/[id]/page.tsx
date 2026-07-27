@@ -20,6 +20,41 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/* ---------------------------------------------------------
+   UPDATED onTestPA WITH LOGS
+--------------------------------------------------------- */
+export async function onTestPA(jobId: string, input: {
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  folio?: string;
+  subdivision?: string;
+  county?: string;
+}) {
+  "use server";
+
+  const { runPropertyAppraiserSearch } = await import(
+    "@/lib/propertyAppraiser/index"
+  );
+
+  const result = await runPropertyAppraiserSearch({
+    jobId,
+    address: input.address ?? "",
+    city: input.city ?? "",
+    state: input.state ?? "",
+    zip: input.zip ?? "",
+    folio: input.folio ?? "",
+    subdivision: input.subdivision ?? "",
+    county: input.county ?? "",
+  });
+
+  return result;
+}
+
+/* ---------------------------------------------------------
+   PAGE COMPONENT
+--------------------------------------------------------- */
 export default async function JobEditPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -60,7 +95,6 @@ export default async function JobEditPage({ params }: PageProps) {
     createdBy: user.username,
   };
 
-  // FIXED: templatePath is now nullable in Prisma, so normalize it
   const initialTemplates = job.documents.map((d: JobDocument) => ({
     id: d.id,
     templateName: d.templateName ?? "",
@@ -104,7 +138,7 @@ export default async function JobEditPage({ params }: PageProps) {
           for (const p of paths) {
             await addTemplateAction(id, p);
           }
-        }}        
+        }}
         onRemoveTemplate={async (jobDocumentId) => {
           "use server";
           await removeTemplateAction(jobDocumentId);
@@ -116,13 +150,13 @@ export default async function JobEditPage({ params }: PageProps) {
         onUploadSnippet={async (jobId, file) => {
           "use server";
           const result = await uploadSnippetImmediately(jobId, file);
-          // Ensure the client receives all OCR data
           return {
             publicUrl: result.publicUrl,
             ocrText: result.ocrText,
             parsed: result.parsed,
           };
-        }}        
+        }}
+        onTestPA={onTestPA}
       />
     </div>
   );

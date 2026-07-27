@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
 import Image from "next/image";
+import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
 
 /* ---------------------------------------------------------
    EditableField
@@ -13,6 +14,7 @@ type JobFormState = {
   customer_phone: string;
   customer_email: string;
   customer_address_full: string;
+  customer_address_street: string;
   customer_address_city: string;
   customer_address_state: string;
   customer_address_zip: string;
@@ -119,7 +121,8 @@ interface JobFormClientProps {
     ocrText?: string;
     parsed?: {
       name?: string;
-      phone?: string; 
+      phone?: string;
+      email?: string;
       address?: string;
       city?: string;
       state?: string;
@@ -127,6 +130,15 @@ interface JobFormClientProps {
       folio?: string;
       subdivision?: string;
     };
+  }>;
+  onTestPA: (
+    jobId: string,
+    input: PaSearchPayload
+  ) => Promise<{
+    county: "broward" | "palmBeach" | "saintLucie";
+    paPath: string;
+    ocrText: string;
+    parsed: ParsedPAData;
   }>;
 }
 
@@ -138,14 +150,7 @@ interface PaSearchPayload {
   zip?: string;
   folio?: string;
   subdivision?: string;
-}
-
-interface PaResult {
-  ownerName?: string;
-  siteAddress?: string;
-  mailingAddress?: string;
-  legalDescription?: string;
-  folio?: string;
+  county?: string;
 }
 
 export default function JobFormClient({
@@ -158,40 +163,62 @@ export default function JobFormClient({
   onRemoveTemplate,
   onCreateMinimalJob,
   onUploadSnippet,
+  onTestPA,
 }: JobFormClientProps) {
   const { showToast } = useToast();
 
   /* ---------------------------------------------------------
-     LOCAL JOB ID 
+     LOCAL JOB ID
   --------------------------------------------------------- */
   const [localJobId, setLocalJobId] = useState(jobId ?? null);
   const [showPasteHint, setShowPasteHint] = useState(false);
-  
+
   const [showPaSearch, setShowPaSearch] = useState(false);
   const [showPaConfirm, setShowPaConfirm] = useState(false);
-  
-  const [paSearchPayload, setPaSearchPayload] = useState<PaSearchPayload | null>(null);
-  const [paResult, setPaResult] = useState<PaResult | null>(null);
 
-  function runPaSearch(payload: PaSearchPayload | null) {
-    console.log("Running PA search with:", payload);
+  const [paSearchPayload, setPaSearchPayload] =
+    useState<PaSearchPayload | null>(null);
+  const [paResult, setPaResult] = useState<ParsedPAData | null>(null);
+
+  function applyPaToForm(pa: ParsedPAData | null) {
+    if (!pa) return;
+
   
-    // TEMP MOCK RESULT
-    setPaResult({
-      ownerName: "John Doe",
-      siteAddress: "123 Main St",
-      mailingAddress: "PO Box 456",
-      legalDescription: "LOT 12 BLK 3",
-      folio: "1234-5678",
+    setForm((prev) => {
+      const updated = { ...prev };
+  
+      // Owner Name
+      if (pa.ownerName) {
+        updated.customer_name = pa.ownerName;
+      }
+  
+      // Street / City / ZIP
+      if (pa.street) {
+        updated.customer_address_street = pa.street;
+      }
+      if (pa.city) {
+        updated.customer_address_city = pa.city;
+      }
+  
+      // Florida is always the state
+      updated.customer_address_state = "FL";
+  
+      if (pa.zip) {
+        updated.customer_address_zip = pa.zip;
+      }
+  
+      // Folio / Parcel ID
+      if (pa.folio) {
+        updated.customer_tax_folio = pa.folio;
+      }
+  
+      // Legal Description
+      if (pa.legalDescription) {
+        updated.legal_description = pa.legalDescription.trim();
+      }
+  
+      return updated;
     });
-  }
-  
-  function applyPaToForm(result: PaResult | null) {
-    if (!result) return;
-  
-    console.log("Applying PA result to form:", result);
-  
-    // TODO: Map PA result into your job form fields
   }
 
   const ensureJobExists = async () => {
@@ -253,6 +280,7 @@ export default function JobFormClient({
   const [ocrParsed, setOcrParsed] = useState<{
     name?: string;
     phone?: string;
+    email?: string;
     address?: string;
     city?: string;
     state?: string;
@@ -260,12 +288,18 @@ export default function JobFormClient({
     folio?: string;
     subdivision?: string;
   } | null>(null);
+  const [snippetExtraFields, setSnippetExtraFields] = useState({
+    phone: "",
+    email: "",
+    subdivision: "",
+  });  
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [form, setForm] = useState({
     customer_name: initialJob?.customerName ?? "",
     customer_phone: initialJob?.customerPhone ?? "",
     customer_email: initialJob?.customerEmail ?? "",
     customer_address_full: initialJob?.customerAddress ?? "",
+    customer_address_street: "",
     customer_address_city: initialJob?.customerCity ?? "",
     customer_address_state: initialJob?.customerState ?? "",
     customer_address_zip: initialJob?.customerZip ?? "",
@@ -327,14 +361,14 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const handleSelectTemplate = async (paths: string[]) => {
     const cleanPaths = paths.map((p) =>
-      p.replace(/\\/g, "/").replace(/^templates\//, "")
+      p.replace(/\\/g, "/")
     );
 
     await ensureJobExists();
 
     if (onAddTemplate) {
       await onAddTemplate(cleanPaths);
-    }
+    }    
 
     setTemplates((prev) => {
       const next = [...prev];
@@ -371,10 +405,17 @@ const applyOcrToForm = () => {
     ...prev,
     customer_name: prev.customer_name || ocrParsed.name || "",
     customer_phone: prev.customer_phone || ocrParsed.phone || "",
-    customer_address_full: prev.customer_address_full || ocrParsed.address || "",
-    customer_address_city: prev.customer_address_city || ocrParsed.city || "",
-    customer_address_state: prev.customer_address_state || ocrParsed.state || "",
-    customer_address_zip: prev.customer_address_zip || ocrParsed.zip || "",
+    customer_address_street:
+      prev.customer_address_street ||
+      prev.customer_address_full ||      // edited modal value
+      ocrParsed.address ||               // parsed full address
+      "",
+    customer_address_city:
+      prev.customer_address_city || ocrParsed.city || "",
+    customer_address_state:
+      prev.customer_address_state || ocrParsed.state || "",
+    customer_address_zip:
+      prev.customer_address_zip || ocrParsed.zip || "",
     subdivision: prev.subdivision || ocrParsed.subdivision || "",
     customer_tax_folio: prev.customer_tax_folio || ocrParsed.folio || "",
   }));
@@ -399,176 +440,118 @@ return (
           )}
 
           <div className="space-y-3 text-sm">
-            <EditableField label="Name" ocrValue={ocrParsed.name} name="customer_name" form={form} setForm={setForm} />
-            <EditableField label="Phone" ocrValue={ocrParsed.phone} name="customer_phone" form={form} setForm={setForm} />
-            <EditableField label="Address" ocrValue={ocrParsed.address} name="customer_address_full" form={form} setForm={setForm} />
-            <EditableField label="City" ocrValue={ocrParsed.city} name="customer_address_city" form={form} setForm={setForm} />
-            <EditableField label="State" ocrValue={ocrParsed.state} name="customer_address_state" form={form} setForm={setForm} />
-            <EditableField label="ZIP" ocrValue={ocrParsed.zip} name="customer_address_zip" form={form} setForm={setForm} />
-            <EditableField label="Subdivision" ocrValue={ocrParsed.subdivision} name="subdivision" form={form} setForm={setForm} />
-            <EditableField label="Folio" ocrValue={ocrParsed.folio} name="customer_tax_folio" form={form} setForm={setForm} />
+            <EditableField
+              label="Name"
+              ocrValue={ocrParsed.name}
+              name="customer_name"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="Phone"
+              ocrValue={ocrParsed.phone}
+              name="customer_phone"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="Address"
+              ocrValue={ocrParsed.address}
+              name="customer_address_full"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="City"
+              ocrValue={ocrParsed.city}
+              name="customer_address_city"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="State"
+              ocrValue={ocrParsed.state}
+              name="customer_address_state"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="ZIP"
+              ocrValue={ocrParsed.zip}
+              name="customer_address_zip"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="Subdivision"
+              ocrValue={ocrParsed.subdivision}
+              name="subdivision"
+              form={form}
+              setForm={setForm}
+            />
+            <EditableField
+              label="Folio"
+              ocrValue={ocrParsed.folio}
+              name="customer_tax_folio"
+              form={form}
+              setForm={setForm}
+            />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button className="btn btn-secondary" onClick={() => setShowOcrModal(false)}>
-              Cancel
-            </button>
+<div className="flex justify-end gap-3 pt-4">
+<button
+  className="btn btn-secondary"
+  onClick={() => setShowOcrModal(false)}
+>
+  Cancel
+</button>
 
-            <button className="btn btn-primary" onClick={applyOcrToForm}>
-              Apply to Form
-            </button>
-          </div>
+{/* NEW BUTTON — Run PA Search */}
+<button
+  className="btn btn-outline"
+  onClick={async () => {
+    if (!ocrParsed) return;
+
+    // Preserve snippet-only fields
+    setSnippetExtraFields({
+      phone: ocrParsed.phone ?? "",
+      email: ocrParsed.email ?? "",
+      subdivision: ocrParsed.subdivision ?? "",
+    });
+
+    const id = await ensureJobExists();
+
+    const result = await onTestPA(id, {
+      address: ocrParsed.address ?? "",
+      city: ocrParsed.city ?? "",
+      state: ocrParsed.state ?? "FL",
+      zip: ocrParsed.zip ?? "",
+      folio: ocrParsed.folio ?? "",
+      subdivision: ocrParsed.subdivision ?? "",
+      county: "broward",
+    });
+
+    setPaResult(result.parsed);
+    setShowOcrModal(false);
+    setShowPaConfirm(true);
+  }}
+>
+  Run PA Search
+</button>
+
+<button className="btn btn-primary" onClick={applyOcrToForm}>
+  Apply to Form
+</button>
+</div>
+
         </div>
       </div>
     )}
 
     {/* ---------------------------------------------------------
-      FORM BINDS SERVER ACTION DIRECTLY
-  --------------------------------------------------------- */}
-  <div className="grid grid-cols-[2fr,1fr] gap-6">
-    <form className="space-y-6 card p-6">
-      {/* Hidden fields required for server action */}
-      <input type="hidden" name="job_price" value={jobPrice} />
-      <input
-        type="hidden"
-        name="template_paths"
-        value={JSON.stringify(templates.map((t) => t.templatePath))}
-      />
-      {localJobId && (
-        <input type="hidden" name="job_id" value={localJobId} />
-      )}
-      {initialJob?.companyId && (
-        <input
-          type="hidden"
-          name="company_id"
-          value={initialJob.companyId}
-        />
-      )}
-      <input
-        type="hidden"
-        name="description"
-        value={initialJob?.description ?? ""}
-      />
-
-{/* ---------------------------------------------------------
-  SNIPPET UPLOAD
---------------------------------------------------------- */}
-<div className="space-y-4 pb-6 border-b">
-<h3 className="text-md font-semibold">Customer Snippet</h3>
-
-{/* DRAG + DROP + PASTE AREA */}
-<div
-  tabIndex={0}
-  className="border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
-  onFocus={() => setShowPasteHint(true)}
-  onBlur={() => setShowPasteHint(false)}
-  onDragOver={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }}
-  onDrop={(e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleSnippetUpload(file);
-  }}
-  onPaste={(e) => {
-    if (document.activeElement !== e.currentTarget) return;
-    e.preventDefault();
-
-    if (e.clipboardData.files?.length > 0) {
-      const file = e.clipboardData.files[0];
-      if (file) handleSnippetUpload(file);
-      return;
-    }
-
-    const item = Array.from(e.clipboardData.items).find((i) =>
-      i.type.startsWith("image/")
-    );
-    if (item) {
-      const file = item.getAsFile();
-      if (file) handleSnippetUpload(file);
-    }
-  }}
->
-  {/* CLICKABLE TEXT (opens file picker) */}
-  <p
-    className="text-sm text-gray-600 underline decoration-dotted cursor-pointer inline-block"
-    onClick={(e) => {
-      e.stopPropagation();
-      fileInputRef.current?.click();
-    }}
-  >
-    Drag & drop, paste, or click to upload a snippet (PNG/JPEG)
-  </p>
-
-  {/* POP-UP MESSAGE WHEN FOCUSED */}
-  {showPasteHint && (
-    <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md animate-fadeIn">
-      Press Ctrl+V to paste an image
-    </div>
-  )}
-</div>
-
-{/* HIDDEN FILE INPUT */}
-<input
-  ref={fileInputRef}
-  type="file"
-  accept="image/png, image/jpeg"
-  className="hidden"
-  onChange={(e) => {
-    const file = e.target.files?.[0] ?? null;
-    if (file) handleSnippetUpload(file);
-  }}
-/>
-
-{/* PREVIEW + REMOVE */}
-{snippetUrl && (
-  <div className="mt-4 space-y-3">
-    <Image
-      src={snippetUrl}
-      alt="Snippet Preview"
-      width={300}
-      height={200}
-      className="rounded border object-contain"
-    />
-
-    <button
-      type="button"
-      className="btn btn-secondary btn-sm"
-      onClick={() => setSnippetUrl(null)}
-    >
-      Remove Snippet
-    </button>
-  </div>
-)}
-</div>
-
-{/* ---------------------------------------------------------
-  PROPERTY APPRAISER SEARCH (MANUAL)
---------------------------------------------------------- */}
-<div className="space-y-4 pb-6 border-b">
-<h3 className="text-md font-semibold">Property Appraiser Search</h3>
-
-<p className="text-sm text-gray-600">
-  Search the county property appraiser using customer name, address, folio, or subdivision.
-</p>
-
-<button
-  type="button"
-  className="btn btn-primary btn-sm"
-  onClick={() => {
-    setPaSearchPayload(null);
-    setShowPaSearch(true);
-  }}
->
-  Search Property Appraiser
-</button>
-</div>
-
-{/* ---------------------------------------------------------
-    PROPERTY APPRAISER SEARCH MODAL (SHARED)
---------------------------------------------------------- */}
-{showPaSearch && (
+        PROPERTY APPRAISER SEARCH MODAL (OUTSIDE FORM)
+    --------------------------------------------------------- */}
+    {showPaSearch && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div className="bg-white p-6 rounded shadow-xl w-[450px] space-y-4">
       <h2 className="text-lg font-semibold">Property Appraiser Search</h2>
@@ -578,24 +561,112 @@ return (
       </p>
 
       <div className="space-y-3">
-        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.name ?? ""} placeholder="Customer Name" />
-        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.address ?? ""} placeholder="Address" />
-        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.city ?? ""} placeholder="City" />
-        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.state ?? ""} placeholder="State" />
-        <input className="input input-bordered w-full" defaultValue={paSearchPayload?.zip ?? ""} placeholder="ZIP" />
-        <input className="input input-bordered w-full" placeholder="Folio / Parcel Number" />
+        <input
+          id="pa_name"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.name ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, name: e.target.value }))
+          }
+          placeholder="Customer Name"
+        />
+
+        <input
+          id="pa_address"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.address ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, address: e.target.value }))
+          }
+          placeholder="Address"
+        />
+
+        <input
+          id="pa_city"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.city ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, city: e.target.value }))
+          }
+          placeholder="City"
+        />
+
+        <input
+          id="pa_state"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.state ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, state: e.target.value }))
+          }
+          placeholder="State"
+        />
+
+        <input
+          id="pa_zip"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.zip ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, zip: e.target.value }))
+          }
+          placeholder="ZIP"
+        />
+
+        <input
+          id="pa_folio"
+          className="input input-bordered w-full"
+          value={paSearchPayload?.folio ?? ""}
+          onChange={(e) =>
+            setPaSearchPayload((prev) => ({ ...prev, folio: e.target.value }))
+          }
+          placeholder="Folio / Parcel Number"
+        />
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
-        <button className="btn btn-secondary" onClick={() => setShowPaSearch(false)}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowPaSearch(false)}
+        >
           Cancel
         </button>
 
-        <button className="btn btn-primary" onClick={() => {
-          runPaSearch(paSearchPayload);
-          setShowPaSearch(false);
-          setShowPaConfirm(true);
-        }}>
+        <button
+          className="btn btn-primary"
+          onClick={async () => {
+
+            const {
+              address,
+              city,
+              state,
+              zip,
+              folio,
+              subdivision,
+              county,
+            } = paSearchPayload ?? {};
+
+            if (!address || address.trim() === "") {
+              showToast("Please enter an address before running PA search.");
+              return;
+            }
+
+            // Ensure job exists
+            const id = localJobId ?? (await ensureJobExists());
+
+            const result = await onTestPA(id, {
+              address,
+              city,
+              state,
+              zip,
+              folio,
+              subdivision,
+              county,
+            });
+
+            setPaResult(result.parsed);
+            setShowPaSearch(false);
+            setShowPaConfirm(true);
+          }}
+        >
           Search
         </button>
       </div>
@@ -603,35 +674,88 @@ return (
   </div>
 )}
 
-{/* ---------------------------------------------------------
-    PROPERTY APPRAISER CONFIRMATION MODAL
---------------------------------------------------------- */}
-{showPaConfirm && (
+    {/* ---------------------------------------------------------
+        PROPERTY APPRAISER CONFIRMATION MODAL (OUTSIDE FORM)
+    --------------------------------------------------------- */}
+    {showPaConfirm && paResult && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
       <h2 className="text-lg font-semibold">Confirm Property Appraiser Data</h2>
 
       <p className="text-sm text-gray-600">
-        Review the extracted property appraiser information.
+        Review the extracted property appraiser information and apply it to the form.
       </p>
 
-      <div className="space-y-3">
-        <input className="input input-bordered w-full" defaultValue={paResult?.ownerName ?? ""} placeholder="Owner Name" />
-        <input className="input input-bordered w-full" defaultValue={paResult?.siteAddress ?? ""} placeholder="Site Address" />
-        <input className="input input-bordered w-full" defaultValue={paResult?.mailingAddress ?? ""} placeholder="Mailing Address" />
-        <input className="input input-bordered w-full" defaultValue={paResult?.legalDescription ?? ""} placeholder="Legal Description" />
-        <input className="input input-bordered w-full" defaultValue={paResult?.folio ?? ""} placeholder="Folio / Parcel Number" />
+      <div className="space-y-3 text-sm">
+        <EditableField
+          label="Owner Name"
+          ocrValue={paResult.ownerName}
+          name="customer_name"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="Street Address"
+          ocrValue={paResult.street}
+          name="customer_address_street"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="City"
+          ocrValue={paResult.city}
+          name="customer_address_city"
+          form={form}
+          setForm={setForm}
+          />
+
+        <EditableField
+          label="ZIP Code"
+          ocrValue={paResult.zip}
+          name="customer_address_zip"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="Tax/Folio Number"
+          ocrValue={paResult.folio}
+          name="customer_tax_folio"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="Legal Description"
+          ocrValue={paResult.legalDescription}
+          name="legal_description"
+          form={form}
+          setForm={setForm}
+        />
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
-        <button className="btn btn-secondary" onClick={() => setShowPaConfirm(false)}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowPaConfirm(false)}
+        >
           Cancel
         </button>
 
-        <button className="btn btn-primary" onClick={() => {
-          applyPaToForm(paResult);
-          setShowPaConfirm(false);
-        }}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            applyPaToForm(paResult);
+
+            // Merge snippet-only fields (phone, email, subdivision)
+            setForm((prev) => ({
+              ...prev,
+              customer_phone: prev.customer_phone || snippetExtraFields.phone || "",
+              customer_email: prev.customer_email || snippetExtraFields.email || "",
+              subdivision: prev.subdivision || snippetExtraFields.subdivision || "",
+            }));
+
+            setShowPaConfirm(false);
+          }}
+        >
           Populate Form
         </button>
       </div>
@@ -639,12 +763,149 @@ return (
   </div>
 )}
 
+    {/* ---------------------------------------------------------
+      FORM BINDS SERVER ACTION DIRECTLY
+    --------------------------------------------------------- */}
+    <div className="grid grid-cols-[2fr,1fr] gap-6">
+      <form className="space-y-6 card p-6">
+        {/* Hidden fields required for server action */}
+        <input type="hidden" name="job_price" value={jobPrice} />
+        <input
+          type="hidden"
+          name="template_paths"
+          value={JSON.stringify(templates.map((t) => t.templatePath))}
+        />
+        {localJobId && (
+          <input type="hidden" name="job_id" value={localJobId} />
+        )}
+        {initialJob?.companyId && (
+          <input
+            type="hidden"
+            name="company_id"
+            value={initialJob.companyId}
+          />
+        )}
+        <input
+          type="hidden"
+          name="description"
+          value={initialJob?.description ?? ""}
+        />
+
         {/* ---------------------------------------------------------
-           CUSTOMER INFORMATION
+          SNIPPET UPLOAD
+        --------------------------------------------------------- */}
+        <div className="space-y-4 pb-6 border-b">
+          <h3 className="text-md font-semibold">Customer Snippet</h3>
+
+          <div
+            tabIndex={0}
+            className="border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
+            onFocus={() => setShowPasteHint(true)}
+            onBlur={() => setShowPasteHint(false)}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleSnippetUpload(file);
+            }}
+            onPaste={(e) => {
+              if (document.activeElement !== e.currentTarget) return;
+              e.preventDefault();
+
+              if (e.clipboardData.files?.length > 0) {
+                const file = e.clipboardData.files[0];
+                if (file) handleSnippetUpload(file);
+                return;
+              }
+
+              const item = Array.from(e.clipboardData.items).find((i) =>
+                i.type.startsWith("image/")
+              );
+              if (item) {
+                const file = item.getAsFile();
+                if (file) handleSnippetUpload(file);
+              }
+            }}
+          >
+            <p
+              className="text-sm text-gray-600 underline decoration-dotted cursor-pointer inline-block"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+            >
+              Drag & drop, paste, or click to upload a snippet (PNG/JPEG)
+            </p>
+
+            {showPasteHint && (
+              <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md animate-fadeIn">
+                Press Ctrl+V to paste an image
+              </div>
+            )}
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png, image/jpeg"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              if (file) handleSnippetUpload(file);
+            }}
+          />
+
+          {snippetUrl && (
+            <div className="mt-4 space-y-3">
+              <Image
+                src={snippetUrl}
+                alt="Snippet Preview"
+                width={300}
+                height={200}
+                className="rounded border object-contain"
+              />
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setSnippetUrl(null)}
+              >
+                Remove Snippet
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ---------------------------------------------------------
+          PROPERTY APPRAISER SEARCH (MANUAL)
+        --------------------------------------------------------- */}
+        <div className="space-y-4 pb-6 border-b">
+          <h3 className="text-md font-semibold">Property Appraiser Search</h3>
+
+          <p className="text-sm text-gray-600">
+            Search the county property appraiser using customer name, address, folio, or subdivision.
+          </p>
+
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              setPaSearchPayload(null);
+              setShowPaSearch(true);
+            }}
+          >
+            Search Property Appraiser
+          </button>
+        </div>
+
+        {/* ---------------------------------------------------------
+          CUSTOMER INFORMATION
         --------------------------------------------------------- */}
         <div className="space-y-4 pt-2">
           <h3 className="text-md font-semibold">Customer Information</h3>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Customer Name</label>
@@ -653,11 +914,13 @@ return (
                 className="input input-bordered"
                 value={form.customer_name}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, customer_name: e.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_name: e.target.value,
+                  }))
                 }
               />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Customer Phone</label>
               <input
@@ -665,11 +928,13 @@ return (
                 className="input input-bordered"
                 value={form.customer_phone}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, customer_phone: e.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_phone: e.target.value,
+                  }))
                 }
               />
             </div>
-
             <div className="flex flex-col gap-1 col-span-2">
               <label className="text-sm font-medium">Customer Email</label>
               <input
@@ -682,60 +947,61 @@ return (
         </div>
 
         {/* ---------------------------------------------------------
-           PROPERTY LOCATION
+          PROPERTY LOCATION
         --------------------------------------------------------- */}
         <div className="space-y-4 border-t pt-4">
           <h3 className="text-md font-semibold">Property Location</h3>
-
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1 col-span-2">
+            <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Street Address</label>
               <input
-                name="customer_address_full"
+                name="customer_address_street"
                 className="input input-bordered"
-                value={form.customer_address_full}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, customer_address_full: e.target.value }))
-                }
+                defaultValue={form.customer_address_street ?? ""}
               />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">City</label>
               <input
-              name="customer_address_city"
-              className="input input-bordered"
-              value={form.customer_address_city}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customer_address_city: e.target.value }))
-              }
-            />
+                name="customer_address_city"
+                className="input input-bordered"
+                value={form.customer_address_city}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_address_city: e.target.value,
+                  }))
+                }
+              />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">State</label>
               <input
-              name="customer_address_state"
-              className="input input-bordered"
-              value={form.customer_address_state}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customer_address_state: e.target.value }))
-              }
-            />
+                name="customer_address_state"
+                className="input input-bordered"
+                value={form.customer_address_state}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_address_state: e.target.value,
+                  }))
+                }
+              />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">ZIP</label>
               <input
-              name="customer_address_zip"
-              className="input input-bordered"
-              value={form.customer_address_zip}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, customer_address_zip: e.target.value }))
-              }
-            />
+                name="customer_address_zip"
+                className="input input-bordered"
+                value={form.customer_address_zip}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_address_zip: e.target.value,
+                  }))
+                }
+              />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Subdivision</label>
               <input
@@ -743,11 +1009,13 @@ return (
                 className="input input-bordered"
                 value={form.subdivision}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, subdivision: e.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    subdivision: e.target.value,
+                  }))
                 }
               />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Tax/Folio Number</label>
               <input
@@ -755,28 +1023,35 @@ return (
                 className="input input-bordered"
                 value={form.customer_tax_folio}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, customer_tax_folio: e.target.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_tax_folio: e.target.value,
+                  }))
                 }
               />
             </div>
-
             <div className="flex flex-col gap-1 col-span-2">
               <label className="text-sm font-medium">Legal Description</label>
-              <textarea
-                name="legal_description"
-                className="textarea textarea-bordered"
-                defaultValue={initialJob?.legalDescription ?? ""}
-              />
+                <textarea
+                  name="legal_description"
+                  className="textarea textarea-bordered"
+                  value={form.legal_description}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      legal_description: e.target.value,
+                    }))
+                  }
+                />
             </div>
           </div>
         </div>
 
         {/* ---------------------------------------------------------
-           JOB DESCRIPTION
+          JOB DESCRIPTION
         --------------------------------------------------------- */}
         <div className="space-y-4 border-t pt-4">
           <h3 className="text-md font-semibold">Job Description</h3>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium">Job Value</label>
@@ -788,7 +1063,6 @@ return (
                 onChange={handlePriceChange}
               />
             </div>
-
             <div className="flex flex-col gap-1 col-span-2">
               <label className="text-sm font-medium">Description of Improvement</label>
               <textarea
@@ -801,7 +1075,7 @@ return (
         </div>
 
         {/* ---------------------------------------------------------
-           SAVE BUTTON
+          SAVE BUTTON
         --------------------------------------------------------- */}
         <div className="flex justify-end mt-6">
           <button

@@ -333,20 +333,6 @@ export async function applyDynamicShrink(
   meta: FieldMeta,
   sharedLayoutCache: Map<string, TextLayout>
 ) {
-  // ============================================================
-  // DEBUG: Field identity + meta
-  // ============================================================
-  //const name = field.getName();
-  // const normalized = field.getName()
-  // ? field.getName().replace(/\s+/g, "").trim().toLowerCase()
-  // : "";
-
-  /* DEBUG LOGS
-  console.log("Field Name:", name);
-  console.log("Normalized:", normalized);
-  console.log("Meta:", meta);
-  console.log("Value:", text); */
-
   const rule = getShrinkRule(meta);
   const acro = field.acroField;
 
@@ -356,9 +342,7 @@ export async function applyDynamicShrink(
 
   const widgets = acro.getWidgets();
   if (!widgets || widgets.length === 0) {
-    console.log("NO WIDGETS FOUND — setting text directly");
     field.setText(text);
-    // console.log("=== END SHRINK ===");
     return;
   }
 
@@ -370,12 +354,8 @@ export async function applyDynamicShrink(
   // (meta.width/height are already the smallest across pages)
   // ============================================================
   if (sharedLayoutCache.has(meta.normalizedName)) {
-    console.log("Using cached layout for:", meta.normalizedName);
     layout = sharedLayoutCache.get(meta.normalizedName)!;
   } else {
-    // console.log("Computing NEW layout:");
-    // console.log("  meta.width:", meta.width);
-    // console.log("  meta.height:", meta.height);
 
     layout = computeLayoutWithRule(
       text,
@@ -387,13 +367,6 @@ export async function applyDynamicShrink(
 
     sharedLayoutCache.set(meta.normalizedName, layout);
   }
-
-  // ============================================================
-  // Apply layout (pdf-lib will propagate to widgets via appearances)
-  // ============================================================
-  // console.log("Final Font Size:", layout.fontSize);
-  // console.log("Final Lines:", layout.lines);
-  // console.log("=== END SHRINK ===");
 
   field.setFontSize(layout.fontSize);
   field.setText(layout.lines.join("\n"));
@@ -418,32 +391,10 @@ export function createShrinker(
 
     const meta = fieldMetaMap[normalized];
 
-    // console.log("=== SHRINK DEBUG ===");
-    // console.log("Field Name:", name);
-    console.log("Normalized:", normalized);
-
-    // if (meta) {
-      // console.log("META FOUND:");
-      // console.log("  meta.width:", meta.width);
-      // console.log("  meta.height:", meta.height);
-      // console.log("  meta.multiline:", meta.multiline);
-    // } else {
-      // console.log("NO META FOUND — FALLBACK MODE");
-    // }
-
     const acro = field.acroField;
     const widgets = acro.getWidgets();
 
     if (widgets && widgets.length > 0) {
-      // console.log("Widget Rect:");
-      // console.log("  rect.width:", rect.width);
-      // console.log("  rect.height:", rect.height);
-    // } else {
-      // console.log("NO WIDGETS FOUND");
-    // }
-
-    // console.log("Value:", value);
-    // console.log("====================");
 
     // ---------------------------------------------------------
     // FALLBACK (no meta found)

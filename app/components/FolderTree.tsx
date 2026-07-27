@@ -247,12 +247,7 @@ function FolderNodeView({
   onSelectFolder?: (path: string) => void;
   disableSelection?: boolean;
 }) {
-  const normalizedPath = 
-    variant === "popup"
-      ? node.fullPath.replace(/^templates\/?/, "")
-      : node.fullPath; 
-
-  const path = normalizedPath;
+  const path = node.fullPath;
   const open = isOpen(path);
 
   const selectionEnabled =
@@ -276,13 +271,8 @@ function FolderNodeView({
           <button
             type="button"
             onClick={() => {
-              // ⭐ Normalize folder path for master mode
-              const normalizedPath =
-                variant === "popup"
-                  ? path.replace(/^templates\/?/, "")
-                  : path;
-
-              onSelectFolder?.(normalizedPath);
+              // Normalize folder path for master mode
+              onSelectFolder?.(path);
             }}
             className="flex items-center gap-2 flex-1 text-left"
           >
@@ -315,11 +305,8 @@ function FolderNodeView({
           {node.files.length > 0 && (
             <ul className="space-y-1">
               {node.files.map((f) => {
-                // ⭐ Normalize file path for master mode (strip "templates/")
-                const normalizedFilePath =
-                  variant === "popup"
-                    ? f.path.replace(/^templates\/?/, "")
-                    : f.path;
+                // Normalize file path for master mode (strip "templates/")
+                const normalizedFilePath = f.path
 
                  const selected = selectionEnabled
                     ? selectedFiles!.some((sf) => sf.path === normalizedFilePath)
@@ -332,7 +319,7 @@ function FolderNodeView({
                         selectionEnabled &&
                         onToggleFile?.({
                           ...f,
-                          path: normalizedFilePath, // ⭐ pass normalized path
+                          path: normalizedFilePath, // pass normalized path
                         })
                       }
                       className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${
@@ -372,13 +359,10 @@ function FolderNodeView({
           {node.folders.length > 0 && (
             <div className="space-y-2">
               {node.folders.map((child) => {
-                // ⭐ Normalize child folder fullPath for master mode
+                // Normalize child folder fullPath for master mode
                 const normalizedChild = {
                   ...child,
-                fullPath:
-                  variant === "popup"
-                    ? child.fullPath.replace(/^templates\/?/, "")
-                    : child.fullPath,
+                  fullPath: child.fullPath,
                 };
 
                 return (

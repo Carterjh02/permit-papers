@@ -8,7 +8,9 @@ import { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
 export async function buildTree(path: string): Promise<FolderNode> {
   const clean = path.replace(/\/+$/, "");
 
-  const { folders, files } = await listFolder(clean);
+  const { folders, files } = await listFolder(
+    path === "" ? "templates" : `templates/${path}`
+  );
 
   // Hide dot-prefixed folders/files
   const visibleFolders = folders.filter((f) => !f.name.startsWith("."));

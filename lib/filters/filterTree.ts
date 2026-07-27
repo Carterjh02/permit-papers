@@ -106,13 +106,6 @@ function cityFilter(
 
     const nodeNameNormalized = normalizeCityName(node.name);
 
-    console.log("CITY FILTER NODE:", {
-      name: node.name,
-      normalized: nodeNameNormalized,
-      depth,
-      fullPath: node.fullPath
-    });
-
     const isNOC = nodeNameNormalized === NOC_NORMALIZED;
 
     const countyMatches = true;
@@ -314,11 +307,6 @@ function mergeCounties(
     const countyFolder = pair.county;
     const cityFolder = pair.city;
     let merged: FolderNode;
-
-    console.log("MERGE COUNTIES PAIR:", {
-      county: countyFolder?.name,
-      city: cityFolder?.name,
-    });
 
     if (countyFolder && cityFolder) {
       merged = {

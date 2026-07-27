@@ -19,7 +19,8 @@ export default function TreeWrapper({
       disableSelection={true}
       expandedPaths={expandedPaths}
       onSelectFolder={(path) => {
-        const encoded = encodeURIComponent(path);
+        const corrected = path === "" ? "" : `templates/${path}`;
+        const encoded = encodeURIComponent(corrected);
         router.push(`/master/templates/map?path=${encoded}`);
       }}
     />

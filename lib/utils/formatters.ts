@@ -101,9 +101,6 @@ export interface JobFields {
 }
 
 export function formatJobFields(job: JobFields): JobFields {
-  // console.log("=== FORMAT JOB FIELDS INPUT ===");
-  // console.log("Raw job.jobValue:", job.jobValue);
-  // console.log("Raw job fields:", job);
 
   const result = {
     ...job,
@@ -125,10 +122,6 @@ export function formatJobFields(job: JobFields): JobFields {
     jobValue: job.jobValue != null ? Number(job.jobValue) : 0,
     legalDescription: job.legalDescription?.trim() || "",
   };
-
-  // console.log("=== FORMAT JOB FIELDS OUTPUT ===");
-  // console.log("Formatted job.jobValue:", result.jobValue);
-  // console.log("Formatted job fields:", result);
 
   return result;
 }

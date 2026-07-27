@@ -15,6 +15,7 @@ import { formatJobFields } from "@/lib/utils/formatters";
    GENERATE PREVIEWS
 ----------------------------------------------------------- */
 export async function generatePreviews(jobId: string) {
+
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     include: { company: true, documents: true },
@@ -28,20 +29,23 @@ export async function generatePreviews(jobId: string) {
   for (const doc of job.documents) {
     try {
       if (!doc.templateSourcePath) {
-        console.log("⚠️ No templateSourcePath for document:", doc.id);
         continue;
       }
 
       // CLEAN PATH — remove accidental "templates/" prefix
-      const cleanSourcePath = doc.templateSourcePath.replace(/^templates\//, "");
-
+      const cleanSourcePath = doc.templateSourcePath
+        .replace(/^templates\//, "")
+        .replace(/\\/g, "/")
+        .split("/")
+        .map((segment) => segment.trim())
+        .join("/");
+      
       // 1. Download blank template
       const { data, error } = await supabaseServer.storage
         .from("templates")
         .download(cleanSourcePath);
 
       if (error || !data) {
-        console.log("❌ Failed to download template:", cleanSourcePath);
         continue;
       }
 
@@ -83,9 +87,6 @@ export async function generatePreviews(jobId: string) {
         desc_of_improv: job.company.descOfImprov ?? "",
       };
 
-      // console.log("=== GENERATE PREVIEWS ===");
-      // console.log("job.jobValue from DB:", job.jobValue);
-
       const jobData = {
         customer_name: job.customerName ?? "",
         customer_phone: job.customerPhone ?? "",
@@ -112,10 +113,6 @@ export async function generatePreviews(jobId: string) {
         job_number: job.jobNumber ?? "",
         desc_of_improv: job.description ?? "",
       };
-
-      // console.log("jobData.job_price:", jobData.job_price);
-      // console.log("Full jobData:", jobData);
-      
 
       // 4. Fill PDF
       const filled = await fillPdf({
@@ -274,6 +271,7 @@ export async function parseCustomerInfo(text: string) {
   // 3️⃣ Regex patterns
   const nameRegex = /^[A-Z][a-z]+[, ]+[A-Z][a-z]+/i;
   const phoneRegex = /\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}/;
+  const addressRegex = /^\d{3,5}\s+[A-Z0-9 .'-]+$/i;
   const cityStateZipRegex = /([A-Z\s]+),?\s*([A-Z]{2})\s*(\d{5})/;
   const folioRegex = /\b\d{4,}[-]?\d*\b/;
   const subdivisionRegex = /(SU|Subdivision|Quinnstreet)/i;
@@ -285,7 +283,7 @@ export async function parseCustomerInfo(text: string) {
     } else if (!result.phone && phoneRegex.test(line)) {
       const m = line.match(phoneRegex);
       if (m) result.phone = normalizePhone(m[0]);
-    } else if (!result.address && /\d{2,}\s+[A-Z0-9\s]+/i.test(line)) {
+    } else if (!result.address && addressRegex.test(line)) {
       result.address = cleanField(line);
     } else if (!result.city && cityStateZipRegex.test(line)) {
       const m = line.match(cityStateZipRegex);
@@ -443,17 +441,6 @@ export async function updateJobAction(formData: FormData) {
   const taxFolioNumber = formData.get("customer_tax_folio") as string | null;
   const rawPrice = formData.get("job_price") as string | null;
 
-  // console.log("=== UPDATE JOB ACTION ===");
-  // console.log("rawPrice:", rawPrice);
-  /* console.log(
-    "rawPrice stripped:",
-    rawPrice
-      ?.replace(/\$/g, "")
-      .replace(/\s/g, "")
-      .replace(/,/g, "")
-    ); 
-  */
-
   const jobValue = rawPrice
     ? Number(
       rawPrice
@@ -463,14 +450,9 @@ export async function updateJobAction(formData: FormData) {
     )
   : 0;
 
-  // console.log("Computed jobValue:", jobValue);
-
   // ALWAYS use user-entered description
   const description =
     (formData.get("desc_of_improvement") as string | null)?.trim() ?? "";
-
-  // console.log("Final jobValue passed to Prisma (UPDATE):", jobValue);
-  // console.log("Formatted fields (UPDATE):", formatted);
 
   await prisma.job.update({
     where: { id: targetId },
@@ -647,6 +629,7 @@ export async function deleteJobAction(jobId: string) {
    CREATE JOB (FULL SAVE)
 ----------------------------------------------------------- */
 export async function createJobAction(formData: FormData) {
+
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
@@ -663,17 +646,6 @@ export async function createJobAction(formData: FormData) {
 
   const rawPrice = formData.get("job_price") as string | null;
 
-  /* console.log("=== CREATE JOB ACTION ===");
-  console.log("rawPrice:", rawPrice);
-  console.log(
-    "rawPrice stripped:",
-    rawPrice
-      ?.replace(/\$/g, "")
-      .replace(/\s/g, "")
-      .replace(/,/g, "")
-  );
-  */
-
   const jobValue = rawPrice
     ? Number(
       rawPrice
@@ -682,8 +654,6 @@ export async function createJobAction(formData: FormData) {
         .replace(/,/g, "")
     )
   : 0;
-
-  // console.log("Computed jobValue (CREATE):", jobValue);
 
   // Otherwise create a new job (first save)
   const raw = {
@@ -722,9 +692,6 @@ export async function createJobAction(formData: FormData) {
   });
 
   const nextJobNumber = lastJob ? lastJob.jobNumber + 1 : 1;
-
-  // console.log("Final jobValue passed to Prisma (CREATE):", jobValue);
-  // console.log("Formatted fields (CREATE):", formatted);
 
   // Create new job
   const job = await prisma.job.create({

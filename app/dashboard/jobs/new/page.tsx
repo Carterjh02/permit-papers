@@ -12,36 +12,37 @@ import {
   removeTemplateAction,
 } from "../serverActions";
 
-import { supabaseServer } from "@/lib/supabaseServer";
+export async function onTestPA(jobId: string, input: {
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  folio?: string;
+  subdivision?: string;
+  county?: string;
+}) {
+  "use server";
 
-/* -----------------------------------------------------------
-   IMPURE CODE MUST LIVE OUTSIDE THE COMPONENT
------------------------------------------------------------ */
-async function cleanupOldTempJobs(companyId: string) {
-  // ⭐ Allowed here — module-level async function
-  const cutoff = new Date(Date.now() - 20 * 60 * 1000);
+  const { runPropertyAppraiserSearch } = await import(
+    "@/lib/propertyAppraiser/index"
+  );
 
-  const oldTempJobs = await prisma.job.findMany({
-    where: {
-      companyId,
-      createdAt: { lt: cutoff },
-    },
+  const result = await runPropertyAppraiserSearch({
+    jobId,
+    address: input.address ?? "",
+    city: input.city ?? "",
+    state: input.state ?? "",
+    zip: input.zip ?? "",
+    folio: input.folio ?? "",
+    subdivision: input.subdivision ?? "",
+    county: input.county ?? "",
   });
 
-  for (const job of oldTempJobs) {
-    await prisma.job.delete({
-      where: { id: job.id },
-    });
-
-    await supabaseServer.storage
-      .from("jobs")
-      .remove([`${job.companyId}/${job.jobNumber}`]);
-  }
+  return result;
 }
 
 export default async function NewJobPage() {
   const session = await getServerSession(authOptions);
-  console.log("🔵 [NewJobPage] session from server:", session);
   if (!session) redirect("/login");
 
   const user = session.user;
@@ -53,12 +54,7 @@ export default async function NewJobPage() {
   }
 
   /* -----------------------------------------------------------
-     CLEANUP — now safe, no ESLint errors
------------------------------------------------------------ */
-  await cleanupOldTempJobs(companyId);
-
-  /* -----------------------------------------------------------
-     Continue normal New Job page load
+    New Job page load
 ----------------------------------------------------------- */
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -90,15 +86,18 @@ export default async function NewJobPage() {
         }}
         onAddTemplate={async (paths) => {
           "use server";
+        
           const job = await prisma.job.findFirst({
             where: { companyId, createdBy: user.username },
             orderBy: { createdAt: "desc" },
           });
+        
           if (!job) return;
+        
           for (const p of paths) {
             await addTemplateAction(job.id, p);
           }
-        }}
+        }}     
         onRemoveTemplate={async (jobDocumentId) => {
           "use server";
           await removeTemplateAction(jobDocumentId);
@@ -115,6 +114,36 @@ export default async function NewJobPage() {
             ocrText: result.ocrText,
             parsed: result.parsed,
           };
+        }}
+
+        onTestPA={async (
+          jobId: string,
+          input: {
+            address?: string;
+            city?: string;
+            state?: string;
+            zip?: string;
+            folio?: string;
+            subdivision?: string;
+            county?: string;
+          }
+        ) => {
+          "use server";
+        
+          const { runPropertyAppraiserSearch } = await import(
+            "@/lib/propertyAppraiser/index"
+          );
+        
+          return await runPropertyAppraiserSearch({
+            jobId,
+            address: input.address ?? "",
+            city: input.city ?? "",
+            state: input.state ?? "",
+            zip: input.zip ?? "",
+            folio: input.folio ?? "",
+            subdivision: input.subdivision ?? "",
+            county: input.county ?? "",
+          });
         }}
       />
     </div>

@@ -31,18 +31,6 @@ if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
 
 const filePath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
 
-  /* DEBUG LOGS
-  console.log("companyCode:", companyCode);
-  console.log("safeCompany:", safeCompany);
-  console.log("jobNumber:", jobNumber);
-  console.log("safeJobNumber:", safeJobNumber);
-  console.log("documentName:", documentName);
-  console.log("safeDocumentName:", safeDocumentName);
-  console.log("filePath:", filePath);
-  console.log("pdfBytes length:", pdfBytes?.length);
-  console.log("Bucket: companies");
-  */
-
   // Upload (overwrite enabled)
   const { error: uploadError } = await supabaseServer.storage
     .from("companies")

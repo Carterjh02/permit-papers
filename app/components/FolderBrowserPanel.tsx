@@ -375,8 +375,8 @@ export default function FolderBrowserPanel({
             expandedPaths={expandedPaths}
             selectedFiles={selectedFiles}
             onToggleFile={toggleFileSelection}
-            onSelectFolder={(path: string) => {
-            setCurrentPath(path);
+            onSelectFolder={(path) => {
+              setCurrentPath(path);   // RAW path only
             }}
           />
         )}

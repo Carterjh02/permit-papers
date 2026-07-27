@@ -9,7 +9,10 @@ import { supabaseServer } from "@/lib/supabaseServer";
 
 async function listFolder(path: string) {
   const clean = path.replace(/\/$/, "");
-  const prefix = clean === "" ? "" : clean + "/";
+  const prefix =
+  clean === ""
+    ? "templates/"
+    : `templates/${clean}/`;
 
   const { data, error } = await supabaseServer.storage
     .from("templates")

@@ -62,7 +62,7 @@ export default function NewTemplatePage() {
       {showBrowser && (
         <FolderBrowserPanel
           mode="master"
-          initialPath={""}   // ⭐ open at root of templates bucket
+          initialPath={""}   // open at root of templates bucket
           onClose={() => setShowBrowser(false)}
           onSelectFile={() => {}}
           onUploadComplete={handleUploadComplete}
