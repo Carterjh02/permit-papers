@@ -9,8 +9,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
-        <ToastProvider>{children}</ToastProvider>
+      <body className="text-gray-800 min-h-screen bg-gray-50">
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

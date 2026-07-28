@@ -2,8 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div className="home-container">
-
+    <main className="public-main home-container">
       {/* HERO */}
       <section className="hero">
         <div className="hero-content">
@@ -49,6 +48,16 @@ export default function HomePage() {
             <h3>Secure Storage</h3>
             <p>Your documents are encrypted, backed by enterprise‑grade infrastructure, and protected by role‑based access controls.</p>
           </div>
+
+          <div className="feature-card">
+            <h3>Company Profiles</h3>
+            <p>Save company and contractor details for instant reuse across multiple jobs and permit types.</p>
+          </div>
+
+          <div className="feature-card">
+            <h3>Auto‑Fill Forms</h3>
+            <p>Automatically populate permit forms with stored data to eliminate repetitive entry.</p>
+          </div>
         </div>
       </section>
 
@@ -90,6 +99,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
   );
 }
