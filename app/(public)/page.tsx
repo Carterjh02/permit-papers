@@ -25,41 +25,51 @@ export default function HomePage() {
       </section>
 
       {/* FEATURES */}
-      <section className="features">
-        <h2 className="section-title">What Permit Papers Can Do</h2>
+<section className="features">
+  <h2 className="section-title">What Permit Papers Can Do</h2>
 
-        <div className="feature-grid">
-          <div className="feature-card">
-            <h3>Job Dashboard</h3>
-            <p>View and manage all active jobs in one place — organized by customer, contractor, and permit type.</p>
-          </div>
+  <div className="feature-grid">
+    <div className="feature-card">
+      <h3>Job Dashboard</h3>
+      <p>View and manage all active jobs in one place — organized by customer, contractor, and permit type.</p>
+    </div>
 
-          <div className="feature-card">
-            <h3>Smart Data Entry</h3>
-            <p>Auto‑fill customer and contractor information to save time and reduce errors.</p>
-          </div>
+    <div className="feature-card">
+      <h3>Smart Data Entry</h3>
+      <p>Auto‑fill customer and contractor information to save time and reduce errors.</p>
+    </div>
 
-          <div className="feature-card">
-            <h3>PDF Generation</h3>
-            <p>Generate complete permit packets with one click — fast, accurate, and ready for submission.</p>
-          </div>
+    <div className="feature-card">
+      <h3>PDF Generation</h3>
+      <p>Generate complete permit packets with one click — fast, accurate, and ready for submission.</p>
+    </div>
 
-          <div className="feature-card">
-            <h3>Secure Storage</h3>
-            <p>Your documents are encrypted, backed by enterprise‑grade infrastructure, and protected by role‑based access controls.</p>
-          </div>
+    <div className="feature-card">
+      <h3>Secure Storage</h3>
+      <p>Your documents are encrypted, backed by enterprise‑grade infrastructure, and protected by role‑based access controls.</p>
+    </div>
 
-          <div className="feature-card">
-            <h3>Company Profiles</h3>
-            <p>Save company and contractor details for instant reuse across multiple jobs and permit types.</p>
-          </div>
+    <div className="feature-card">
+      <h3>Company Profiles</h3>
+      <p>Save company details once and reuse them across multiple jobs for faster setup.</p>
+    </div>
 
-          <div className="feature-card">
-            <h3>Auto‑Fill Forms</h3>
-            <p>Automatically populate permit forms with stored data to eliminate repetitive entry.</p>
-          </div>
-        </div>
-      </section>
+    <div className="feature-card">
+      <h3>Permit Tracking</h3>
+      <p>Track submission progress and receive updates when permits are approved or require attention.</p>
+    </div>
+
+    <div className="feature-card">
+      <h3>Notifications</h3>
+      <p>Stay informed with automatic alerts for job updates, expirations, and new permit requirements.</p>
+    </div>
+
+    <div className="feature-card">
+      <h3>Template Management</h3>
+      <p>Organize and maintain your permit templates for different counties and job types.</p>
+    </div>
+  </div>
+  </section>
 
       {/* HOW IT WORKS */}
       <section className="how-it-works">
