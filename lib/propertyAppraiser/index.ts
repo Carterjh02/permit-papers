@@ -48,14 +48,18 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
   }
 
   let screenshot: Buffer;
+  let html: string | undefined;
 
   switch (county) {
     case "broward":
       screenshot = await searchBroward(input.address);
       break;
-    case "palmBeach":
-      screenshot = await searchPalmBeach(input.address);
-      break;
+      case "palmBeach": {
+        const result = await searchPalmBeach(input.address);
+        screenshot = result.screenshot;
+        html = result.html; // ✅ capture HTML for parser
+        break;
+      }
     case "saintLucie":
       screenshot = await searchSaintLucie(input.address);
       break;
@@ -105,7 +109,10 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
     console.error("❌ [PA] OCR returned empty text");
   }
 
-  const parsed = parsePAData(ocrText, county);
+  const parsed =
+  county === "palmBeach"
+    ? parsePAData(html!, county) // ✅ use HTML for Palm Beach
+    : parsePAData(ocrText, county);
 
   console.log("🔵 [PA] PARSED DATA:", parsed);
 

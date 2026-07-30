@@ -9,11 +9,8 @@ import { supabaseServer } from "@/lib/supabaseServer";
 
 async function listFolder(path: string) {
   const clean = path.replace(/\/$/, "");
-  const prefix =
-  clean === ""
-    ? "templates/"
-    : `templates/${clean}/`;
-
+  const prefix = clean === "" ? "" : clean + "/";
+ 
   const { data, error } = await supabaseServer.storage
     .from("templates")
     .list(prefix, { limit: 1000 });
@@ -46,17 +43,18 @@ async function listFolder(path: string) {
 /* ---------------- BUILD TREE ---------------- */
 
 async function buildTree(path: string): Promise<FolderNode> {
+  const clean = path.replace(/\/+$/, "");
   const { folders, files } = await listFolder(path);
 
   const children = await Promise.all(
     folders.map((f) =>
-      buildTree(path === "" ? f.name : `${path}/${f.name}`)
+      buildTree(path === "" ? f.name : `${clean}/${f.name}`)
     )
   );
 
   return {
-    name: path === "" ? "templates" : path.split("/").pop()!,
-    fullPath: path === '' ? "templates" :path,
+    name: clean === "" ? "Templates" : clean.split("/").pop()!,
+    fullPath: clean,
     folders: children,
     files,
   };
@@ -80,7 +78,7 @@ export default async function MasterTemplatesPage() {
       {/* Client wrapper handles navigation + interactivity */}
       <TreeWrapper
         root={root}
-        expandedPaths={new Set(["", "templates"])}
+        expandedPaths={new Set([""])}
       />
     </div>
   );

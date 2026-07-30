@@ -90,47 +90,49 @@ export default function FolderBrowserPanel({
   ----------------------------------------------------------- */
   const load = useCallback(async () => {
     setLoading(true);
-
+  
     try {
-      const clean = currentPath.replace(/\/+$/, "");
-      const parts = clean ? clean.split("/").filter(Boolean) : [];
+      const cleanCurrent = currentPath.replace(/\/+$/, "");
+  
+      // Breadcrumbs for current root
+      const parts = cleanCurrent ? cleanCurrent.split("/").filter(Boolean) : [];
       setBreadcrumbs(parts);
-
-      const root = await buildTree(clean);
+  
+      // Build subtree from the current folder
+      const root = await buildTree(currentPath);
       setTree(root);
-
-      /* -----------------------------------------------------------
-         FIXED — use helper extractCountiesFromTree
-      ----------------------------------------------------------- */
+  
+      // Counties + cities from full subtree
       const detectedCounties = extractCountiesFromTree(root);
       setCounties(detectedCounties);
-
-      /* -----------------------------------------------------------
-         use helper extractCitiesFromTree
-      ----------------------------------------------------------- */
+  
       if (selectedCounty) {
-      const detectedCities = extractCitiesFromTree(root, selectedCounty);
-       setCities(detectedCities);
-      }   
-
-      /* -----------------------------------------------------------
-         FilterTree destructuring
-      ----------------------------------------------------------- */
-      // Always reapply filters after tree rebuild
-      const { mergedTree, expandedPaths } = filterTree(
-        root,
-        selectedCounty,
-        selectedCity
-      );
-
-      expandedPaths.add("");
-      
-      setFilteredTree(mergedTree);
-      setExpandedPaths(expandedPaths);         
+        const detectedCities = extractCitiesFromTree(root, selectedCounty);
+        setCities(detectedCities);
+      }
+  
+      // If NO filters are active, show raw subtree
+      if (!selectedCounty && !selectedCity) {
+        setFilteredTree(root);
+        setExpandedPaths(new Set([cleanCurrent]));
+      } else {
+        // Otherwise, apply filterTree
+        const { mergedTree, expandedPaths } = filterTree(
+          root,
+          selectedCounty,
+          selectedCity
+        );
+  
+        // Always expand the current folder (new root)
+        expandedPaths.add(cleanCurrent);
+  
+        setFilteredTree(mergedTree);
+        setExpandedPaths(expandedPaths);
+      }
     } catch (err) {
       console.error("Folder load error:", err);
     }
-
+  
     setLoading(false);
   }, [currentPath, selectedCounty, selectedCity]);
 
@@ -321,18 +323,19 @@ export default function FolderBrowserPanel({
             {/* CLEAR FILTER */}
             <button
               onClick={() => {
-              setSelectedCounty("");
-              setSelectedCity("");
+                setSelectedCounty("");
+                setSelectedCity("");
 
-              if (tree) {
-                setFilteredTree(tree);        // restore full tree
-                setExpandedPaths(new Set([""])); // keep root expanded
-              }
-            }}
-          className="btn btn-outline btn-sm"
+                 if (tree) {
+                  const cleanCurrent = currentPath.replace(/\/+$/, "");
+                  setFilteredTree(tree);                     // subtree rooted at currentPath
+                  setExpandedPaths(new Set([cleanCurrent])); // expand current root
+                }
+              }}
+              className="btn btn-outline btn-sm"
             >
-            Clear Filter
-          </button>
+              Clear Filter
+            </button>
         </div>
 
         {/* BREADCRUMBS */}
@@ -349,12 +352,10 @@ export default function FolderBrowserPanel({
               <span className="mx-1 text-gray-400">/</span>
 
               <button
-                onClick={() => {
-                  const newPath = breadcrumbs
-                    .slice(0, i + 1)
-                    .join("/")
-                    .replace(/\/+$/, "");
+                onClick={async () => {
+                  const newPath = breadcrumbs.slice(0, i + 1).join("/").replace(/\/+$/, "");
                   setCurrentPath(newPath);
+                  await load();
                 }}
                 className="text-blue-600 hover:underline"
               >
@@ -376,7 +377,7 @@ export default function FolderBrowserPanel({
             selectedFiles={selectedFiles}
             onToggleFile={toggleFileSelection}
             onSelectFolder={(path) => {
-              setCurrentPath(path);   // RAW path only
+              setCurrentPath(path);
             }}
           />
         )}

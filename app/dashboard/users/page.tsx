@@ -37,7 +37,6 @@ export default async function AdminUsersPage({
   const dir = searchParams?.dir ?? "asc";
   const page = Math.max(1, Number(searchParams?.page ?? "1"));
 
-  // Explicit type instead of "any"
   const where: {
     companyId?: string | null;
     OR?: Array<{
@@ -70,13 +69,7 @@ export default async function AdminUsersPage({
     prisma.user.count({ where }),
   ]);
 
-  // Explicit type for map callback
-  const typedUsers: Array<{
-    id: string;
-    username: string;
-    email: string | null;
-    createdAt: Date | null;
-  }> = users;
+  const typedUsers = users;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

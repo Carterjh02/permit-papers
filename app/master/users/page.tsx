@@ -5,33 +5,80 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { SortControls } from "@/app/components/SortControls";
+import { SearchBar } from "@/app/components/SearchBar";
+import { FilterPanel } from "@/app/components/FilterPanel";
 import type { User, Company } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 interface PageProps {
   searchParams: Promise<{
+    q?: string;
+    sort?: "company" | "username" | "createdAt";
+    dir?: "asc" | "desc";
     page?: string;
   }>;
 }
 
 const PAGE_SIZE = 20;
 
-export default async function MasterUsersPage({ searchParams: searchParamsPromise }: PageProps) {
+export default async function MasterUsersPage({
+  searchParams: searchParamsPromise,
+}: PageProps) {
   const searchParams = await searchParamsPromise;
 
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
   if (session.user.role !== "master") redirect("/dashboard");
 
+  const q = searchParams?.q?.trim() ?? "";
+  const sort = searchParams?.sort ?? "createdAt";
+  const dir = searchParams?.dir ?? "desc";
   const page = Math.max(1, Number(searchParams?.page ?? "1"));
+
+  const where: Prisma.UserWhereInput = q
+  ? {
+      OR: [
+        {
+          username: {
+            contains: q,
+            mode: "insensitive",
+          },
+        },
+        {
+          email: {
+            contains: q,
+            mode: "insensitive",
+          },
+        },
+        {
+          company: {
+            name: {
+              contains: q,
+              mode: "insensitive",
+            },
+          },
+        },
+      ],
+    }
+  : {};
+
+  const orderBy =
+    sort === "company"
+      ? { company: { name: dir } }
+      : sort === "username"
+      ? { username: dir }
+      : { createdAt: dir };
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
+      where,
       include: { company: true },
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    prisma.user.count(),
+    prisma.user.count({ where }),
   ]);
 
   const typedUsers: (User & { company: Company | null })[] = users;
@@ -46,6 +93,20 @@ export default async function MasterUsersPage({ searchParams: searchParamsPromis
           New User
         </Link>
       </div>
+
+      <FilterPanel>
+        <SearchBar defaultValue={q} placeholder="Search users or companies..." />
+
+        <SortControls
+          sortValue={sort}
+          dirValue={dir}
+          options={[
+            { value: "company", label: "Company" },
+            { value: "username", label: "Username" },
+            { value: "createdAt", label: "Created At" },
+          ]}
+        />
+      </FilterPanel>
 
       <div className="card p-4 overflow-x-auto">
         <table className="min-w-full text-sm">

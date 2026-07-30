@@ -5,6 +5,7 @@ import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
 import Image from "next/image";
 import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
+import { detectCounty } from "@/lib/propertyAppraiser/detectCounty";
 
 /* ---------------------------------------------------------
    EditableField
@@ -18,7 +19,6 @@ type JobFormState = {
   customer_address_city: string;
   customer_address_state: string;
   customer_address_zip: string;
-  subdivision: string;
   customer_tax_folio: string;
   legal_description: string;
 };
@@ -93,7 +93,6 @@ interface JobFormClientProps {
     customerState?: string | null;
     customerZip?: string | null;
     legalDescription?: string | null;
-    subdivision?: string | null;
     taxFolioNumber?: string | null;
     jobValue?: number | null;
     description?: string | null;
@@ -128,7 +127,6 @@ interface JobFormClientProps {
       state?: string;
       zip?: string;
       folio?: string;
-      subdivision?: string;
     };
   }>;
   onTestPA: (
@@ -149,7 +147,6 @@ interface PaSearchPayload {
   state?: string;
   zip?: string;
   folio?: string;
-  subdivision?: string;
   county?: string;
 }
 
@@ -286,24 +283,21 @@ export default function JobFormClient({
     state?: string;
     zip?: string;
     folio?: string;
-    subdivision?: string;
   } | null>(null);
   const [snippetExtraFields, setSnippetExtraFields] = useState({
     phone: "",
     email: "",
-    subdivision: "",
   });  
   const [showOcrModal, setShowOcrModal] = useState(false);
   const [form, setForm] = useState({
     customer_name: initialJob?.customerName ?? "",
     customer_phone: initialJob?.customerPhone ?? "",
     customer_email: initialJob?.customerEmail ?? "",
-    customer_address_full: initialJob?.customerAddress ?? "",
-    customer_address_street: "",
+    customer_address_street: initialJob?.customerAddress ?? "",
+    customer_address_full: "",
     customer_address_city: initialJob?.customerCity ?? "",
     customer_address_state: initialJob?.customerState ?? "",
     customer_address_zip: initialJob?.customerZip ?? "",
-    subdivision: initialJob?.subdivision ?? "",
     customer_tax_folio: initialJob?.taxFolioNumber ?? "",
     legal_description: initialJob?.legalDescription ?? "",
   });
@@ -401,24 +395,54 @@ export default function JobFormClient({
 const applyOcrToForm = () => {
   if (!ocrParsed) return;
 
-  setForm((prev) => ({
-    ...prev,
-    customer_name: prev.customer_name || ocrParsed.name || "",
-    customer_phone: prev.customer_phone || ocrParsed.phone || "",
-    customer_address_street:
-      prev.customer_address_street ||
-      prev.customer_address_full ||      // edited modal value
-      ocrParsed.address ||               // parsed full address
-      "",
-    customer_address_city:
-      prev.customer_address_city || ocrParsed.city || "",
-    customer_address_state:
-      prev.customer_address_state || ocrParsed.state || "",
-    customer_address_zip:
-      prev.customer_address_zip || ocrParsed.zip || "",
-    subdivision: prev.subdivision || ocrParsed.subdivision || "",
-    customer_tax_folio: prev.customer_tax_folio || ocrParsed.folio || "",
-  }));
+  setForm((prev) => {
+    const updated = { ...prev };
+
+    const applyField = (name: keyof typeof prev, ocrValue?: string) => {
+      const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="${name}"]`
+      );
+
+      const prevValue = prev[name] ?? "";
+      const userTyped = el?.value ?? "";
+      const trimmedUser = userTyped.trim();
+      const trimmedPrev = String(prevValue).trim();
+      const trimmedOcr = (ocrValue ?? "").trim();
+
+      // Hierarchy:
+      // 1. EditableField (userTyped different from prevValue and non-empty)
+      // 2. OCR value (ocrValue)
+      // 3. Previous form value (prevValue)
+      if (trimmedUser !== "" && trimmedUser !== trimmedPrev) {
+        // User edited this field in the modal → keep it
+        updated[name] = userTyped;
+      } else if (trimmedOcr !== "") {
+        // No user edit → use OCR value
+        updated[name] = ocrValue as string;
+      } else {
+        // No OCR value → keep previous form value
+        updated[name] = prevValue;
+      }
+    };
+
+    // Name & phone
+    applyField("customer_name", ocrParsed.name);
+    applyField("customer_phone", ocrParsed.phone);
+
+    // Address fields — use correct field names
+    applyField("customer_address_street", ocrParsed.address);
+    applyField("customer_address_city", ocrParsed.city);
+    applyField("customer_address_state", ocrParsed.state);
+    applyField("customer_address_zip", ocrParsed.zip);
+
+    // Subdivision: do NOT OCR this anymore
+    // applyField("subdivision", ocrParsed.subdivision);
+
+    // Tax/folio
+    applyField("customer_tax_folio", ocrParsed.folio);
+
+    return updated;
+  });
 
   setShowOcrModal(false);
 };
@@ -483,13 +507,6 @@ return (
               setForm={setForm}
             />
             <EditableField
-              label="Subdivision"
-              ocrValue={ocrParsed.subdivision}
-              name="subdivision"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
               label="Folio"
               ocrValue={ocrParsed.folio}
               name="customer_tax_folio"
@@ -508,7 +525,7 @@ return (
 
 {/* NEW BUTTON — Run PA Search */}
 <button
-  className="btn btn-outline"
+  className="btn btn-primary"
   onClick={async () => {
     if (!ocrParsed) return;
 
@@ -516,19 +533,23 @@ return (
     setSnippetExtraFields({
       phone: ocrParsed.phone ?? "",
       email: ocrParsed.email ?? "",
-      subdivision: ocrParsed.subdivision ?? "",
     });
 
     const id = await ensureJobExists();
+
+    const county = detectCounty({
+      address: ocrParsed.address ?? "",
+      city: ocrParsed.city ?? "",
+      state: ocrParsed.state ?? "",
+      zip: ocrParsed.zip ?? "",
+    }) ?? undefined;
 
     const result = await onTestPA(id, {
       address: ocrParsed.address ?? "",
       city: ocrParsed.city ?? "",
       state: ocrParsed.state ?? "FL",
       zip: ocrParsed.zip ?? "",
-      folio: ocrParsed.folio ?? "",
-      subdivision: ocrParsed.subdivision ?? "",
-      county: "broward",
+      county,
     });
 
     setPaResult(result.parsed);
@@ -610,16 +631,6 @@ return (
           }
           placeholder="ZIP"
         />
-
-        <input
-          id="pa_folio"
-          className="input input-bordered w-full"
-          value={paSearchPayload?.folio ?? ""}
-          onChange={(e) =>
-            setPaSearchPayload((prev) => ({ ...prev, folio: e.target.value }))
-          }
-          placeholder="Folio / Parcel Number"
-        />
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
@@ -640,7 +651,6 @@ return (
               state,
               zip,
               folio,
-              subdivision,
               county,
             } = paSearchPayload ?? {};
 
@@ -658,7 +668,6 @@ return (
               state,
               zip,
               folio,
-              subdivision,
               county,
             });
 
@@ -739,18 +748,16 @@ return (
         >
           Cancel
         </button>
-
         <button
           className="btn btn-primary"
           onClick={() => {
             applyPaToForm(paResult);
 
-            // Merge snippet-only fields (phone, email, subdivision)
+            // Overwrite with snippet-only fields when they exist
             setForm((prev) => ({
               ...prev,
-              customer_phone: prev.customer_phone || snippetExtraFields.phone || "",
-              customer_email: prev.customer_email || snippetExtraFields.email || "",
-              subdivision: prev.subdivision || snippetExtraFields.subdivision || "",
+              customer_phone: snippetExtraFields.phone ?? prev.customer_phone,
+              customer_email: snippetExtraFields.email ?? prev.customer_email,
             }));
 
             setShowPaConfirm(false);
@@ -940,7 +947,13 @@ return (
               <input
                 name="customer_email"
                 className="input input-bordered"
-                defaultValue={initialJob?.customerEmail ?? ""}
+                value={form.customer_email}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_email: e.target.value,
+                  }))
+                }
               />
             </div>
           </div>
@@ -952,12 +965,18 @@ return (
         <div className="space-y-4 border-t pt-4">
           <h3 className="text-md font-semibold">Property Location</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Street Address</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Street Address</label>
               <input
                 name="customer_address_street"
                 className="input input-bordered"
-                defaultValue={form.customer_address_street ?? ""}
+                value={form.customer_address_street}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    customer_address_street: e.target.value,
+                  }))
+                }
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -998,20 +1017,6 @@ return (
                   setForm((prev) => ({
                     ...prev,
                     customer_address_zip: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Subdivision</label>
-              <input
-                name="subdivision"
-                className="input input-bordered"
-                value={form.subdivision}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    subdivision: e.target.value,
                   }))
                 }
               />

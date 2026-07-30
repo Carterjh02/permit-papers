@@ -1,6 +1,6 @@
 export const countySearchUrls = {
     broward: "https://web.bcpa.net/BcpaClient/#/Record-Search",
-    palmBeach: "https://www.pbcgov.com/papa/",
+    palmBeach: "https://pbcpao.gov/index.htm",
     saintLucie: "https://www.pa.stlucieco.gov/",
     // add more counties here
   };
