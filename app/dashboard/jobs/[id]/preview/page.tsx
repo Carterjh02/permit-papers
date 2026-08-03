@@ -19,9 +19,20 @@ export default async function JobPreviewPage({ params }: PageProps) {
   const job = await prisma.job.findUnique({
     where: { id },
     include: {
-      company: true,
-      documents: true,
-    },
+      documents: {
+        select: {
+          id: true,
+          createdAt: true,
+          jobId: true,
+          templateId: true,
+          templateName: true,
+          templatePath: true,
+          templateSourcePath: true,
+          templateOutputPath: true,
+          templateSignedUrl: true,   // ⭐ REQUIRED
+        },
+      },
+    }
   });
 
   if (!job) notFound();
