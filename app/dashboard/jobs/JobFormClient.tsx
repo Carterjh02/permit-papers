@@ -84,6 +84,7 @@ type JobFormMode = "create" | "edit";
 interface JobFormClientProps {
   mode: JobFormMode;
   jobId?: string;
+  companyCode: string;
   initialJob?: {
     customerName?: string | null;
     customerPhone?: string | null;
@@ -97,6 +98,7 @@ interface JobFormClientProps {
     jobValue?: number | null;
     description?: string | null;
     snippetPath?: string | null;
+    snippetSignedUrl?: string | null;
     companyId?: string;
     createdBy?: string;
   };
@@ -116,7 +118,7 @@ interface JobFormClientProps {
     jobId: string,
     file: File
   ) => Promise<{
-    publicUrl: string;
+    publicUrl?: string | null;
     ocrText?: string;
     parsed?: {
       name?: string;
@@ -153,6 +155,7 @@ interface PaSearchPayload {
 export default function JobFormClient({
   mode,
   jobId,
+  companyCode,
   initialJob,
   initialTemplates,
   onSave,
@@ -243,9 +246,7 @@ export default function JobFormClient({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [snippetUrl, setSnippetUrl] = useState<string | null>(
-    initialJob?.snippetPath
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${initialJob.snippetPath}`
-      : null
+    initialJob?.snippetSignedUrl ?? null
   );
 
   /* ---------------------------------------------------------
@@ -435,12 +436,6 @@ const applyOcrToForm = () => {
     applyField("customer_address_state", ocrParsed.state);
     applyField("customer_address_zip", ocrParsed.zip);
 
-    // Subdivision: do NOT OCR this anymore
-    // applyField("subdivision", ocrParsed.subdivision);
-
-    // Tax/folio
-    applyField("customer_tax_folio", ocrParsed.folio);
-
     return updated;
   });
 
@@ -503,13 +498,6 @@ return (
               label="ZIP"
               ocrValue={ocrParsed.zip}
               name="customer_address_zip"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="Folio"
-              ocrValue={ocrParsed.folio}
-              name="customer_tax_folio"
               form={form}
               setForm={setForm}
             />
@@ -722,13 +710,6 @@ return (
           label="ZIP Code"
           ocrValue={paResult.zip}
           name="customer_address_zip"
-          form={form}
-          setForm={setForm}
-        />
-        <EditableField
-          label="Tax/Folio Number"
-          ocrValue={paResult.folio}
-          name="customer_tax_folio"
           form={form}
           setForm={setForm}
         />
@@ -1140,7 +1121,8 @@ return (
       {showBrowser && (
         <FolderBrowserPanel
           mode="job"
-          initialPath=""
+          initialPath={`companies/${companyCode}/documents`}
+          companyCode={companyCode}
           onClose={() => setShowBrowser(false)}
           onSelectFile={(paths) => handleSelectTemplate(paths)}
         />

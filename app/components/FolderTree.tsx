@@ -31,6 +31,7 @@ type Variant = "admin" | "popup";
 interface FolderTreeProps {
   root: FolderNode;
   variant: Variant;
+  mode?: "job" | "master";
   expandedPaths?: Set<string>;
 
   // Selection is optional now
@@ -40,17 +41,21 @@ interface FolderTreeProps {
 
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
   onSelectFolder?: (path: string) => void;
+
+  currentPath?: string;
 }
 
 export default function FolderTree({
   root,
   variant,
+  mode,
   expandedPaths,
   selectedFiles,
   onToggleFile,
   disableSelection,
   deleteTemplateAction,
   onSelectFolder,
+  currentPath,
 }: FolderTreeProps) {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -213,6 +218,7 @@ export default function FolderTree({
         <FolderNodeView
           node={treeWithSelected}
           variant={variant}
+          mode={mode}
           isOpen={isOpen}
           toggle={toggle}
           deleteTemplateAction={deleteTemplateAction}
@@ -220,6 +226,7 @@ export default function FolderTree({
           selectedFiles={selectedFiles}
           onSelectFolder={onSelectFolder}
           disableSelection={disableSelection}
+          currentPath={currentPath}
         />
       </div>
     </div>
@@ -229,6 +236,7 @@ export default function FolderTree({
 function FolderNodeView({
   node,
   variant,
+  mode,
   isOpen,
   toggle,
   deleteTemplateAction,
@@ -236,9 +244,11 @@ function FolderNodeView({
   selectedFiles,
   onSelectFolder,
   disableSelection,
+  currentPath,
 }: {
   node: FolderNode;
   variant: Variant;
+  mode?: "job" | "master";
   isOpen: (path: string) => boolean;
   toggle: (path: string) => void;
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
@@ -246,6 +256,7 @@ function FolderNodeView({
   selectedFiles?: SupabaseFile[];
   onSelectFolder?: (path: string) => void;
   disableSelection?: boolean;
+  currentPath?: string;
 }) {
   const path = node.fullPath;
   const open = isOpen(path);
@@ -257,7 +268,11 @@ function FolderNodeView({
     <div className="space-y-2">
       {/* Folder Header */}
       {node.fullPath !== "__selected__" && (
-        <div className="flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-gray-50">
+        <div
+        className={`flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-gray-50 ${
+          onSelectFolder && path === currentPath ? "bg-blue-50 border-l-4 border-blue-600" : ""
+        }`}
+      >
           {/* Expand / collapse */}
           <button type="button" onClick={() => toggle(path)} className="p-1">
             {open ? (
@@ -271,13 +286,20 @@ function FolderNodeView({
           <button
             type="button"
             onClick={() => {
-              // Normalize folder path for master mode
+              if (mode === "job") {
+                // Prevent navigating above the company root
+                if (path === "companies") return;
+              }
               onSelectFolder?.(path);
             }}
             className="flex items-center gap-2 flex-1 text-left"
           >
-            <FolderIcon className="w-5 h-5 text-yellow-500" />
-            <span className="font-semibold">{node.name}</span>
+          <FolderIcon className="w-5 h-5 text-yellow-500" />
+            <span className="font-semibold">
+              {mode === "job" && node.name.toLowerCase() === "documents"
+                ? "Company Documents"
+                : node.name}
+              </span>
           </button>
 
           {/* Admin delete button */}
@@ -305,7 +327,6 @@ function FolderNodeView({
           {node.files.length > 0 && (
             <ul className="space-y-1">
               {node.files.map((f) => {
-                // Normalize file path for master mode (strip "templates/")
                 const normalizedFilePath = f.path
 
                  const selected = selectionEnabled
@@ -358,18 +379,21 @@ function FolderNodeView({
           {/* Child Folders */}
           {node.folders.length > 0 && (
             <div className="space-y-2">
-              {node.folders.map((child) => {
+              {node.folders
+                .filter((child) => {
+                  const n = child.name.toLowerCase();
+                  return n !== "jobs" && n !== "logos";   // ← NEW
+                })
+                .map((child) => {
                 // Normalize child folder fullPath for master mode
-                const normalizedChild = {
-                  ...child,
-                  fullPath: child.fullPath,
-                };
-
+                const normalizedChild = child;
+                
                 return (
                   <FolderNodeView
                     key={normalizedChild.fullPath}
                     node={normalizedChild}
                     variant={variant}
+                    mode={mode}
                     isOpen={isOpen}
                     toggle={toggle}
                     deleteTemplateAction={deleteTemplateAction}
@@ -377,6 +401,7 @@ function FolderNodeView({
                     selectedFiles={selectedFiles}
                     onSelectFolder={onSelectFolder}
                     disableSelection={disableSelection}
+                    currentPath={currentPath}
                   />
                 );
               })}

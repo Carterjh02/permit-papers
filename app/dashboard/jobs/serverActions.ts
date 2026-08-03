@@ -39,6 +39,17 @@ export async function generatePreviews(jobId: string) {
         .split("/")
         .map((segment) => segment.trim())
         .join("/");
+
+        console.log("🟦 generatePreviews() — attempting template download");
+        console.log("  doc.templateSourcePath:", doc.templateSourcePath);
+        console.log("  cleanSourcePath:", cleanSourcePath);
+        console.log("  bucket: templates");
+        console.log("  SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+        // Check if path still contains a bucket prefix
+        if (cleanSourcePath.startsWith("templates/") || cleanSourcePath.startsWith("companies/")) {
+          console.log("  ⚠️ WARNING: cleanSourcePath still contains a bucket prefix!");
+        }
       
       // 1. Download blank template
       const { data, error } = await supabaseServer.storage
@@ -141,10 +152,25 @@ export async function generatePreviews(jobId: string) {
         pdfBytes: filled,
       });
 
-      // 7. Update DB with correct path
+      // 6b. Generate signed URL for preview (1 hour expiration)
+      const { data: signedUrlData, error: signedUrlError } =
+        await supabaseServer.storage
+          .from("companies")
+          .createSignedUrl(outputPath, 60 * 60);
+      
+      if (signedUrlError) {
+        console.error("❌ Signed URL error:", signedUrlError);
+      }
+      
+      const signedUrl = signedUrlData?.signedUrl ?? null;
+      
+      // 7. Update DB with correct path + signed URL
       await prisma.jobDocument.update({
         where: { id: doc.id },
-        data: { templateOutputPath: outputPath },
+        data: {
+          templateOutputPath: outputPath,
+          templateSignedUrl: signedUrl,
+        },
       });
     } catch (err) {
       console.log("❌ ERROR IN PREVIEW GENERATION:", err);
@@ -313,17 +339,14 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   });
   if (!job) throw new Error("Job not found.");
 
-  // 0. Normalize MIME type (pasted images often have empty type)
   const mime =
     file.type && file.type.startsWith("image/") ? file.type : "image/png";
 
-  // 1. Convert file to buffer
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Always save as snippet.png
   const path = `${job.company.companyCode}/jobs/${job.jobNumber}/snippet.png`;
 
-  // 2. Upload snippet to Supabase
+  // Upload snippet
   const { error } = await supabaseServer.storage
     .from("companies")
     .upload(path, buffer, {
@@ -336,10 +359,21 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     throw new Error("Failed to upload snippet.");
   }
 
-  // 3. Download snippet for OCR
-  const { data: downloaded, error: downloadError } = await supabaseServer.storage
-    .from("companies")
-    .download(path);
+  // ⭐ Generate signed URL for snippet
+  const { data: signedUrlData, error: signedUrlError } =
+    await supabaseServer.storage
+      .from("companies")
+      .createSignedUrl(path, 60 * 60);
+
+  if (signedUrlError) {
+    console.error("❌ Signed URL error:", signedUrlError);
+  }
+
+  const snippetSignedUrl = signedUrlData?.signedUrl ?? null;
+
+  // Download for OCR
+  const { data: downloaded, error: downloadError } =
+    await supabaseServer.storage.from("companies").download(path);
 
   if (downloadError || !downloaded) {
     console.error("❌ Supabase download error:", downloadError);
@@ -348,7 +382,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
 
-  // 4. Run OCR
+  // OCR
   const vision = await import("@google-cloud/vision");
   const visionClient = new vision.ImageAnnotatorClient({
     credentials: {
@@ -361,14 +395,14 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
   const [result] = await visionClient.textDetection(downloadedBuffer);
   const fullText = result.fullTextAnnotation?.text ?? "";
 
-  // 5. Parse OCR text (using your updated strict parser)
   const parsed = await parseCustomerInfo(fullText);
 
-  // 6. Update job with parsed fields
+  // Update job with parsed fields + signed URL
   await prisma.job.update({
     where: { id: jobId },
     data: {
       snippetPath: path,
+      snippetSignedUrl,
 
       customerName: parsed.name ?? job.customerName,
       customerPhone: parsed.phone ?? job.customerPhone,
@@ -382,9 +416,8 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     },
   });
 
-  // 7. Return OCR text + parsed fields + public URL
   return {
-    publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/companies/${path}`,
+    signedUrl: snippetSignedUrl,
     ocrText: fullText,
     parsed,
   };

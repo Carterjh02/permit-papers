@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { prisma } from "@/lib/prisma";
-import { extractPdfFieldNames } from "@/lib/pdf/fieldExtractor";
+import { extractPdfFields } from "@/lib/pdf/extractFields";
 import { autoMapFields } from "@/lib/mapping/autoMapping";
 
 export async function POST(req: Request) {
@@ -17,15 +17,19 @@ export async function POST(req: Request) {
       );
     }
 
+    // Convert File → Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // Storage path
     const filePath = `forms/${Date.now()}-${file.name}`;
 
+    // Upload using service role
     const { error: uploadError } = await supabaseServer.storage
       .from("forms")
       .upload(filePath, buffer, {
         contentType: "application/pdf",
+        upsert: true,
       });
 
     if (uploadError) {
@@ -36,9 +40,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const fieldNames = await extractPdfFieldNames(buffer);
+    // Extract fields using NEW extractor
+    const fieldNames = await extractPdfFields("forms", filePath);
 
-    // Add required fields
+    // Save template
     const template = await prisma.formTemplate.create({
       data: {
         name,

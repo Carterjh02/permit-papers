@@ -16,29 +16,88 @@ export interface FolderListing {
   files: FileItem[];
 }
 
-export async function listFolder(path: string): Promise<FolderListing> {
+/**
+ * Unified folder listing for both templates and companies buckets.
+ * - Templates bucket: behaves exactly as before.
+ * - Companies bucket: folders may have metadata objects, so detection differs.
+ */
+export async function listFolder(
+  bucket: "templates" | "companies",
+  path: string
+): Promise<FolderListing> {
   const clean = path.replace(/\/$/, "").replace(/\/+/g, "/");
   const prefix = clean === "" ? "" : clean + "/";
 
-  const { data, error } = await supabaseClient.storage
-    .from("templates")
-    .list(prefix, {
-      limit: 1000,
-      offset: 0,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let data: any[] = [];
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let error: any = null;
+  
+  if (bucket === "companies") {
+    // SERVER-SIDE LISTING VIA API ROUTE
+    const res = await fetch("/api/storage/list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bucket, path: clean }),
     });
-
-  if (error) {
-    console.error("Supabase list error:", error);
-    throw new Error("Failed to list folder");
+  
+    const json = await res.json();
+  
+    if (!res.ok) {
+      console.error("Companies list API error:", json.error);
+      throw new Error(`Failed to list companies folder: ${json.error}`);
+    }
+  
+    data = json.items;
+  } else {
+    // CLIENT-SIDE LISTING FOR TEMPLATES
+    const result = await supabaseClient.storage
+      .from(bucket)
+      .list(prefix, {
+        limit: 1000,
+        offset: 0,
+      });
+  
+      data = result.data ?? [];
+      error = result.error;
+  
+    if (error) {
+      console.error(`Supabase list error (${bucket}):`, error);
+      throw new Error(`Failed to list folder in ${bucket}`);
+    }
   }
+  
+  // DEBUG
+  console.log("LIST FOLDER DEBUG:", {
+    bucket,
+    path: clean,
+    prefix,
+    error,
+    dataLength: data?.length ?? 0,
+    rawData: data,
+  });
+  
 
   const folders: FolderItem[] = [];
   const files: FileItem[] = [];
 
   for (const item of data || []) {
-    if (item.name === ".keep") continue;
+    // Skip hidden dotfiles
+    if (item.name.startsWith(".")) continue;
 
-    if (item.metadata === null) {
+    // Companies-specific hidden folders
+    if (bucket === "companies" && item.metadata === null) {
+      if (item.name === "jobs" || item.name === "logos") continue;
+    }
+
+    // Companies bucket: folders may have metadata objects
+    const isFolder =
+      bucket === "companies"
+        ? !item.name.includes(".") // no dot = folder
+        : item.metadata === null;  // templates bucket logic
+
+    if (isFolder) {
       folders.push({ name: item.name, type: "folder" });
       continue;
     }
@@ -48,7 +107,7 @@ export async function listFolder(path: string): Promise<FolderListing> {
       type: "file",
       path: prefix + item.name,
     });
-  }
+  } // ← THIS was the missing brace
 
   folders.sort((a, b) => a.name.localeCompare(b.name));
   files.sort((a, b) => a.name.localeCompare(b.name));

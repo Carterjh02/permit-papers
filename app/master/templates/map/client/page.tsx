@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import TemplateMappingPageInner from "./TemplateMappingPageInner";
+import TemplateMappingPageInner from "../TemplateMappingPageInner";
 
 export default function TemplateMappingPage() {
   return (

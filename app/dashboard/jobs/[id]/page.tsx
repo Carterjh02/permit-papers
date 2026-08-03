@@ -126,6 +126,7 @@ export default async function JobEditPage({ params }: PageProps) {
       <JobFormClient
         mode="edit"
         jobId={job.id}
+        companyCode={job.company.companyCode}
         initialJob={initialJob}
         initialTemplates={initialTemplates}
         onSave={async (formData) => {
@@ -151,7 +152,7 @@ export default async function JobEditPage({ params }: PageProps) {
           "use server";
           const result = await uploadSnippetImmediately(jobId, file);
           return {
-            publicUrl: result.publicUrl,
+            publicUrl: result.signedUrl,
             ocrText: result.ocrText,
             parsed: result.parsed,
           };

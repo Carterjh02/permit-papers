@@ -13,6 +13,7 @@ import { filterTree } from "@/lib/filters/filterTree";
 interface FolderBrowserPanelProps {
   mode: "job" | "master";
   initialPath?: string;
+  companyCode?: string;
   onClose: () => void;
   onUploadComplete?: (path: string) => void;
 
@@ -21,24 +22,24 @@ interface FolderBrowserPanelProps {
 }
 
 /* -----------------------------------------------------------
-     BuildTree
+     BuildTree (bucket-aware)
 ----------------------------------------------------------- */
-async function buildTree(path: string): Promise<FolderNode> {
+async function buildTree(bucket: "templates" | "companies", path: string): Promise<FolderNode> {
   const clean = path.replace(/\/+$/, "");
 
-  const { folders, files } = await listFolder(clean);
+  const { folders, files } = await listFolder(bucket, clean);
 
   const visibleFolders = folders.filter((f) => !f.name.startsWith("."));
   const visibleFiles = files.filter((f) => !f.name.startsWith("."));
 
   const children = await Promise.all(
     visibleFolders.map((f) =>
-      buildTree(clean ? `${clean}/${f.name}` : f.name)
+      buildTree(bucket, clean ? `${clean}/${f.name}` : f.name)
     )
   );
 
   return {
-    name: clean ? clean.split("/").pop()! : "Templates",
+    name: clean ? clean.split("/").pop()! : bucket === "templates" ? "Templates" : "Companies",
     fullPath: clean,
     folders: children,
     files: visibleFiles,
@@ -48,15 +49,16 @@ async function buildTree(path: string): Promise<FolderNode> {
 export default function FolderBrowserPanel({
   mode,
   initialPath = "",
+  companyCode,
   onClose,
   onSelectFile,
   onUploadComplete,
 }: FolderBrowserPanelProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
-  const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
+  const [activeTree, setActiveTree] = useState<"root" | "templates" | "companies">("root");
   const [loading, setLoading] = useState(true);
 
-  const [tree, setTree] = useState<FolderNode | null>(null);
+  const [tree, setTree] = useState<{ templates: FolderNode; companies: FolderNode } | null>(null);
 
   /* -----------------------------------------------------------
      FILTER STATE 
@@ -67,7 +69,7 @@ export default function FolderBrowserPanel({
   const [counties, setCounties] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
 
-  const [filteredTree, setFilteredTree] = useState<FolderNode | null>(null);
+  const [filteredTree, setFilteredTree] = useState<{ templates: FolderNode; companies: FolderNode } | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
 
   /* -----------------------------------------------------------
@@ -90,51 +92,63 @@ export default function FolderBrowserPanel({
   ----------------------------------------------------------- */
   const load = useCallback(async () => {
     setLoading(true);
-  
+
     try {
-      const cleanCurrent = currentPath.replace(/\/+$/, "");
-  
-      // Breadcrumbs for current root
-      const parts = cleanCurrent ? cleanCurrent.split("/").filter(Boolean) : [];
-      setBreadcrumbs(parts);
-  
-      // Build subtree from the current folder
-      const root = await buildTree(currentPath);
-      setTree(root);
-  
-      // Counties + cities from full subtree
-      const detectedCounties = extractCountiesFromTree(root);
+      // Build Templates root (bucket: templates)
+      const templatesRoot = await buildTree("templates", "");
+      
+      // Build Companies root (bucket: companies)
+      const companiesRoot = await buildTree("companies", companyCode ? `${companyCode}/documents` : "");
+      
+      // Store separately — NOT merged
+      setTree({
+        templates: templatesRoot,
+        companies: companiesRoot,
+      });
+      
+      // Counties + cities ONLY from Templates
+      const detectedCounties = extractCountiesFromTree(templatesRoot);
       setCounties(detectedCounties);
-  
+      
       if (selectedCounty) {
-        const detectedCities = extractCitiesFromTree(root, selectedCounty);
+        const detectedCities = extractCitiesFromTree(templatesRoot, selectedCounty);
         setCities(detectedCities);
       }
-  
-      // If NO filters are active, show raw subtree
+      
+      // FILTERS APPLY ONLY TO TEMPLATES
       if (!selectedCounty && !selectedCity) {
-        setFilteredTree(root);
-        setExpandedPaths(new Set([cleanCurrent]));
+        setFilteredTree({
+          templates: templatesRoot,
+          companies: companiesRoot,
+        });
+
+        const initial = new Set<string>();
+        initial.add(templatesRoot.fullPath);   // usually ""
+        initial.add(companiesRoot.fullPath);   // now "" for master, or "<companyCode>/documents" for user/admin
+        setExpandedPaths(initial);
+        setExpandedPaths(initial);
       } else {
-        // Otherwise, apply filterTree
-        const { mergedTree, expandedPaths } = filterTree(
-          root,
+        const { mergedTree: filteredTemplates, expandedPaths } = filterTree(
+          templatesRoot,
           selectedCounty,
           selectedCity
         );
-  
-        // Always expand the current folder (new root)
-        expandedPaths.add(cleanCurrent);
-  
-        setFilteredTree(mergedTree);
+      
+        setFilteredTree({
+          templates: filteredTemplates ?? templatesRoot,
+          companies: companiesRoot,
+        });
+      
+        expandedPaths.add("templates");
+        expandedPaths.add("companies");
         setExpandedPaths(expandedPaths);
-      }
+      }      
     } catch (err) {
       console.error("Folder load error:", err);
     }
-  
+
     setLoading(false);
-  }, [currentPath, selectedCounty, selectedCity]);
+  }, [selectedCounty, selectedCity, companyCode]);
 
   useEffect(() => {
     Promise.resolve().then(() => load());
@@ -173,33 +187,76 @@ export default function FolderBrowserPanel({
   };
 
   /* -----------------------------------------------------------
-     MASTER MODE — UPLOAD FILE
-  ----------------------------------------------------------- */
-  const handleUpload = async (file: File) => {
-    if (mode !== "master") return;
+  MASTER MODE — UPLOAD FILE
+----------------------------------------------------------- */
+const handleUpload = async (file: File) => {
+ // Only masters can upload files
+ if (mode !== "master") {
+   console.warn("Upload blocked: only master users may upload files.");
+   return;
+ }
 
-    const base = currentPath.replace(/\/+$/, "");
-    const fullPath = (base ? `${base}/${file.name}` : file.name).replace(
-      /\\/g,
-      "/"
-    );
+ const base = currentPath.replace(/\/+$/, "");
+ const cleanName = file.name.replace(/\\/g, "/");
 
-    const { error } = await supabaseClient.storage
-      .from("templates")
-      .upload(fullPath, file);
+ /* -----------------------------------------
+    TEMPLATES UPLOAD (master only)
+ ----------------------------------------- */
+ if (activeTree === "templates") {
+   const fullPath = base ? `${base}/${cleanName}` : cleanName;
 
-    if (error) {
-      console.error("Upload error:", error);
-      return;
-    }
+   // Use server upload route
+   const formData = new FormData();
+   formData.append("file", file);
+   formData.append("bucket", "templates");
+   formData.append("path", fullPath);
 
-    if (onUploadComplete) onUploadComplete(fullPath);
+   const res = await fetch("/api/storage/upload", {
+     method: "POST",
+     body: formData,
+   });
 
-    // RULE #14 — DO NOT auto-select uploaded files
-    // (removed toggleFileSelection)
+   const json = await res.json();
 
-    await load();
-  };
+   if (!res.ok) {
+     console.error("Upload error:", json.error);
+     return;
+   }
+
+   onUploadComplete?.(fullPath);
+   await load();
+   return;
+ }
+
+ /* -----------------------------------------
+    COMPANIES UPLOAD (master only)
+ ----------------------------------------- */
+ if (activeTree === "companies") {
+   const fullPath = base ? `${base}/${cleanName}` : cleanName;
+
+   // Use server upload route
+   const formData = new FormData();
+   formData.append("file", file);
+   formData.append("bucket", "companies");
+   formData.append("path", fullPath);
+
+   const res = await fetch("/api/storage/upload", {
+     method: "POST",
+     body: formData,
+   });
+
+   const json = await res.json();
+
+   if (!res.ok) {
+     console.error("Upload error:", json.error);
+     return;
+   }
+
+   onUploadComplete?.(fullPath);
+   await load();
+   return;
+ }
+};
 
   /* -----------------------------------------------------------
      FILTER HANDLERS
@@ -209,11 +266,14 @@ export default function FolderBrowserPanel({
     setSelectedCity("");
   
     if (tree) {
-      const detectedCities = extractCitiesFromTree(tree, county);
+      const detectedCities = extractCitiesFromTree(tree.templates, county);
       setCities(detectedCities);
   
-      const { mergedTree, expandedPaths } = filterTree(tree, county, "");
-      setFilteredTree(mergedTree);
+      const { mergedTree, expandedPaths } = filterTree(tree.templates, county, "");
+      setFilteredTree({
+        templates: mergedTree ?? tree.templates,
+        companies: tree.companies,
+      });
       setExpandedPaths(expandedPaths);
     }
   };  
@@ -224,11 +284,14 @@ export default function FolderBrowserPanel({
     setTimeout(() => {
       if (tree) {
         const { mergedTree, expandedPaths } = filterTree(
-          tree,
+          tree.templates,
           selectedCounty,
           city
         );
-        setFilteredTree(mergedTree);
+        setFilteredTree({
+          templates: mergedTree ?? tree.templates,
+          companies: tree.companies,
+        });
         setExpandedPaths(expandedPaths);
     }
     }, 0);
@@ -240,7 +303,9 @@ export default function FolderBrowserPanel({
 
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <div className="font-semibold text-lg">Select Template</div>
+          <div className="font-semibold text-lg">
+            {mode === "master" ? "Select Item" : "Select Document"}
+          </div>
 
           <div className="flex items-center gap-3">
             {mode === "master" && (
@@ -327,9 +392,12 @@ export default function FolderBrowserPanel({
                 setSelectedCity("");
 
                  if (tree) {
-                  const cleanCurrent = currentPath.replace(/\/+$/, "");
-                  setFilteredTree(tree);                     // subtree rooted at currentPath
-                  setExpandedPaths(new Set([cleanCurrent])); // expand current root
+                  setFilteredTree({
+                    templates: tree.templates,
+                    companies: tree.companies,
+                  });
+                  
+                  setExpandedPaths(new Set(["templates", "companies"])) // expand current root
                 }
               }}
               className="btn btn-outline btn-sm"
@@ -338,50 +406,118 @@ export default function FolderBrowserPanel({
             </button>
         </div>
 
-        {/* BREADCRUMBS */}
-        <div className="px-4 py-2 border-b border-gray-100 text-sm flex flex-wrap gap-1">
-          <button
-            onClick={() => setCurrentPath("")}
-            className="text-blue-600 hover:underline"
-          >
-            Templates
-          </button>
+        {/* MASTER MODE — VIEW SWITCH */}
+        {mode === "master" && (
+          <div className="px-4 py-2 border-b border-gray-100 text-sm flex gap-4">
+            <button
+              onClick={() => setActiveTree("root")}
+              className={`text-blue-600 hover:underline ${activeTree === "root" ? "font-semibold" : ""}`}
+            >
+              Root
+            </button>
 
-          {breadcrumbs.map((crumb, i) => (
-            <span key={i} className="flex items-center">
-              <span className="mx-1 text-gray-400">/</span>
+            <button
+              onClick={() => setActiveTree("templates")}
+              className={`text-blue-600 hover:underline ${activeTree === "templates" ? "font-semibold" : ""}`}
+            >
+              Templates
+            </button>
 
-              <button
-                onClick={async () => {
-                  const newPath = breadcrumbs.slice(0, i + 1).join("/").replace(/\/+$/, "");
-                  setCurrentPath(newPath);
-                  await load();
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                {crumb}
-              </button>
-            </span>
-          ))}
-        </div>
+            <button
+              onClick={() => setActiveTree("companies")}
+              className={`text-blue-600 hover:underline ${activeTree === "companies" ? "font-semibold" : ""}`}
+            >
+              Companies
+            </button>
+          </div>
+        )}
 
         {/* TREE */}
-          <div className="p-4 overflow-y-auto flex-1">
-            {loading || !filteredTree ? (
-          <div className="text-center text-gray-500 py-10">Loading…</div>
-        ) : (
-          <FolderTree
-            root={filteredTree}
-            variant="popup"
-            expandedPaths={expandedPaths}
-            selectedFiles={selectedFiles}
-            onToggleFile={toggleFileSelection}
-            onSelectFolder={(path) => {
-              setCurrentPath(path);
-            }}
-          />
-        )}
-      </div>
+        <div className="p-4 overflow-y-auto flex-1 space-y-8">
+          {loading || !filteredTree ? (
+            <div className="text-center text-gray-500 py-10">Loading…</div>
+          ) : (
+            <>
+              {/* JOB MODE — always show both */}
+              {mode === "job" && (
+                <>
+                  <div>
+                    <h3 className="text-md font-semibold mb-2">Templates</h3>
+                    <FolderTree
+                      root={filteredTree.templates}
+                      variant="popup"
+                      mode={mode}
+                      expandedPaths={expandedPaths}
+                      selectedFiles={selectedFiles}
+                      onToggleFile={toggleFileSelection}
+                      onSelectFolder={() => {}}
+                      currentPath={currentPath}
+                    />
+                  </div>
+
+                  <div>
+                    <h3 className="text-md font-semibold mb-2">Companies</h3>
+                    <FolderTree
+                      root={filteredTree.companies}
+                      variant="popup"
+                      mode={mode}
+                      expandedPaths={expandedPaths}
+                      selectedFiles={selectedFiles}
+                      onToggleFile={toggleFileSelection}
+                      onSelectFolder={() => {}}
+                      currentPath={currentPath}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* MASTER MODE — dual-tree switching */}
+              {mode === "master" && (
+                <>
+                  {(activeTree === "root" || activeTree === "templates") && (
+                    <div>
+                      <h3 className="text-md font-semibold mb-2">Templates</h3>
+                      <FolderTree
+                        root={filteredTree.templates}
+                        variant="popup"
+                        mode={mode}
+                        expandedPaths={expandedPaths}
+                        selectedFiles={selectedFiles}
+                        onToggleFile={toggleFileSelection}
+                        onSelectFolder={(path) => {
+                          setActiveTree("templates");
+                          setCurrentPath(path);
+                        }}
+                        currentPath={currentPath}
+                      />
+                    </div>
+                  )}
+
+                  {(activeTree === "root" || activeTree === "companies") && (
+                    <div>
+                      <h3 className="text-md font-semibold mb-2">Companies</h3>
+                      <FolderTree
+                        root={filteredTree.companies}
+                        variant="popup"
+                        mode={mode}
+                        expandedPaths={expandedPaths}
+                        selectedFiles={selectedFiles}
+                        onToggleFile={toggleFileSelection}
+                        onSelectFolder={(path) => {
+                          if (path && path !== filteredTree.companies.fullPath) {
+                            setActiveTree("companies");
+                            setCurrentPath(path);
+                          }
+                        }}
+                        currentPath={currentPath}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
 
       {/* CONFIRM SELECTION */}
         {selectedFiles.length > 0 && (
@@ -404,4 +540,4 @@ export default function FolderBrowserPanel({
       </div>
     </div>
   );
-}
+ }

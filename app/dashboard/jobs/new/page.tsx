@@ -74,6 +74,7 @@ export default async function NewJobPage() {
 
       <JobFormClient
         mode="create"
+        companyCode={company?.companyCode ?? ""}
         initialJob={{
           description: defaultDescription,
           companyId,
@@ -110,7 +111,7 @@ export default async function NewJobPage() {
           "use server";
           const result = await uploadSnippetImmediately(jobId, file);
           return {
-            publicUrl: result.publicUrl,
+            publicUrl: result.signedUrl,
             ocrText: result.ocrText,
             parsed: result.parsed,
           };

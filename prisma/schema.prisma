@@ -9,17 +9,12 @@ datasource db {
 }
 
 model Company {
-  id            String  @id @default(cuid())
-  companyCode   String  @unique
-  name          String
-  email         String?
-  phone         String?
-  address       String?
-  addressStreet String?
-  addressCity   String?
-  addressState  String?
-  addressZip    String?
-
+  id                 String   @id @default(cuid())
+  companyCode        String   @unique
+  name               String
+  email              String?
+  phone              String?
+  address            String?
   licenseNumber      String?
   website            String?
   logoUrl            String?
@@ -27,10 +22,13 @@ model Company {
   updatedAt          DateTime @updatedAt
   descOfImprov       String?
   qualifierName      String?
+  addressCity        String?
+  addressState       String?
+  addressStreet      String?
+  addressZip         String?
   businessTaxReceipt String?
-
-  jobs  Job[]
-  users User[]
+  jobs               Job[]
+  users              User[]
 }
 
 model User {
@@ -46,41 +44,35 @@ model User {
 }
 
 model Job {
-  id              String  @id @default(cuid())
-  companyId       String
-  jobNumber       Int
-  title           String?
-  customerName    String?
-  customerPhone   String?
-  customerAddress String?
-  customerCity    String?
-  customerState   String?
-  customerZip     String?
-
+  id               String        @id @default(cuid())
+  companyId        String
+  title            String?
+  customerName     String?
+  customerPhone    String?
+  customerAddress  String?
+  customerCity     String?
+  customerState    String?
+  customerZip      String?
   legalDescription String?
   lotNumber        String?
   blockNumber      String?
   subdivision      String?
   buildingNumber   String?
   unitNumber       String?
-
-  taxFolioNumber String?
-  jobValue       Float?
-  description    String?
-
-  createdBy     String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime? @updatedAt
-  status        String?   @default("open")
-  customerEmail String?
-
-  company Company @relation(fields: [companyId], references: [id])
-
-  documents   JobDocument[]
-  jobFiles    JobFile[]
-  snippetPath String?       @db.Text
-
-  isTemp Boolean? @default(true)
+  taxFolioNumber   String?
+  jobValue         Float?
+  description      String?
+  createdBy        String
+  createdAt        DateTime      @default(now())
+  status           String?       @default("open")
+  customerEmail    String?
+  snippetPath      String?
+  snippetSignedUrl String?       @db.Text
+  updatedAt        DateTime?     @updatedAt
+  jobNumber        Int
+  company          Company       @relation(fields: [companyId], references: [id])
+  documents        JobDocument[]
+  jobFiles         JobFile[]
 }
 
 model FormTemplate {
@@ -111,25 +103,23 @@ model FormFieldMapping {
 }
 
 model JobDocument {
-  id           String  @id @default(cuid())
-  jobId        String
-  templateId   String?
-  templateName String
-
-  createdAt    DateTime @default(now())
-  templatePath String?
-
-  templateSourcePath String?
+  id                 String        @id @default(cuid())
+  jobId              String
+  templateId         String?
+  templatePath       String?
+  templateName       String
+  createdAt          DateTime      @default(now())
   templateOutputPath String?
-
-  job      Job           @relation(fields: [jobId], references: [id])
-  template FormTemplate? @relation(fields: [templateId], references: [id])
+  templateSourcePath String?
+  templateSignedUrl String?        @db.Text
+  job                Job           @relation(fields: [jobId], references: [id])
+  template           FormTemplate? @relation(fields: [templateId], references: [id])
 }
 
 model JobFile {
   id        String   @id @default(cuid())
   jobId     String
-  job       Job      @relation(fields: [jobId], references: [id])
   fileName  String
   createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id])
 }

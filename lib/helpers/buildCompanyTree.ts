@@ -6,12 +6,12 @@ import { FolderNode, SupabaseFile } from "@/app/components/FolderTree";
  * Build a FolderNode tree for the companies bucket.
  *
  * MASTER MODE:
- *   - Lists all companies at bucket root
+ *   - Lists all companies under /companies
  *   - Each company folder contains its /documents folder
  *
  * ADMIN/USER MODE:
  *   - Shows only activeCompanyCode
- *   - Rooted at: <companyCode>/documents
+ *   - Rooted at: companies/<code>/documents
  */
 export async function buildCompanyTree(
   path: string,
@@ -41,31 +41,32 @@ export async function buildCompanyTree(
 
     const children = await Promise.all(
       companyFolders.map(async (folder) => {
-        const docsPath = `${folder.name}/documents`;
-
+        const docsStoragePath = `${folder.name}/documents`;          // storage
+        const docsUiPath = `companies/${folder.name}/documents`;     // UI
+        
         const { folders: docFolders, files: docFiles } =
-          await listCompanyFolder(docsPath);
-
+          await listCompanyFolder(docsStoragePath);
+        
         const visibleFiles: SupabaseFile[] = docFiles
           .filter((f) => !f.name.startsWith("."))
           .map((f) => ({
             name: f.name,
-            path: `${docsPath}/${f.name}`,
+            path: `${docsUiPath}/${f.name}`,                         // UI path
           }));
-
+        
         const visibleFolders = docFolders.filter(
           (f) => !f.name.startsWith(".")
         );
-
+        
         const nestedChildren = await Promise.all(
           visibleFolders.map(async (f) =>
-            buildCompanyTree(`${docsPath}/${f.name}`, role, activeCompanyCode)
+            buildCompanyTree(`${docsStoragePath}/${f.name}`, role, activeCompanyCode)
           )
         );
-
+        
         return {
           name: folder.name,
-          fullPath: `companies/${docsPath}`,
+          fullPath: docsUiPath,                                      // UI path
           folders: nestedChildren,
           files: visibleFiles,
         };
@@ -74,7 +75,7 @@ export async function buildCompanyTree(
 
     return {
       name: "Companies",
-      fullPath: "",
+      fullPath: "companies",  
       folders: children,
       files: [],
     };
@@ -87,28 +88,29 @@ export async function buildCompanyTree(
     throw new Error("Active company code required for admin/user.");
   }
 
-  const effectivePath = `${activeCompanyCode}/documents`;
-
-  const { folders, files } = await listCompanyFolder(effectivePath);
-
+  const effectiveStoragePath = `${activeCompanyCode}/documents`;          // storage
+  const effectiveUiPath = `companies/${activeCompanyCode}/documents`;     // UI
+  
+  const { folders, files } = await listCompanyFolder(effectiveStoragePath);
+  
   const visibleFiles: SupabaseFile[] = files
     .filter((f) => !f.name.startsWith("."))
     .map((f) => ({
       name: f.name,
-      path: `${effectivePath}/${f.name}`,
+      path: `${effectiveUiPath}/${f.name}`,                               // UI path
     }));
-
+  
   const visibleFolders = folders.filter((f) => !f.name.startsWith("."));
-
+  
   const children = await Promise.all(
     visibleFolders.map((f) =>
-      buildCompanyTree(`${effectivePath}/${f.name}`, role, activeCompanyCode)
+      buildCompanyTree(`${effectiveStoragePath}/${f.name}`, role, activeCompanyCode)
     )
   );
-
+  
   return {
     name: "Company Documents",
-    fullPath: `companies/${effectivePath}`,
+    fullPath: effectiveUiPath,                                            // UI path
     folders: children,
     files: visibleFiles,
   };
@@ -122,7 +124,7 @@ export async function buildCompanyRootTree(
   activeCompanyCode: string | null
 ): Promise<FolderNode> {
   if (role === "master") {
-    return buildCompanyTree("", role, activeCompanyCode);
+    return buildCompanyTree("companies", role, activeCompanyCode);   // UI root
   }
 
   if (!activeCompanyCode) {
@@ -130,7 +132,7 @@ export async function buildCompanyRootTree(
   }
 
   return buildCompanyTree(
-    `${activeCompanyCode}/documents`,
+    `companies/${activeCompanyCode}/documents`,                      // UI path
     role,
     activeCompanyCode
   );

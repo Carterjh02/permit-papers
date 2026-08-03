@@ -29,16 +29,15 @@ export default async function JobPreviewPage({ params }: PageProps) {
   const updatedAt = job.updatedAt ?? job.createdAt;
   const cacheKey = `v=${updatedAt.getTime()}`;
 
-  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // Use templateOutputPath (filled PDF)
+  // Generated previews (signed URLs)
   const generatedPreviews = job.documents
-    .filter((doc) => doc.templateOutputPath) // only show generated PDFs
+    .filter((doc) => doc.templateSignedUrl) // only show generated PDFs
     .map((doc) => {
       const fileName = doc.templateName.endsWith(".pdf")
-  ? doc.templateName
-  : `${doc.templateName}.pdf`;
-      const url = `${baseUrl}/storage/v1/object/public/companies/${doc.templateOutputPath}?${cacheKey}`;
+        ? doc.templateName
+        : `${doc.templateName}.pdf`;
+
+      const url = `${doc.templateSignedUrl}&${cacheKey}`;
 
       return {
         id: doc.id,
@@ -46,29 +45,6 @@ export default async function JobPreviewPage({ params }: PageProps) {
         url,
       };
     });
-
-  // Permanent files (unchanged)
-  const safeCompany = job.company?.companyCode
-  ? job.company.companyCode.replace(/[^a-zA-Z0-9-_ ]/g, "")
-  : "";
-  const jobNumber = job.jobNumber;
-
-  const permanentFiles = await prisma.jobFile.findMany({
-    where: { jobId: id },
-    orderBy: { createdAt: "asc" },
-  });
-
-  const permanentPreviews = permanentFiles.map((file) => {
-    const fileName = file.fileName;
-    const path = `${safeCompany}/jobs/${jobNumber}/${fileName}`;
-    const url = `${baseUrl}/storage/v1/object/public/companies/${path}?${cacheKey}`;
-
-    return {
-      id: file.id,
-      name: fileName,
-      url,
-    };
-  });
 
   async function backToJob() {
     "use server";
@@ -102,30 +78,6 @@ export default async function JobPreviewPage({ params }: PageProps) {
       {generatedPreviews.length > 0 && (
         <div className="space-y-8">
           {generatedPreviews.map((p) => (
-            <div key={p.id} className="card p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{p.name}</h3>
-                <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
-                  Open / Download
-                </a>
-              </div>
-              <iframe src={p.url} className="w-full h-[600px]" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      <h2 className="text-xl font-semibold mt-10">Permanent Job Files</h2>
-
-      {permanentPreviews.length === 0 && (
-        <p className="text-sm text-gray-500">
-          No permanent documents uploaded yet.
-        </p>
-      )}
-
-      {permanentPreviews.length > 0 && (
-        <div className="space-y-8">
-          {permanentPreviews.map((p) => (
             <div key={p.id} className="card p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">{p.name}</h3>

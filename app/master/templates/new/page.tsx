@@ -25,7 +25,10 @@ export default function NewTemplatePage() {
   const handleBatchMapping = () => {
     if (uploadedPaths.length === 0) return;
 
-    const query = encodeURIComponent(uploadedPaths.join(","));
+    const query = uploadedPaths
+    .map((p) => encodeURIComponent(p))
+    .join(",");
+  
     router.push(`/master/templates/map/batch?paths=${query}`);
   };
 
@@ -62,7 +65,8 @@ export default function NewTemplatePage() {
       {showBrowser && (
         <FolderBrowserPanel
           mode="master"
-          initialPath={""}   // open at root of templates bucket
+          initialPath=""
+          companyCode=""       
           onClose={() => setShowBrowser(false)}
           onSelectFile={() => {}}
           onUploadComplete={handleUploadComplete}

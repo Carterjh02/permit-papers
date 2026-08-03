@@ -1,13 +1,12 @@
-"use server";
-
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { extractPdfFields } from "@/lib/pdf/extractFields";
+import { extractPdfFieldsServer } from "@/lib/pdf/extractFieldsServer";
 
 export default async function BatchMappingPage(props: {
-  searchParams: Promise<{ paths?: string }>;
+  searchParams?: Promise<{ paths?: string }>;
 }) {
-  const { paths: raw } = await props.searchParams;
+  const params = await props.searchParams;
+  const raw = params?.paths;
 
   if (!raw) {
     return (
@@ -62,12 +61,22 @@ export default async function BatchMappingPage(props: {
   const templateData = [];
 
   for (const template of templates) {
-    const fields = await extractPdfFields(template.path);
+    const isCompanyTemplate = template.path.includes("/documents/");
+    const bucket = isCompanyTemplate ? "companies" : "templates";
 
-    await prisma.formTemplate.update({
-      where: { id: template.id },
-      data: { fieldNames: fields },
-    });
+    let fields: string[] = [];
+
+    try {
+      fields = await extractPdfFieldsServer(bucket, template.path);
+
+      await prisma.formTemplate.update({
+        where: { id: template.id },
+        data: { fieldNames: fields },
+      });
+    } catch (err) {
+      console.error("PDF extraction failed for:", template.path, err);
+      fields = [];
+    }
 
     templateData.push({
       id: template.id,

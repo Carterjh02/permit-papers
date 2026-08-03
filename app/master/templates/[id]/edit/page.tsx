@@ -9,11 +9,11 @@ import {
 } from "./actions";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function TemplateEditPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id } = params;
 
   const template = await prisma.formTemplate.findUnique({
     where: { id },

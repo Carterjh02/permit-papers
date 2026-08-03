@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabaseClient } from "@/lib/supabaseClient";
-import { extractPdfFields } from "@/lib/pdf/extractFields";
+import { extractPdfFieldsServer } from "@/lib/pdf/extractFieldsServer";
 
 export default function TemplateMappingPageInner() {
   const params = useSearchParams();
@@ -19,53 +18,84 @@ export default function TemplateMappingPageInner() {
 
   useEffect(() => {
     if (!templatePath) return;
-
+  
     async function load() {
-      setLoading(true);
-
-      const res = await fetch(
-        `/api/forms/templates/byPath?path=${encodeURIComponent(templatePath)}`
-      );
-      const data = await res.json();
-
-      if (!data?.template) {
-        console.error("Template not found");
+      try {
+        setLoading(true);
+  
+        // 1. Determine bucket
+        const isCompanyTemplate = templatePath.includes("/documents/");
+        const bucket = isCompanyTemplate ? "companies" : "templates";
+  
+        // 2. Fetch template record
+        const res = await fetch(
+          `/api/forms/templates/byPath?path=${encodeURIComponent(templatePath)}`
+        );
+        const data = await res.json();
+  
+        if (!data?.template) {
+          console.error("Template not found");
+          setLoading(false);
+          return;
+        }
+  
+        setTemplateId(data.template.id);
+  
+        // 3. Generate signed URL
+        const signed = await fetch("/api/storage/signed-url", {
+          method: "POST",
+          body: JSON.stringify({ bucket, path: templatePath }),
+          headers: { "Content-Type": "application/json" },
+        });
+  
+        const signedJson = await signed.json();
+  
+        if (!signed.ok) {
+          console.error("Signed URL error:", signedJson.error);
+          setLoading(false);
+          return;
+        }
+  
+        setPdfUrl(signedJson.url);
+  
+        // 4. Extract fields only for PDFs
+        if (templatePath.toLowerCase().endsWith(".pdf")) {
+          let extracted: string[] = [];
+  
+          try {
+            extracted = await extractPdfFieldsServer(bucket, templatePath);
+          } catch (err) {
+            console.error("PDF extraction failed:", err);
+            extracted = []; // Prevent RSC crash
+          }
+  
+          setFields(extracted);
+        } else {
+          setFields([]); // non-PDFs have no fields
+        }
+  
+        // 5. Load existing mappings
+        const mapRes = await fetch(
+          `/api/forms/templates/${data.template.id}/mappings`
+        );
+        const mapJson = await mapRes.json();
+  
+        const existing: Record<string, string> = {};
+        for (const m of mapJson.mappings) {
+          existing[m.pdfFieldName] = m.mappedTo;
+        }
+  
+        setMappings(existing);
+      } catch (err) {
+        console.error("Mapping page load failed:", err);
+        // Prevent RSC crash
+        setFields([]);
+        setMappings({});
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setTemplateId(data.template.id);
-
-      const signed = await supabaseClient.storage
-        .from("templates")
-        .createSignedUrl(templatePath, 3600);
-
-      if (signed.error) {
-        console.error("Signed URL error:", signed.error);
-        setLoading(false);
-        return;
-      }
-
-      setPdfUrl(signed.data.signedUrl);
-
-      const extracted = await extractPdfFields(templatePath);
-      setFields(extracted);
-
-      const mapRes = await fetch(
-        `/api/forms/templates/${data.template.id}/mappings`
-      );
-      const mapJson = await mapRes.json();
-
-      const existing: Record<string, string> = {};
-      for (const m of mapJson.mappings) {
-        existing[m.pdfFieldName] = m.mappedTo;
-      }
-
-      setMappings(existing);
-
-      setLoading(false);
     }
-
+  
     load();
   }, [templatePath]);
 

@@ -1,16 +1,12 @@
-"use client";
-
-import { signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import LogoutButton from "./LogoutButton";
 
-export default function MasterLayout({
-  children,
-}: {
+interface MasterLayoutProps {
   children: React.ReactNode;
-}) {
-  // Server-side protection is already handled in the master pages.
+}
 
+export default function MasterLayout({ children }: MasterLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 shadow-sm sticky top-0 z-50 py-4 sm:py-5">
@@ -26,6 +22,7 @@ export default function MasterLayout({
               priority
             />
           </Link>
+
           <div className="flex items-center gap-6">
             <Link href="/master" className="hover:text-blue-600">
               Dashboard
@@ -43,17 +40,8 @@ export default function MasterLayout({
               Settings
             </Link>
 
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setTimeout(() => {
-                signOut({ callbackUrl: "/login" });
-              }, 50);
-            }}
-          >
-            Logout
-          </button>
+            {/* Client-side logout button */}
+            <LogoutButton />
           </div>
         </div>
       </nav>
