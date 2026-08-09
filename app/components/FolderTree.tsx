@@ -41,6 +41,7 @@ interface FolderTreeProps {
 
   deleteTemplateAction?: (formData: FormData) => Promise<void>;
   onSelectFolder?: (path: string) => void;
+  onSelectFile?: (path: string) => void;
 
   currentPath?: string;
 }
@@ -55,6 +56,7 @@ export default function FolderTree({
   disableSelection,
   deleteTemplateAction,
   onSelectFolder,
+  onSelectFile,
   currentPath,
 }: FolderTreeProps) {
   const [search, setSearch] = useState("");
@@ -225,6 +227,7 @@ export default function FolderTree({
           onToggleFile={onToggleFile}
           selectedFiles={selectedFiles}
           onSelectFolder={onSelectFolder}
+          onSelectFile={onSelectFile}
           disableSelection={disableSelection}
           currentPath={currentPath}
         />
@@ -243,6 +246,7 @@ function FolderNodeView({
   onToggleFile,
   selectedFiles,
   onSelectFolder,
+  onSelectFile,
   disableSelection,
   currentPath,
 }: {
@@ -255,6 +259,7 @@ function FolderNodeView({
   onToggleFile?: (file: SupabaseFile) => void;
   selectedFiles?: SupabaseFile[];
   onSelectFolder?: (path: string) => void;
+  onSelectFile?: (path: string) => void;
   disableSelection?: boolean;
   currentPath?: string;
 }) {
@@ -336,17 +341,20 @@ function FolderNodeView({
                 return (
                   <li key={normalizedFilePath}>
                     <button
-                      onClick={() =>
-                        selectionEnabled &&
-                        onToggleFile?.({
-                          ...f,
-                          path: normalizedFilePath, // pass normalized path
-                        })
-                      }
+                      onClick={() => {
+                        if (selectionEnabled) {
+                          // job mode → toggle selection
+                          onToggleFile?.({
+                            ...f,
+                            path: normalizedFilePath,
+                          });
+                        } else {
+                          // admin mode → click file to map it
+                        onSelectFile?.(normalizedFilePath);
+                        }
+                      }}
                       className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${
-                        selected
-                          ? "bg-blue-50 border-l-4 border-blue-600"
-                          : ""
+                        selected ? "bg-blue-50 border-l-4 border-blue-600" : ""
                       }`}
                     >
                       {/* Checkbox */}
@@ -400,6 +408,7 @@ function FolderNodeView({
                     onToggleFile={onToggleFile}
                     selectedFiles={selectedFiles}
                     onSelectFolder={onSelectFolder}
+                    onSelectFile={onSelectFile}
                     disableSelection={disableSelection}
                     currentPath={currentPath}
                   />

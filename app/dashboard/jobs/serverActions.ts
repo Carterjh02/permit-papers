@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
 import { formatJobFields } from "@/lib/utils/formatters";
+import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
 
 /* -----------------------------------------------------------
    GENERATE PREVIEWS
@@ -31,48 +32,49 @@ export async function generatePreviews(jobId: string) {
       if (!doc.templateSourcePath) {
         continue;
       }
-
-      // CLEAN PATH — remove accidental "templates/" prefix
-      const cleanSourcePath = doc.templateSourcePath
+  
+      // Determine bucket + clean path
+      const rawSourcePath = doc.templateSourcePath.replace(/\\/g, "/");
+  
+      const pathWithoutBucket = rawSourcePath
         .replace(/^templates\//, "")
-        .replace(/\\/g, "/")
-        .split("/")
-        .map((segment) => segment.trim())
-        .join("/");
+        .replace(/^companies\//, "");
 
-        console.log("🟦 generatePreviews() — attempting template download");
-        console.log("  doc.templateSourcePath:", doc.templateSourcePath);
-        console.log("  cleanSourcePath:", cleanSourcePath);
-        console.log("  bucket: templates");
-        console.log("  SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-
-        // Check if path still contains a bucket prefix
-        if (cleanSourcePath.startsWith("templates/") || cleanSourcePath.startsWith("companies/")) {
-          console.log("  ⚠️ WARNING: cleanSourcePath still contains a bucket prefix!");
-        }
-      
-      // 1. Download blank template
+        const templateRecord = await prisma.formTemplate.findFirst({
+          where: { path: pathWithoutBucket },
+        });
+        
+        const bucket = templateRecord ? "templates" : "companies";
+  
+      // 1. Download template or company doc
       const { data, error } = await supabaseServer.storage
-        .from("templates")
-        .download(cleanSourcePath);
-
+        .from(bucket)
+        .download(pathWithoutBucket);
+  
       if (error || !data) {
+        console.error("❌ Download failed:", error);
         continue;
       }
-
+  
       const buffer = Buffer.from(await data.arrayBuffer());
-
-      // 2. Load field names
+  
+      // 2. Load field names (only templates have mappings)
       const template = await prisma.formTemplate.findFirst({
-        where: { path: cleanSourcePath },
+        where: { path: pathWithoutBucket },
       });
 
+      console.log("📄 generatePreviews() — template lookup", {
+        docId: doc.id,
+        pathWithoutBucket,
+        templateFound: !!template,
+      });
+  
       const fieldNames = Array.isArray(template?.fieldNames)
         ? (template.fieldNames as string[])
         : [];
-
+  
       const autoMapped = autoMapFields(fieldNames);
-
+  
       // 3. Build company + job data
       const companyData = {
         company_name: job.company.name ?? "",
@@ -97,7 +99,7 @@ export async function generatePreviews(jobId: string) {
             .join(", "),
         desc_of_improv: job.company.descOfImprov ?? "",
       };
-
+  
       const jobData = {
         customer_name: job.customerName ?? "",
         customer_phone: job.customerPhone ?? "",
@@ -132,39 +134,39 @@ export async function generatePreviews(jobId: string) {
         company: companyData,
         job: jobData,
       });
-
-      // 5. Build SAFE filename (matches uploadPdf)
+  
+      // 5. Build SAFE filename
       let safeDocumentName = doc.templateName
         .replace(/\s+/g, "_")
         .replace(/[^a-zA-Z0-9._-]/g, "");
-
+  
       if (!safeDocumentName.toLowerCase().endsWith(".pdf")) {
         safeDocumentName += ".pdf";
       }
-
+  
       const outputPath = `${companyCode}/jobs/${jobNumber}/${safeDocumentName}`;
-
-      // 6. Upload filled PDF using safe name
+  
+      // 6. Upload filled PDF
       await uploadPdf({
         companyCode,
         jobNumber,
         documentName: safeDocumentName,
         pdfBytes: filled,
       });
-
-      // 6b. Generate signed URL for preview (1 hour expiration)
+  
+      // 7. Signed URL
       const { data: signedUrlData, error: signedUrlError } =
         await supabaseServer.storage
           .from("companies")
           .createSignedUrl(outputPath, 60 * 60);
-      
+  
       if (signedUrlError) {
         console.error("❌ Signed URL error:", signedUrlError);
       }
-      
+  
       const signedUrl = signedUrlData?.signedUrl ?? null;
-      
-      // 7. Update DB with correct path + signed URL
+  
+      // 8. Update DB
       await prisma.jobDocument.update({
         where: { id: doc.id },
         data: {
@@ -359,7 +361,7 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     throw new Error("Failed to upload snippet.");
   }
 
-  // ⭐ Generate signed URL for snippet
+  // Generate signed URL for snippet
   const { data: signedUrlData, error: signedUrlError } =
     await supabaseServer.storage
       .from("companies")
@@ -406,7 +408,9 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
       customerName: parsed.name ?? job.customerName,
       customerPhone: parsed.phone ?? job.customerPhone,
-      customerAddress: parsed.address ?? job.customerAddress,
+      customerAddress: parsed.address
+      ? normalizeAddress(parsed.address)
+      : job.customerAddress,
       customerCity: parsed.city ?? job.customerCity,
       customerState: parsed.state ?? job.customerState,
       customerZip: parsed.zip ?? job.customerZip,
@@ -460,6 +464,14 @@ export async function updateJobAction(formData: FormData) {
     legalDescription: formData.get("legal_description") as string | null,
   };
 
+  const templatePaths = JSON.parse(
+    (formData.get("template_paths") as string) ?? "[]"
+  );
+
+  const companyDocumentPaths = JSON.parse(
+    (formData.get("company_document_paths") as string) ?? "[]"
+  );
+
   const formatted = formatJobFields({
     customerName: raw.customerName ?? undefined,
     customerPhone: raw.customerPhone ?? undefined,
@@ -505,6 +517,49 @@ export async function updateJobAction(formData: FormData) {
       description,
     },
   });
+
+  await prisma.jobDocument.deleteMany({
+    where: { jobId: targetId },
+  });
+  
+  // TEMPLATES
+  for (const path of templatePaths) {
+    const cleanPath = path.replace(/\\/g, "/");
+  
+    const template = await prisma.formTemplate.findFirst({
+      where: { path: cleanPath },
+    });
+  
+    await prisma.jobDocument.create({
+      data: {
+        jobId: targetId,
+        templateId: template?.id ?? null,
+        templatePath: cleanPath,
+        templateSourcePath: cleanPath,
+        templateName:
+          template?.name ??
+          cleanPath.split("/").slice(-1)[0] ??
+          cleanPath,
+        templateOutputPath: null,
+      },
+    });
+  }
+  
+  // COMPANY DOCS 
+  for (const path of companyDocumentPaths) {
+    const cleanPath = path.replace(/\\/g, "/");
+  
+    await prisma.jobDocument.create({
+      data: {
+        jobId: targetId,
+        templateId: null,
+        templatePath: cleanPath,
+        templateSourcePath: cleanPath,
+        templateName: cleanPath.split("/").slice(-1)[0] ?? cleanPath,
+        templateOutputPath: null,
+      },
+    });
+  }
 
   await generatePreviews(targetId);
 
@@ -718,6 +773,10 @@ export async function createJobAction(formData: FormData) {
     (formData.get("template_paths") as string) ?? "[]"
   ) as string[];
 
+  const companyDocumentPaths = JSON.parse(
+    (formData.get("company_document_paths") as string) ?? "[]"
+  ) as string[];
+
   // Compute next jobNumber
   const lastJob = await prisma.job.findFirst({
     where: { companyId },
@@ -749,14 +808,14 @@ export async function createJobAction(formData: FormData) {
     },
   });
 
-  // Create JobDocument rows
+  // TEMPLATES
   for (const path of templatePaths) {
     const cleanPath = path.replace(/\\/g, "/");
-
+  
     const template = await prisma.formTemplate.findFirst({
       where: { path: cleanPath },
     });
-
+  
     await prisma.jobDocument.create({
       data: {
         jobId: job.id,
@@ -771,8 +830,24 @@ export async function createJobAction(formData: FormData) {
       },
     });
   }
+  
+  // COMPANY DOCS
+  for (const path of companyDocumentPaths) {
+    const cleanPath = path.replace(/\\/g, "/");
+  
+    await prisma.jobDocument.create({
+      data: {
+        jobId: job.id,
+        templateId: null,
+        templatePath: cleanPath,
+        templateSourcePath: cleanPath,
+        templateName: cleanPath.split("/").slice(-1)[0] ?? cleanPath,
+        templateOutputPath: null,
+      },
+    });
+  }
 
   await generatePreviews(job.id);
 
-  redirect(`/dashboard/jobs/${job.id}/preview`);
-}
+  redirect(`/dashboard/jobs/${job.id}/preview`);  
+} 

@@ -6,6 +6,7 @@ import { useToast } from "@/app/components/ToastProvider";
 import Image from "next/image";
 import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
 import { detectCounty } from "@/lib/propertyAppraiser/detectCounty";
+import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
 
 /* ---------------------------------------------------------
    EditableField
@@ -137,8 +138,9 @@ interface JobFormClientProps {
   ) => Promise<{
     county: "broward" | "palmBeach" | "saintLucie";
     paPath: string;
-    ocrText: string;
+    ocrText?: string;
     parsed: ParsedPAData;
+    html? : string;
   }>;
 }
 
@@ -243,6 +245,8 @@ export default function JobFormClient({
   const [showBrowser, setShowBrowser] = useState(false);
   const [templates, setTemplates] = useState(initialTemplates);
 
+  const [companyDocs, setCompanyDocs] = useState<string[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [snippetUrl, setSnippetUrl] = useState<string | null>(
@@ -308,32 +312,31 @@ export default function JobFormClient({
   --------------------------------------------------------- */
   const handleSnippetUpload = async (file: File | null) => {
     if (!file) return;
-
+  
     try {
       const id = await ensureJobExists();
-
+  
       showToast(
         <div className="text-sm font-medium text-gray-700">
           Uploading snippet…
         </div>,
         { duration: 3000 }
       );
-
+  
       const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
-
-      // add cache-busting so preview updates
+  
+      // ⭐ Always update snippet preview immediately
       setSnippetUrl(`${publicUrl}?t=${Date.now()}`);
-
+  
+      // ⭐ Store OCR text + parsed fields
       setOcrText(ocrText ?? null);
       setOcrParsed(parsed ?? null);
-
+  
+      // ⭐ Always open OCR modal when parsed exists
       if (parsed) {
-        setOcrParsed(parsed);
         requestAnimationFrame(() => setShowOcrModal(true));
-      } else {
-        setOcrParsed(null);
       }
-
+  
       showToast(
         <div className="text-sm font-medium text-green-700">
           Snippet uploaded successfully.
@@ -389,6 +392,25 @@ export default function JobFormClient({
     }
     setTemplates((prev) => prev.filter((t) => t.id !== templateId));
   };
+
+  /* ---------------------------------------------------------
+     COMPANY DOCUMENTS SELECTION
+---------------------------------------------------------- */
+const handleSelectCompanyDocs = async (paths: string[]) => {
+  const cleanPaths = paths.map((p) => p.replace(/\\/g, "/"));
+
+  await ensureJobExists();
+
+  setCompanyDocs((prev) => {
+    const next = [...prev];
+    for (const p of cleanPaths){
+      if (!next.includes(p)) next.push(p);
+    }
+    return next;
+  });
+
+  setShowBrowser(false);
+}
 
   /* ---------------------------------------------------------
   OCR CONFIRMATION MODAL (Editable Fields)
@@ -503,56 +525,55 @@ return (
             />
           </div>
 
-<div className="flex justify-end gap-3 pt-4">
-<button
-  className="btn btn-secondary"
-  onClick={() => setShowOcrModal(false)}
->
-  Cancel
-</button>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowOcrModal(false)}
+            >
+              Cancel
+            </button>
 
-{/* NEW BUTTON — Run PA Search */}
-<button
-  className="btn btn-primary"
-  onClick={async () => {
-    if (!ocrParsed) return;
+            {/* NEW BUTTON — Run PA Search */}
+            <button
+              className="btn btn-primary"
+              onClick={async () => {
+                if (!ocrParsed) return;
 
-    // Preserve snippet-only fields
-    setSnippetExtraFields({
-      phone: ocrParsed.phone ?? "",
-      email: ocrParsed.email ?? "",
-    });
+              // Preserve snippet-only fields
+              setSnippetExtraFields({
+                phone: ocrParsed.phone ?? "",
+                email: ocrParsed.email ?? "",
+              });
 
-    const id = await ensureJobExists();
+              const id = await ensureJobExists();
 
-    const county = detectCounty({
-      address: ocrParsed.address ?? "",
-      city: ocrParsed.city ?? "",
-      state: ocrParsed.state ?? "",
-      zip: ocrParsed.zip ?? "",
-    }) ?? undefined;
+              const county = detectCounty({
+                address: ocrParsed.address ?? "",
+                city: ocrParsed.city ?? "",
+                state: ocrParsed.state ?? "",
+                zip: ocrParsed.zip ?? "",
+              }) ?? undefined;
 
-    const result = await onTestPA(id, {
-      address: ocrParsed.address ?? "",
-      city: ocrParsed.city ?? "",
-      state: ocrParsed.state ?? "FL",
-      zip: ocrParsed.zip ?? "",
-      county,
-    });
+              const result = await onTestPA(id, {
+                address: normalizeAddress(form.customer_address_street || ocrParsed.address || ""),
+                city: form.customer_address_city || ocrParsed.city || "",
+                state: form.customer_address_state || ocrParsed.state || "FL",
+                zip: form.customer_address_zip || ocrParsed.zip || "",
+                county,
+              });
 
-    setPaResult(result.parsed);
-    setShowOcrModal(false);
-    setShowPaConfirm(true);
-  }}
->
-  Run PA Search
-</button>
+                setPaResult(result.parsed);
+                setShowOcrModal(false);
+                setShowPaConfirm(true);
+              }}
+            >
+              Run PA Search
+            </button>
 
-<button className="btn btn-primary" onClick={applyOcrToForm}>
-  Apply to Form
-</button>
-</div>
-
+            <button className="btn btn-primary" onClick={applyOcrToForm}>
+              Apply to Form
+            </button>
+          </div>
         </div>
       </div>
     )}
@@ -647,11 +668,21 @@ return (
               return;
             }
 
+            if (!city || city.trim() === "") {
+              showToast("City is required.");
+              return;
+            }
+        
+            if (!zip || zip.trim() === "") {
+              showToast("ZIP code is required.");
+              return;
+            }
+
             // Ensure job exists
             const id = localJobId ?? (await ensureJobExists());
 
             const result = await onTestPA(id, {
-              address,
+              address: normalizeAddress(address),
               city,
               state,
               zip,
@@ -763,6 +794,11 @@ return (
           name="template_paths"
           value={JSON.stringify(templates.map((t) => t.templatePath))}
         />
+        <input
+          type="hidden"
+          name="company_document_paths"
+          value={JSON.stringify(companyDocs)}
+          />
         {localJobId && (
           <input type="hidden" name="job_id" value={localJobId} />
         )}
@@ -854,6 +890,8 @@ return (
                 width={300}
                 height={200}
                 className="rounded border object-contain"
+                loader={({ src }) => src}
+                unoptimized
               />
 
               <button
@@ -1119,13 +1157,20 @@ return (
       </div>
 
       {showBrowser && (
-        <FolderBrowserPanel
-          mode="job"
-          initialPath={`companies/${companyCode}/documents`}
-          companyCode={companyCode}
-          onClose={() => setShowBrowser(false)}
-          onSelectFile={(paths) => handleSelectTemplate(paths)}
-        />
+      <FolderBrowserPanel
+        mode="job"
+        initialPath={`companies/${companyCode}/documents`}
+        companyCode={companyCode}
+        onClose={() => setShowBrowser(false)}
+        onSelectFile={(paths) => {
+          // Templates come from the templates bucket → they NEVER include "companies/"
+          if (paths.some((p) => !p.startsWith(companyCode))) {
+            handleSelectTemplate(paths);
+          } else {
+            handleSelectCompanyDocs(paths);
+          }
+        }}
+      />
       )}
     </div>
     </>

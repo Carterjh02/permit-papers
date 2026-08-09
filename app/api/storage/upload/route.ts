@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Secure server-side upload route.
@@ -25,7 +26,13 @@ export async function POST(req: Request) {
       .from(bucket)
       .upload(path, file, {
         upsert: true,
-        contentType: file.type || "application/octet-stream",
+        contentType:
+        file.type ||
+        (file.name.toLowerCase().endsWith(".pdf")
+          ? "application/pdf"
+          : file.name.toLowerCase().match(/\.(png|jpg|jpeg)$/)
+          ? `image/${file.name.split(".").pop()}`
+          : "application/octet-stream"),
       });
 
     if (uploadError) {
@@ -33,7 +40,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
-    // ⭐ Generate signed URL (1 hour)
+    // Generate signed URL (1 hour)
     const { data: signedUrlData, error: signedUrlError } =
       await supabaseServer.storage
         .from(bucket)
@@ -57,12 +64,31 @@ export async function POST(req: Request) {
 
     console.log("✅ Upload successful:", { bucket, path });
 
+    const companyCode = formData.get("companyCode") as string | null;
+
+    if (bucket === "companies" && companyCode) {
+      await prisma.formTemplate.create({
+        data: {
+          name: file.name,
+          path,
+          storagePath: path,
+          fieldNames: [],       // extracted later in mapping
+          mapping: {},          // filled later
+          formType: "company",
+          county: null,
+          municipality: null,
+          companyCode: companyCode,
+        },
+      });
+    }
+    
     return NextResponse.json(
       {
         success: true,
         bucket,
         path,
-        signedUrl, // ⭐ Returned to caller
+        signedUrl,
+        jobFolderPath: path,
       },
       { status: 200 }
     );

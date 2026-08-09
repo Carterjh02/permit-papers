@@ -12,6 +12,16 @@ export default function TreeWrapper({
 }) {
   const router = useRouter();
 
+  const goToMapping = (fullPath: string) => {
+    const bucket =
+      root.name === "Templates" ? "templates" : "companies";
+
+    const corrected = `${bucket}/${fullPath}`;
+    const encoded = encodeURIComponent(corrected);
+
+    router.push(`/master/templates/map/batch?paths=${encoded}`);
+  };
+
   return (
     <FolderTree
       root={root}
@@ -19,9 +29,12 @@ export default function TreeWrapper({
       disableSelection={true}
       expandedPaths={expandedPaths}
       onSelectFolder={(path) => {
-        const corrected = path === "" ? "" : `templates/${path}`;
-        const encoded = encodeURIComponent(corrected);
-        router.push(`/master/templates/map?path=${encoded}`);
+        if (!path) return;
+        goToMapping(path);
+      }}
+      onSelectFile={(filePath) => {
+        if (!filePath) return;
+        goToMapping(filePath);
       }}
     />
   );

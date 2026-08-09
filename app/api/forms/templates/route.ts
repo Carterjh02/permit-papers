@@ -24,10 +24,11 @@ export async function POST(req: Request) {
       formType: body.formType ?? "",
       county: body.county ?? "",
       municipality: body.municipality ?? "",
-      path: body.path,            // ✔ REQUIRED: actual Supabase storage path
-      storagePath: body.path,     // ✔ optional but consistent with your schema
-      fieldNames: [],             // ✔ empty until extracted
-      mapping: {},                // ✔ empty until mapped
+      path: body.path,
+      storagePath: body.path,
+      fieldNames: [],
+      mapping: {},
+      companyCode: body.companyCode ?? null,  
     },
   });
 

@@ -15,6 +15,7 @@ import {
   uploadSnippetImmediately,
 } from "../serverActions";
 import type { JobDocument } from "@prisma/client";
+import { supabaseServer } from "@/lib/supabaseServer";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -77,6 +78,16 @@ export default async function JobEditPage({ params }: PageProps) {
 
   if (!allowed) redirect("/dashboard");
 
+  let freshSnippetUrl = null;
+
+if (job.snippetPath) {
+  const { data: signedUrlData } = await supabaseServer.storage
+    .from("companies") 
+    .createSignedUrl(job.snippetPath, 60 * 60); // 1 hour
+
+  freshSnippetUrl = signedUrlData?.signedUrl ?? null;
+}
+
   const initialJob = {
     customerName: job.customerName,
     customerPhone: job.customerPhone,
@@ -91,6 +102,7 @@ export default async function JobEditPage({ params }: PageProps) {
     jobValue: job.jobValue,
     description: job.description ?? "",
     snippetPath: job.snippetPath ?? null,
+    snippetSignedUrl: freshSnippetUrl,
     companyId: job.companyId,
     createdBy: user.username,
   };
@@ -100,6 +112,11 @@ export default async function JobEditPage({ params }: PageProps) {
     templateName: d.templateName ?? "",
     templatePath: d.templatePath ?? "",
   }));
+
+  console.log("🟨 JobEditPage — initialTemplates for side panel", {
+    jobId: job.id,
+    initialTemplates,
+  });
 
   return (
     <div className="page-container space-y-6">

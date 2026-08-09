@@ -59,10 +59,11 @@ export async function POST(req: Request) {
       municipality,
       formType,
       description: description ?? "",
-      path,          // Supabase storage path
+      path,
       storagePath: path,
-      fieldNames: [], // empty until extracted
-      mapping: {},    // empty until mapped
+      fieldNames: [],
+      mapping: {},
+      companyCode: formData.get("companyCode") as string | null,  
     },
   });
 

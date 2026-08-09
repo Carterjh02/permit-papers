@@ -52,6 +52,7 @@ export async function POST(req: Request) {
         county: "Unknown",
         path: filePath,
         formType: "generic",
+        companyCode: formData.get("companyCode") as string | null, 
       },
     });
 

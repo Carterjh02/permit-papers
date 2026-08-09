@@ -1,9 +1,11 @@
 import { detectCounty } from "./detectCounty";
 import { extractTextFromImage } from "@/lib/ocr";
 import { parsePAData } from "./parse";
+import type { ParsedPAData } from "./types"; 
 import { searchBroward } from "./search/broward";
 import { searchPalmBeach } from "./search/palmBeach";
 import { searchSaintLucie } from "./search/saintLucie";
+import { normalizeAddress } from "./normalizeAddress";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { prisma } from "@/lib/prisma";
 
@@ -32,8 +34,10 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
     throw new Error("Job not found.");
   }
 
+  const normalizedAddress = normalizeAddress(input.address);
+
   const county = detectCounty({
-    address: input.address,
+    address: normalizedAddress,
     city: input.city,
     state: input.state,
     zip: input.zip,
@@ -49,20 +53,40 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
 
   let screenshot: Buffer;
   let html: string | undefined;
+  let parsed: ParsedPAData = {};   
 
   switch (county) {
-    case "broward":
-      screenshot = await searchBroward(input.address);
+
+    case "broward": {
+      const result = await searchBroward(normalizedAddress);
+      screenshot = result.screenshot;
+      html = result.html;
+
+      // ⭐ Broward now uses HTML parser
+      parsed = parsePAData(html!, "broward");
       break;
-      case "palmBeach": {
-        const result = await searchPalmBeach(input.address);
-        screenshot = result.screenshot;
-        html = result.html; // ✅ capture HTML for parser
-        break;
-      }
-    case "saintLucie":
-      screenshot = await searchSaintLucie(input.address);
+    }
+
+    case "palmBeach": {
+      const result = await searchPalmBeach(normalizedAddress);
+      screenshot = result.screenshot;
+      html = result.html;
+
+      // ⭐ Palm Beach uses HTML parser
+      parsed = parsePAData(html!, "palmBeach");
       break;
+    }
+
+    case "saintLucie": {
+      screenshot = await searchSaintLucie(normalizedAddress);
+
+      // ⭐ Saint Lucie still uses OCR
+      const downloadedBuffer = screenshot;
+      const ocrText = await extractTextFromImage(downloadedBuffer);
+      parsed = parsePAData(ocrText, "saintLucie");
+      break;
+    }
+
     default:
       console.error("❌ [PA] County not supported:", county);
       throw new Error(`County not supported: ${county}`);
@@ -97,29 +121,18 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
     throw new Error("Failed to download PA screenshot for OCR.");
   }
 
-  const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
+  let ocrText: string | undefined = undefined;
 
-  const ocrText = await extractTextFromImage(downloadedBuffer);
-
-  console.log("🔵 [PA] INPUT:", input);
-  console.log("🔵 [PA] DETECTED COUNTY:", county);
-  console.log("🔵 [PA] SCREENSHOT SIZE:", screenshot?.length);
-
-  if (!ocrText) {
-    console.error("❌ [PA] OCR returned empty text");
+  if (county === "saintLucie") {
+    const downloadedBuffer = Buffer.from(await downloaded.arrayBuffer());
+    ocrText = await extractTextFromImage(downloadedBuffer);
   }
-
-  const parsed =
-  county === "palmBeach"
-    ? parsePAData(html!, county) // ✅ use HTML for Palm Beach
-    : parsePAData(ocrText, county);
-
-  console.log("🔵 [PA] PARSED DATA:", parsed);
-
+  
   return {
     county: county as "broward" | "palmBeach" | "saintLucie",
     paPath,
-    ocrText,
     parsed,
-  };
+    html,
+    ocrText,
+  };  
 }

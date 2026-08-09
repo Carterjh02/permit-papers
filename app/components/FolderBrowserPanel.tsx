@@ -19,6 +19,8 @@ interface FolderBrowserPanelProps {
 
   // MULTI-FILE SELECTION
   onSelectFile: (paths: string[]) => void;
+
+  defaultTree?: "templates" | "companies";
 }
 
 /* -----------------------------------------------------------
@@ -53,6 +55,7 @@ export default function FolderBrowserPanel({
   onClose,
   onSelectFile,
   onUploadComplete,
+  defaultTree,
 }: FolderBrowserPanelProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [activeTree, setActiveTree] = useState<"root" | "templates" | "companies">("root");
@@ -153,6 +156,15 @@ export default function FolderBrowserPanel({
   useEffect(() => {
     Promise.resolve().then(() => load());
   }, [load]);
+  
+  // Force initial tree selection (templates or companies)
+  useEffect(() => {
+    if (defaultTree) {
+      setTimeout(() => {
+        setActiveTree(defaultTree);
+      }, 0);
+    }
+  }, [defaultTree]);
 
   /* -----------------------------------------------------------
      ESC CLOSE 
@@ -232,30 +244,35 @@ const handleUpload = async (file: File) => {
     COMPANIES UPLOAD (master only)
  ----------------------------------------- */
  if (activeTree === "companies") {
-   const fullPath = base ? `${base}/${cleanName}` : cleanName;
+  const fullPath = base ? `${base}/${cleanName}` : cleanName;
 
-   // Use server upload route
-   const formData = new FormData();
-   formData.append("file", file);
-   formData.append("bucket", "companies");
-   formData.append("path", fullPath);
+  // Use server upload route
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("bucket", "companies");
+  formData.append("path", fullPath);
 
-   const res = await fetch("/api/storage/upload", {
-     method: "POST",
-     body: formData,
-   });
+  // tell the server which company this doc belongs to
+  if (companyCode) {
+    formData.append("companyCode", companyCode);
+  }
 
-   const json = await res.json();
+  const res = await fetch("/api/storage/upload", {
+    method: "POST",
+    body: formData,
+  });
 
-   if (!res.ok) {
-     console.error("Upload error:", json.error);
-     return;
-   }
+  const json = await res.json();
 
-   onUploadComplete?.(fullPath);
-   await load();
-   return;
- }
+  if (!res.ok) {
+    console.error("Upload error:", json.error);
+    return;
+  }
+
+  onUploadComplete?.(fullPath);
+  await load();
+  return;
+}
 };
 
   /* -----------------------------------------------------------

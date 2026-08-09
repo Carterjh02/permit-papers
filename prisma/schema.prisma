@@ -81,12 +81,14 @@ model FormTemplate {
   fieldNames   Json
   storagePath  String?
   description  String?
-  county       String
+  county       String?
   path         String
   updatedAt    DateTime           @updatedAt
   formType     String
   mapping      Json?
   municipality String?
+
+  companyCode  String? 
   mappings     FormFieldMapping[] @relation("TemplateMappings")
   jobDocuments JobDocument[]
 }
@@ -110,7 +112,7 @@ model JobDocument {
   createdAt          DateTime      @default(now())
   templateOutputPath String?
   templateSourcePath String?
-  templateSignedUrl String?        @db.Text
+  templateSignedUrl  String?       @db.Text
   job                Job           @relation(fields: [jobId], references: [id])
   template           FormTemplate? @relation(fields: [templateId], references: [id])
 }

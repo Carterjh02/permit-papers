@@ -1,4 +1,5 @@
 import type { ParsedPAData } from "../types";
+import { normalizeOwnerNames } from "./nameUtils";
 
 /**
  * Types for the Palm Beach JSON model
@@ -40,51 +41,9 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   const owners = model.ownerInfo || [];
 
   // ---------------------------
-  // OWNER NAME (smart formatting)
+  // OWNER NAME (universal normalizer)
   // ---------------------------
-  function formatOwnerName(name: string): string {
-    name = name.replace(/&/g, "").trim(); // remove trailing ampersands
-
-    // Case 1: "LAST, FIRST M"
-    if (name.includes(",")) {
-      const [last, first] = name.split(",").map((s: string) => s.trim());
-      return `${first} ${last}`.trim();
-    }
-
-    // Case 2: "LAST FIRST" → "FIRST LAST"
-    const parts = name.split(" ").filter(Boolean);
-    if (parts.length === 2) {
-      const [last, first] = parts;
-      return `${first} ${last}`.trim();
-    }
-
-    // Case 3: Multi‑word last names or trusts → leave as-is
-    return name.trim();
-  }
-
-  const formattedOwners = owners.map((o: string) => formatOwnerName(o));
-
-  // If all share same last name → merge into "First & First Last"
-  if (formattedOwners.length > 1) {
-    const lastNames = formattedOwners.map(
-      (n: string) => n.split(" ").pop() || ""
-    );
-    const allSameLast = lastNames.every(
-      (l: string) => l === lastNames[0]
-    );
-
-    if (allSameLast) {
-      const last = lastNames[0];
-      const firstNames = formattedOwners
-        .map((n: string) => n.split(" ")[0])
-        .join(" & ");
-      data.ownerName = `${firstNames} ${last}`.trim();
-    } else {
-      data.ownerName = formattedOwners.join(" & ").trim();
-    }
-  } else {
-    data.ownerName = formattedOwners[0] || undefined;
-  }
+  data.ownerName = normalizeOwnerNames(owners);
 
   // ---------------------------
   // ADDRESS EXTRACTION

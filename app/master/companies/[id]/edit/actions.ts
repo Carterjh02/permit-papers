@@ -119,10 +119,10 @@ export async function updateCompanyAction(formData: FormData) {
     `${basePrefix}/documents/.keep`,
   ];
 
-  for (const path of folders) {
-    await supabaseServer.storage
-      .from("companies")
-      .upload(path, new Blob([""]), { upsert: true });
+  if (codeChanged) {
+    for (const path of folders) {
+      await supabaseServer.storage.from("companies").upload(path, new Blob([""]), { upsert: true });
+    }
   }
 
   const file = formData.get("logo") as File | null;
@@ -145,8 +145,8 @@ export async function updateCompanyAction(formData: FormData) {
   await prisma.company.update({
     where: { id: companyId },
     data: {
-      name: formatted.name,
-      companyCode: formatted.companyCode,
+      name: raw.name,
+      companyCode: raw.companyCode,
       email: formatted.email,
       phone: formatted.phone,
       address: formattedAddress,

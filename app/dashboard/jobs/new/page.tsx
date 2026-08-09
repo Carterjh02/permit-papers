@@ -27,7 +27,7 @@ export async function onTestPA(jobId: string, input: {
     "@/lib/propertyAppraiser/index"
   );
 
-  const result = await runPropertyAppraiserSearch({
+  return await runPropertyAppraiserSearch({
     jobId,
     address: input.address ?? "",
     city: input.city ?? "",
@@ -37,8 +37,6 @@ export async function onTestPA(jobId: string, input: {
     subdivision: input.subdivision ?? "",
     county: input.county ?? "",
   });
-
-  return result;
 }
 
 export default async function NewJobPage() {
@@ -54,11 +52,15 @@ export default async function NewJobPage() {
   }
 
   /* -----------------------------------------------------------
-    New Job page load
------------------------------------------------------------ */
+    Load company
+  ----------------------------------------------------------- */
   const company = await prisma.company.findUnique({
     where: { id: companyId },
   });
+
+  if (!company) {
+    return <div className="p10">Company not found.</div>;
+  }
 
   const defaultDescription = company?.descOfImprov ?? "";
 
@@ -74,11 +76,13 @@ export default async function NewJobPage() {
 
       <JobFormClient
         mode="create"
-        companyCode={company?.companyCode ?? ""}
+        companyCode={company.companyCode}
         initialJob={{
           description: defaultDescription,
           companyId,
           createdBy: user.username,
+          snippetPath: null,
+          snippetSignedUrl: null,
         }}
         initialTemplates={[]}
         onSave={async (formData: FormData) => {
@@ -87,18 +91,18 @@ export default async function NewJobPage() {
         }}
         onAddTemplate={async (paths) => {
           "use server";
-        
+
           const job = await prisma.job.findFirst({
             where: { companyId, createdBy: user.username },
             orderBy: { createdAt: "desc" },
           });
-        
+
           if (!job) return;
-        
+
           for (const p of paths) {
             await addTemplateAction(job.id, p);
           }
-        }}     
+        }}
         onRemoveTemplate={async (jobDocumentId) => {
           "use server";
           await removeTemplateAction(jobDocumentId);
@@ -116,36 +120,7 @@ export default async function NewJobPage() {
             parsed: result.parsed,
           };
         }}
-
-        onTestPA={async (
-          jobId: string,
-          input: {
-            address?: string;
-            city?: string;
-            state?: string;
-            zip?: string;
-            folio?: string;
-            subdivision?: string;
-            county?: string;
-          }
-        ) => {
-          "use server";
-        
-          const { runPropertyAppraiserSearch } = await import(
-            "@/lib/propertyAppraiser/index"
-          );
-        
-          return await runPropertyAppraiserSearch({
-            jobId,
-            address: input.address ?? "",
-            city: input.city ?? "",
-            state: input.state ?? "",
-            zip: input.zip ?? "",
-            folio: input.folio ?? "",
-            subdivision: input.subdivision ?? "",
-            county: input.county ?? "",
-          });
-        }}
+        onTestPA={onTestPA}
       />
     </div>
   );

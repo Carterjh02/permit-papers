@@ -5,6 +5,15 @@ import { PDFDocument } from "pdf-lib";
 import { prisma } from "@/lib/prisma";
 
 /**
+ * Normalize a Supabase storage path by removing the bucket prefix if present.
+ * Works for both "templates" and "companies" buckets.
+ */
+function normalizePath(bucket: string, storagePath: string): string {
+  // Remove leading bucket prefix (case-insensitive)
+  return storagePath.replace(new RegExp(`^${bucket}/`, "i"), "");
+}
+
+/**
  * Extract all AcroForm field names from a PDF stored in Supabase.
  *
  * @param bucket - The Supabase storage bucket ("templates", "companies", etc.)
@@ -16,26 +25,27 @@ export async function extractPdfFields(
   bucket: string,
   storagePath: string
 ): Promise<string[]> {
-  // 1. Download PDF using service role (works with private buckets)
-  const cleanPath =
-  storagePath.startsWith(`${bucket}/`)
-    ? storagePath.slice(bucket.length + 1)
-    : storagePath;
+  const cleanPath = normalizePath(bucket, storagePath);
 
-const { data, error } = await supabaseServer.storage
-  .from(bucket)
-  .download(cleanPath);
+  console.log("[extractPdfFields] Bucket:", bucket);
+  console.log("[extractPdfFields] storagePath:", storagePath);
+  console.log("[extractPdfFields] cleanPath:", cleanPath);
+
+  // Download PDF from Supabase
+  const { data, error } = await supabaseServer.storage
+    .from(bucket)
+    .download(cleanPath);
 
   if (error || !data) {
-    console.error("Failed to download PDF:", error);
-    throw new Error("Could not download PDF from storage.");
+    console.error("[extractPdfFields] Failed to download PDF:", error);
+    throw new Error(`Could not download PDF from storage: ${cleanPath}`);
   }
 
   // Convert Blob → ArrayBuffer → Buffer
   const arrayBuffer = await data.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  // 2. Load PDF with pdf-lib
+  // Load PDF with pdf-lib
   const pdfDoc = await PDFDocument.load(buffer);
   const form = pdfDoc.getForm();
 
@@ -47,12 +57,14 @@ const { data, error } = await supabaseServer.storage
     if (name) fieldNames.push(name);
   }
 
+  console.log("[extractPdfFields] Extracted fields:", fieldNames);
+
   return Array.from(new Set(fieldNames)).sort();
 }
 
 /**
  * Extract fields and save them to the DB for a template record.
- * This function still assumes templates live in the "templates" bucket.
+ * This now supports BOTH templates and company documents.
  */
 export async function extractAndSaveFields(templateId: string) {
   const template = await prisma.formTemplate.findUnique({
@@ -61,9 +73,15 @@ export async function extractAndSaveFields(templateId: string) {
 
   if (!template) throw new Error("Template not found.");
 
-  // IMPORTANT:
-  // This still uses the templates bucket because DB templates always live there.
-  const fieldNames = await extractPdfFields("templates", template.path);
+  // Determine bucket based on stored path
+  const bucket = template.path.startsWith("companies/")
+    ? "companies"
+    : "templates";
+
+  console.log("[extractAndSaveFields] Template bucket:", bucket);
+  console.log("[extractAndSaveFields] Template path:", template.path);
+
+  const fieldNames = await extractPdfFields(bucket, template.path);
 
   await prisma.formTemplate.update({
     where: { id: templateId },

@@ -65,8 +65,7 @@ export default function NewTemplatePage() {
       {showBrowser && (
         <FolderBrowserPanel
           mode="master"
-          initialPath=""
-          companyCode=""       
+          initialPath="" 
           onClose={() => setShowBrowser(false)}
           onSelectFile={() => {}}
           onUploadComplete={handleUploadComplete}

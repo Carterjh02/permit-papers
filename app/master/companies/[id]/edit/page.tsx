@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import CompanyDocumentsPanel from "./CompanyDocumentsPanel";
 
 import { updateCompanyAction, deleteCompanyAction } from "./actions";
 
@@ -137,9 +138,20 @@ export default async function CompanyEditPage({
           Save Changes
         </button>
       </form>
+
+      {/* Company Documents */}
+      <div className="space-y-4 border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+          Company Documents
+        </h2>
+
+        <CompanyDocumentsPanel companyCode={company.companyCode!} />
+      </div>
     </div>
   );
 }
+
+
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

@@ -19,6 +19,7 @@ export default async function JobPreviewPage({ params }: PageProps) {
   const job = await prisma.job.findUnique({
     where: { id },
     include: {
+      company: true,
       documents: {
         select: {
           id: true,
@@ -29,7 +30,7 @@ export default async function JobPreviewPage({ params }: PageProps) {
           templatePath: true,
           templateSourcePath: true,
           templateOutputPath: true,
-          templateSignedUrl: true,   // ⭐ REQUIRED
+          templateSignedUrl: true,  
         },
       },
     }
@@ -41,21 +42,21 @@ export default async function JobPreviewPage({ params }: PageProps) {
   const cacheKey = `v=${updatedAt.getTime()}`;
 
   // Generated previews (signed URLs)
-  const generatedPreviews = job.documents
-    .filter((doc) => doc.templateSignedUrl) // only show generated PDFs
-    .map((doc) => {
-      const fileName = doc.templateName.endsWith(".pdf")
-        ? doc.templateName
-        : `${doc.templateName}.pdf`;
+  const allPreviews = job.documents
+  .filter((doc) => doc.templateSignedUrl)
+  .map((doc) => {
+    const fileName = doc.templateName.endsWith(".pdf")
+      ? doc.templateName
+      : `${doc.templateName}.pdf`;
 
-      const url = `${doc.templateSignedUrl}&${cacheKey}`;
+    const url = `${doc.templateSignedUrl}&${cacheKey}`;
 
-      return {
-        id: doc.id,
-        name: fileName,
-        url,
-      };
-    });
+    return {
+      id: doc.id,
+      name: fileName,
+      url,
+    };
+  });
 
   async function backToJob() {
     "use server";
@@ -80,15 +81,15 @@ export default async function JobPreviewPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <h2 className="text-xl font-semibold mt-6">Generated Previews</h2>
+      <h2 className="text-xl font-semibold mt-6">Documents</h2>
 
-      {generatedPreviews.length === 0 && (
-        <p className="text-sm text-gray-500">No preview documents found.</p>
+      {allPreviews.length === 0 && (
+        <p className="text-sm text-gray-500">No documents found.</p>
       )}
 
-      {generatedPreviews.length > 0 && (
+      {allPreviews.length > 0 && (
         <div className="space-y-8">
-          {generatedPreviews.map((p) => (
+          {allPreviews.map((p) => (
             <div key={p.id} className="card p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">{p.name}</h3>
