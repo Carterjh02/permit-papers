@@ -28,7 +28,6 @@ export async function POST(req: Request) {
       storagePath: body.path,
       fieldNames: [],
       mapping: {},
-      companyCode: body.companyCode ?? null,  
     },
   });
 
