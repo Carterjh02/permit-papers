@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     // Extract fields using NEW extractor
     const fieldNames = await extractPdfFields("forms", filePath);
 
-    // Save template
+    // Save template. 
     const template = await prisma.formTemplate.create({
       data: {
         name,
