@@ -63,7 +63,6 @@ export async function POST(req: Request) {
       storagePath: path,
       fieldNames: [],
       mapping: {},
-      companyCode: formData.get("companyCode") as string | null,  
     },
   });
 
