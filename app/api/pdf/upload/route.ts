@@ -54,15 +54,6 @@ export async function POST(req: Request) {
         formType: "generic",
       },
     });
-    
-    // Now update companyCode separately
-    await prisma.formTemplate.update({
-      where: { id: template.id },
-      data: {
-        companyCode: formData.get("companyCode") as string | null,
-      },
-    });
-    
 
     const autoMapped = autoMapFields(fieldNames);
 
