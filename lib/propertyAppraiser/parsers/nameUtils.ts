@@ -1,11 +1,18 @@
 /**
  * Normalize owner names for Broward + Palm Beach
- * Always returns: "First Last" or "First & First Last"
+ * Always returns:
+ *  - "First Last"
+ *  - "First & First Last"
+ *  - "First Last & First Last"
+ *
+ * Removes:
+ *  - Middle names
+ *  - Secondary last names
+ *  - Trusts
  */
 export function normalizeOwnerNames(raw: string | string[]): string | undefined {
   if (!raw) return undefined;
 
-  // Convert single string → array
   const names = Array.isArray(raw) ? raw : [raw];
 
   // ---------------------------
@@ -19,59 +26,70 @@ export function normalizeOwnerNames(raw: string | string[]): string | undefined 
   if (filtered.length === 0) return undefined;
 
   // ---------------------------
-  // 2. Normalize each name
+  // Helper: extract first names + primary last
   // ---------------------------
-  const normalized = filtered.map(n => {
-    let name = n.trim().replace(/\s+/g, " ");
+  function extractNameParts(name: string): { firstNames: string[]; last: string } {
+    name = name.trim().replace(/\s+/g, " ").replace(/&amp;/gi, "&");
 
-    // Remove trailing commas
-    name = name.replace(/,+$/, "");
-
-    // Remove standalone one-letter fragments
-    name = name
-      .split(" ")
-      .filter(part => part.length > 1)
-      .join(" ");
-
-    // Case: "LAST, FIRST MIDDLE"
+    // Case: "LAST LAST2, FIRST & SECOND MIDDLE"
     if (name.includes(",")) {
-      const [last, rest] = name.split(",").map(s => s.trim());
-      const first = rest.split(" ")[0]; // ignore middle names
-      return `${first} ${last}`.trim();
+      const [lastRaw, restRaw] = name.split(",").map(s => s.trim());
+
+      // FIRST & SECOND MIDDLE → ["FIRST", "SECOND"]
+      const firstNames = restRaw
+        .split("&")
+        .map(s => s.trim().split(" ")[0]); // remove middle names
+
+      // PRIMARY LAST = last token before comma
+      const lastParts = lastRaw.split(" ");
+      const last = lastParts[lastParts.length - 1];
+
+      return { firstNames, last };
     }
 
-    // Case: "LAST FIRST MIDDLE"
+    // Case: "LAST LAST2 FIRST MIDDLE"
     const parts = name.split(" ");
+
     if (parts.length >= 2) {
-      const last = parts[0];
-      const first = parts[1];
-      return `${first} ${last}`.trim();
+      const last = parts[parts.length - 2]; // primary last
+      const first = parts[parts.length - 1]; // first name only
+      return { firstNames: [first], last };
     }
 
-    return name;
-  });
-
-  // ---------------------------
-  // 3. Only keep first two names
-  // ---------------------------
-  const two = normalized.slice(0, 2);
-
-  if (two.length === 1) return two[0];
-
-  // ---------------------------
-  // 4. Merge shared last names
-  // ---------------------------
-  const lastNames = two.map(n => n.split(" ").pop());
-  const allSameLast = lastNames.every(l => l === lastNames[0]);
-
-  if (allSameLast) {
-    const last = lastNames[0];
-    const firstNames = two.map(n => n.split(" ")[0]).join(" & ");
-    return `${firstNames} ${last}`;
+    return { firstNames: [name], last: "" };
   }
 
   // ---------------------------
-  // 5. Different last names → "First Last & First Last"
+  // 2. Normalize each owner
   // ---------------------------
-  return two.join(" & ");
+  const normalized = filtered.map(n => {
+    const { firstNames, last } = extractNameParts(n);
+    return { firstNames, last };
+  });
+
+  // ---------------------------
+  // 3. Merge multiple owners
+  // ---------------------------
+  if (normalized.length > 1) {
+    const lastNames = normalized.map(n => n.last);
+    const allSameLast = lastNames.every(l => l === lastNames[0]);
+
+    // Case: shared last name → "First & First Last"
+    if (allSameLast && lastNames[0]) {
+      const last = lastNames[0];
+      const allFirstNames = normalized
+        .flatMap(n => n.firstNames)
+        .join(" & ");
+      return `${allFirstNames} ${last}`.trim();
+    }
+
+    // Case: different last names → "First Last & First Last"
+    return normalized
+      .map(n => `${n.firstNames[0]} ${n.last}`.trim())
+      .join(" & ");
+  }
+
+  // Single owner
+  const single = normalized[0];
+  return `${single.firstNames.join(" & ")} ${single.last}`.trim();
 }

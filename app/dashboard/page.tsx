@@ -110,7 +110,7 @@ export default async function DashboardPage({
         />
 
         <div>
-          <label className="block text-sm font-medium">Status</label>
+          <label className="block text-sm font-medium text-[var(--text-color)]">Status</label>
           <select name="status" defaultValue={status} className="input">
             <option value="">All</option>
             <option value="open">Open</option>
@@ -130,13 +130,14 @@ export default async function DashboardPage({
       </FilterPanel>
 
       <DataTable
+        className="dashboard-table"
         headers={
           <>
-            <th className="text-left py-2 pr-4">Job #</th>
-            <th className="text-left py-2 pr-4">Customer</th>
-            <th className="text-left py-2 pr-4">Address</th>
-            <th className="text-left py-2 pr-4">Created</th>
-            <th className="text-left py-2 pr-4">Actions</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Job #</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Customer</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Address</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Created</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Actions</th>
           </>
         }
       >
@@ -163,15 +164,15 @@ export default async function DashboardPage({
           .join(", ");
 
         return (
-          <tr key={j.id} className="border-b last:border-0">
-          <td className="py-2 pr-4">{j.jobNumber}</td>
-          <td className="py-2 pr-4">{j.customerName ?? "-"}</td>
-          <td className="py-2 pr-4">{fullAddress || "-"}</td>
-          <td className="py-2 pr-4">
+          <tr key={j.id} className="border-b border-[var(--border-color)] last:border-0">
+          <td className="py-2 pr-4 text-[var(--text-color)]">{j.jobNumber}</td>
+          <td className="py-2 pr-4 text-[var(--text-color)]">{j.customerName ?? "-"}</td>
+          <td className="py-2 pr-4 text-[var(--text-color)]">{fullAddress || "-"}</td>
+          <td className="py-2 pr-4 text-[var(--text-color)]">
             {j.createdAt.toLocaleDateString()}
           </td>
 
-          <td className="py-2 pr-4">
+          <td className="py-2 pr-4 text-[var(--text-color)]">
             <JobActions jobId={j.id} jobNumber={j.jobNumber} />
           </td>
         </tr>
@@ -182,14 +183,14 @@ export default async function DashboardPage({
 
         {jobs.length === 0 && (
           <tr>
-            <td colSpan={5} className="py-4 text-center text-gray-500">
+            <td colSpan={5} className="py-4 text-center text-[var(--text-color)] opacity-60">
               No jobs found.
             </td>
           </tr>
         )}
       </DataTable>
 
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm text-[var(--text-color)]">
         <span>
           Page {page} of {totalPages} ({total} total)
         </span>
@@ -204,7 +205,7 @@ export default async function DashboardPage({
                 dir,
                 page: String(page - 1),
               }).toString()}`}
-              className="btn btn-secondary btn-sm"
+              className="px-3 py-1 rounded bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]"
             >
               Previous
             </Link>
@@ -219,7 +220,7 @@ export default async function DashboardPage({
                 dir,
                 page: String(page + 1),
               }).toString()}`}
-              className="btn btn-secondary btn-sm"
+              className="px-3 py-1 rounded bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]"
             >
               Next
             </Link>

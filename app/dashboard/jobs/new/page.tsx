@@ -69,7 +69,7 @@ export default async function NewJobPage() {
       <h1 className="text-2xl font-bold">Create New Job</h1>
 
       <div className="flex justify-end">
-        <a href="/dashboard" className="btn btn-secondary">
+        <a href="/dashboard" className="btn btn-primary">
           Back to Dashboard
         </a>
       </div>

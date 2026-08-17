@@ -86,8 +86,8 @@ export default async function CompanyInfoPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="card p-6 space-y-4 border border-gray-200 rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+    <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+      <h2 className="text-lg font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>
@@ -104,10 +104,10 @@ function Info({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-600">
+      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">
         {label}
       </label>
-      <p className="text-gray-900">{value || "—"}</p>
+      <p className="text-[var(--text-color)]">{value || "—"}</p>
     </div>
   );
 }

@@ -9,8 +9,10 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect, notFound } from "next/navigation";
-import { formatJobFields } from "@/lib/utils/formatters";
+import { formatJobFields, formatCompanyFields, CompanyFields } from "@/lib/utils/formatters";
 import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
+import { loadPreferences } from "@/lib/preferences/loadPreferences";
+import { FormattingPreferences } from "@/lib/utils/formatters";
 
 /* -----------------------------------------------------------
    GENERATE PREVIEWS
@@ -74,30 +76,63 @@ export async function generatePreviews(jobId: string) {
         : [];
   
       const autoMapped = autoMapFields(fieldNames);
+
+      // Load formatting preferences for this company
+      const prefs = await loadPreferences({
+        userId: job.createdBy,
+        companyId: job.companyId,
+      });
+
+      const formattingPrefs: FormattingPreferences = {
+        addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+        addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+        nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+        nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+        phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+        documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+      };
   
-      // 3. Build company + job data
+      // 3. Build company + job data (formatted)
+      const companyCamel: CompanyFields = {
+        name: job.company.name ?? undefined,
+        qualifierName: job.company.qualifierName ?? undefined,
+        addressStreet: job.company.addressStreet ?? undefined,
+        addressCity: job.company.addressCity ?? undefined,
+        addressState: job.company.addressState ?? undefined,
+        addressZip: job.company.addressZip ?? undefined,
+        address: job.company.address ?? undefined,
+        phone: job.company.phone ?? undefined,
+        email: job.company.email ?? undefined,
+        descOfImprov: job.company.descOfImprov ?? undefined,
+        businessTaxReceipt: job.company.businessTaxReceipt ?? undefined,
+        licenseNumber: job.company.licenseNumber ?? undefined,
+        companyCode: job.company.companyCode ?? undefined,
+      };
+      
+      // Apply formatting preferences
+      const formattedCompany = formatCompanyFields(companyCamel, formattingPrefs);
+      
+      // Build snake_case companyData for fillPdf
       const companyData = {
-        company_name: job.company.name ?? "",
-        company_license: job.company.licenseNumber ?? "",
-        company_tax_id: job.company.businessTaxReceipt ?? "",
-        qualifier_name: job.company.qualifierName ?? "",
-        company_phone: job.company.phone ?? "",
-        company_email: job.company.email ?? "",
-        company_address_street: job.company.addressStreet ?? "",
-        company_address_city: job.company.addressCity ?? "",
-        company_address_state: job.company.addressState ?? "",
-        company_address_zip: job.company.addressZip ?? "",
-        company_address_full:
-          job.company.address ??
-          [
-            job.company.addressStreet,
-            job.company.addressCity,
-            job.company.addressState,
-            job.company.addressZip,
-          ]
-            .filter(Boolean)
-            .join(", "),
-        desc_of_improv: job.company.descOfImprov ?? "",
+        company_name: formattedCompany.name ?? "",
+        company_license: formattedCompany.licenseNumber ?? "",
+        company_tax_id: formattedCompany.businessTaxReceipt ?? "",
+        qualifier_name: formattedCompany.qualifierName ?? "",
+        company_phone: formattedCompany.phone ?? "",
+        company_email: formattedCompany.email ?? "",
+        company_address_street: formattedCompany.addressStreet ?? "",
+        company_address_city: formattedCompany.addressCity ?? "",
+        company_address_state: formattedCompany.addressState ?? "",
+        company_address_zip: formattedCompany.addressZip ?? "",
+        company_address_full: [
+          formattedCompany.addressStreet,
+          formattedCompany.addressCity,
+          formattedCompany.addressState,
+          formattedCompany.addressZip,
+        ]
+          .filter(Boolean)
+          .join(", "),
+        desc_of_improv: formattedCompany.descOfImprov ?? "",
       };
   
       const jobData = {
@@ -133,6 +168,7 @@ export async function generatePreviews(jobId: string) {
         autoMapped,
         company: companyData,
         job: jobData,
+        formattingPrefs,
       });
   
       // 5. Build SAFE filename
@@ -264,7 +300,7 @@ function normalizeOCRName(name: string | undefined): string | undefined {
 }
 
 // ------------------------------------------------------------
-// FULL OCR PARSER (UPDATED)
+// FULL OCR PARSER 
 // ------------------------------------------------------------
 export async function parseCustomerInfo(text: string) {
   // Pre-clean text
@@ -274,7 +310,7 @@ export async function parseCustomerInfo(text: string) {
     .replace(/\s{2,}/g, " ")               // collapse multiple spaces
     .trim();
 
-  // 2️⃣ Split and filter lines
+  // Split and filter lines
   const blacklist = ["customer", "address", "info", "email", "phone", "section"];
   const lines = cleaned
     .split(/\r?\n/)
@@ -296,15 +332,15 @@ export async function parseCustomerInfo(text: string) {
     phone?: string;
   } = {};
 
-  // 3️⃣ Regex patterns
+  // Regex patterns
   const nameRegex = /^[A-Z][a-z]+[, ]+[A-Z][a-z]+/i;
   const phoneRegex = /\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}/;
   const addressRegex = /^\d{3,5}\s+[A-Z0-9 .'-]+$/i;
-  const cityStateZipRegex = /([A-Z\s]+),?\s*([A-Z]{2})\s*(\d{5})/;
+  const cityStateZipRegex = /^([\w\s'.-]+)\s*,?\s*([A-Z]{2})\s*(\d{5})$/i;
   const folioRegex = /\b\d{4,}[-]?\d*\b/;
   const subdivisionRegex = /(SU|Subdivision|Quinnstreet)/i;
 
-  // 4️⃣ Detect fields
+  // Detect fields
   for (const line of lines) {
     if (!result.name && nameRegex.test(line)) {
       result.name = cleanField(normalizeOCRName(line));
@@ -399,6 +435,8 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
 
   const parsed = await parseCustomerInfo(fullText);
 
+  
+
   // Update job with parsed fields + signed URL
   await prisma.job.update({
     where: { id: jobId },
@@ -472,15 +510,32 @@ export async function updateJobAction(formData: FormData) {
     (formData.get("company_document_paths") as string) ?? "[]"
   );
 
-  const formatted = formatJobFields({
-    customerName: raw.customerName ?? undefined,
-    customerPhone: raw.customerPhone ?? undefined,
-    customerAddress: raw.customerAddress ?? undefined,
-    customerCity: raw.customerCity ?? undefined,
-    customerState: raw.customerState ?? undefined,
-    customerZip: raw.customerZip ?? undefined,
-    legalDescription: raw.legalDescription ?? undefined,
+  const prefs = await loadPreferences({
+    userId: existing.createdBy,
+    companyId: existing.companyId,
   });
+  
+  const formattingPrefs: FormattingPreferences = {
+    addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+    addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+    nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+    nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+    phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+    documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+  };
+
+  const formatted = formatJobFields(
+    {
+      customerName: raw.customerName ?? undefined,
+      customerPhone: raw.customerPhone ?? undefined,
+      customerAddress: raw.customerAddress ?? undefined,
+      customerCity: raw.customerCity ?? undefined,
+      customerState: raw.customerState ?? undefined,
+      customerZip: raw.customerZip ?? undefined,
+      legalDescription: raw.legalDescription ?? undefined,
+    },
+    formattingPrefs
+  );
 
   const subdivision = formData.get("subdivision") as string | null;
   const taxFolioNumber = formData.get("customer_tax_folio") as string | null;
@@ -505,7 +560,7 @@ export async function updateJobAction(formData: FormData) {
       customerName: formatted.customerName,
       customerPhone: formatted.customerPhone,
       customerEmail: raw.customerEmail ?? undefined,
-      customerAddress: raw.customerAddress ?? undefined,
+      customerAddress: formatted.customerAddress ?? undefined,
       customerCity: formatted.customerCity,
       customerState: formatted.customerState,
       customerZip: formatted.customerZip,
@@ -562,7 +617,6 @@ export async function updateJobAction(formData: FormData) {
   }
 
   await generatePreviews(targetId);
-
   redirect(`/dashboard/jobs/${targetId}/preview`);
 }
 
@@ -758,16 +812,34 @@ export async function createJobAction(formData: FormData) {
     jobValue: jobValue,
   };
 
-  const formatted = formatJobFields({
-    customerName: raw.customerName ?? undefined,
-    customerPhone: raw.customerPhone ?? undefined,
-    customerAddress: raw.customerAddress ?? undefined,
-    customerCity: raw.customerCity ?? undefined,
-    customerState: raw.customerState ?? undefined,
-    customerZip: raw.customerZip ?? undefined,
-    legalDescription: raw.legalDescription ?? undefined,
-    jobValue,
+  const prefs = await loadPreferences({
+    userId: user.username,
+    companyId,
   });
+  
+  const formattingPrefs: FormattingPreferences = {
+    addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+    addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+    nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+    nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+    phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+    documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+  };
+  
+
+  const formatted = formatJobFields(
+    {
+      customerName: raw.customerName ?? undefined,
+      customerPhone: raw.customerPhone ?? undefined,
+      customerAddress: raw.customerAddress ?? undefined,
+      customerCity: raw.customerCity ?? undefined,
+      customerState: raw.customerState ?? undefined,
+      customerZip: raw.customerZip ?? undefined,
+      legalDescription: raw.legalDescription ?? undefined,
+      jobValue,
+    },
+    formattingPrefs
+  );
 
   const templatePaths = JSON.parse(
     (formData.get("template_paths") as string) ?? "[]"
@@ -793,10 +865,12 @@ export async function createJobAction(formData: FormData) {
       description:
         (formData.get("desc_of_improvement") as string | null)?.trim() ?? "",
       jobNumber: nextJobNumber,
+
+      // CUSTOMER (formatted)
       customerName: formatted.customerName,
       customerPhone: formatted.customerPhone,
       customerEmail: raw.customerEmail ?? undefined,
-      customerAddress: raw.customerAddress ?? undefined,
+      customerAddress: formatted.customerAddress ?? undefined,
       customerCity: formatted.customerCity,
       customerState: formatted.customerState,
       customerZip: formatted.customerZip,
@@ -848,6 +922,5 @@ export async function createJobAction(formData: FormData) {
   }
 
   await generatePreviews(job.id);
-
   redirect(`/dashboard/jobs/${job.id}/preview`);  
 } 

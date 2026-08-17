@@ -199,12 +199,12 @@ export default function FolderTree({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search folders and files…"
-          className="input input-bordered w-64"
+          className="input w-64 bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
         />
-        <button onClick={collapseAll} className="btn btn-outline btn-sm">
+        <button onClick={collapseAll} className="dashboard-btn-transparent text-sm">
           Collapse All
         </button>
-        <button onClick={expandAll} className="btn btn-outline btn-sm">
+        <button onClick={expandAll} className="dashboard-btn-transparent text-sm">
           Expand All
         </button>
       </div>
@@ -213,8 +213,8 @@ export default function FolderTree({
       <div
         className={
           variant === "admin"
-            ? "border rounded-lg p-4 bg-white"
-            : "border rounded-lg p-3 bg-white"
+            ? "border border-[var(--border-color)] rounded-lg p-4 bg-[var(--card-bg)]"
+            : "border border-[var(--border-color)] rounded-lg p-3 bg-[var(--card-bg)]"
         }
       >
         <FolderNodeView
@@ -270,20 +270,20 @@ function FolderNodeView({
     !disableSelection && selectedFiles && onToggleFile;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-[var(--text-color)]">
       {/* Folder Header */}
       {node.fullPath !== "__selected__" && (
         <div
-        className={`flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-gray-50 ${
-          onSelectFolder && path === currentPath ? "bg-blue-50 border-l-4 border-blue-600" : ""
+        className={`flex items-center gap-2 w-full px-2 py-1 rounded hover:bg-[var(--card-bg)] ${
+          onSelectFolder && path === currentPath ? "bg-[var(--selected-bg)] border-l-4 border-[var(--selected-border)]" : ""
         }`}
       >
           {/* Expand / collapse */}
           <button type="button" onClick={() => toggle(path)} className="p-1">
             {open ? (
-              <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+              <ChevronDownIcon className="w-4 h-4 text-[var(--text-color)] opacity-70" />
             ) : (
-              <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+              <ChevronRightIcon className="w-4 h-4 text-[var(--text-color)] opacity-70" />
             )}
           </button>
 
@@ -316,7 +316,7 @@ function FolderNodeView({
               <input type="hidden" name="path" value={node.fullPath} />
               <button
                 type="submit"
-                className="text-red-600 hover:text-red-800 text-sm"
+                className="text-red-400 hover:text-red-500 text-sm"
               >
                 Delete
               </button>
@@ -353,8 +353,8 @@ function FolderNodeView({
                         onSelectFile?.(normalizedFilePath);
                         }
                       }}
-                      className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${
-                        selected ? "bg-blue-50 border-l-4 border-blue-600" : ""
+                      className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded hover:bg-[var(--card-bg)] ${
+                        selected ? "bg-[var(--selected-bg)] border-l-4 border-[var(--selected-border)]" : ""
                       }`}
                     >
                       {/* Checkbox */}
@@ -362,8 +362,8 @@ function FolderNodeView({
                         <div
                           className={`w-4 h-4 rounded-sm border flex items-center justify-center ${
                             selected
-                              ? "bg-blue-600 border-blue-600"
-                              : "border-gray-400"
+                              ? "bg-[var(--accent-bg)] border-[var(--accent-bg)]"
+                              : "border-[var(--border-color)]"
                           }`}
                         >
                           {selected && (
@@ -373,7 +373,7 @@ function FolderNodeView({
                       )}
 
                       {/* File Icon */}
-                      <DocumentIcon className="w-4 h-4 text-blue-500" />
+                      <DocumentIcon className="w-4 h-4 text-[var(--accent-bg)]" />
 
                       {/* File Name */}
                       <span className="truncate">{f.name}</span>
@@ -386,7 +386,7 @@ function FolderNodeView({
 
           {/* Child Folders */}
           {node.folders.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 text-[var(--text-color)]">
               {node.folders
                 .filter((child) => {
                   const n = child.name.toLowerCase();

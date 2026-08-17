@@ -101,21 +101,21 @@ export default async function AdminUsersPage({
       <DataTable
         headers={
           <>
-            <th className="text-left py-2 pr-4">Username</th>
-            <th className="text-left py-2 pr-4">Email</th>
-            <th className="text-left py-2 pr-4">Created</th>
-            <th className="text-left py-2 pr-4">Actions</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Username</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Email</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Created</th>
+            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Actions</th>
           </>
         }
       >
         {typedUsers.map((u) => (
-          <tr key={u.id} className="border-b last:border-0">
-            <td className="py-2 pr-4">{u.username}</td>
-            <td className="py-2 pr-4">{u.email ?? "-"}</td>
-            <td className="py-2 pr-4">
+          <tr key={u.id} className="border-b border-[var(--border-color)] last:border-0">
+            <td className="py-2 pr-4 text-[var(--text-color)]">{u.username}</td>
+            <td className="py-2 pr-4 text-[var(--text-color)]">{u.email ?? "-"}</td>
+            <td className="py-2 pr-4 text-[var(--text-color)]">
               {u.createdAt?.toLocaleDateString?.() ?? "-"}
             </td>
-            <td className="py-2 pr-4">
+            <td className="py-2 pr-4 text-[var(--text-color)]">
               <Link
                 href={`/dashboard/users/${u.id}/edit`}
                 className="text-blue-600 hover:underline"
@@ -128,7 +128,7 @@ export default async function AdminUsersPage({
 
         {typedUsers.length === 0 && (
           <tr>
-            <td colSpan={4} className="py-4 text-center text-gray-500">
+            <td colSpan={4} className="py-4 text-center text-[var(--text-color)] opacity-60">
               No users found.
             </td>
           </tr>

@@ -41,9 +41,52 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   const owners = model.ownerInfo || [];
 
   // ---------------------------
-  // OWNER NAME (universal normalizer)
+  // OWNER NAME 
   // ---------------------------
-  data.ownerName = normalizeOwnerNames(owners);
+
+  // 1. Clean raw Palm Beach owner strings
+  let cleanedOwners = owners
+    .map(o => o.replace(/&/g, "").trim())   // remove stray ampersands
+    .filter(o => o.length > 0);             // remove empty entries
+  
+  // 2. Palm Beach sometimes returns 3+ owners; keep only first two
+  if (cleanedOwners.length > 2) {
+    cleanedOwners = cleanedOwners.slice(0, 2);
+  }
+  
+  // 3. Branch: single-owner vs multi-owner
+  if (cleanedOwners.length === 1) {
+    const parts = cleanedOwners[0].split(/\s+/);
+  
+    if (parts.length === 2) {
+      // Case: LAST FIRST
+      const last = parts[0];
+      const first = parts[1];
+      data.ownerName = `${first} ${last}`.trim();
+    }
+  
+    else if (parts.length >= 3) {
+      const last = parts[0];
+      const second = parts[1];
+      const tail = parts[parts.length - 1];
+    
+      // If tail is a single letter → middle initial → ignore it
+      if (/^[A-Z]$/i.test(tail)) {
+        data.ownerName = `${second} ${last}`.trim();
+      } else {
+        // Tail is a full name → treat tail as FIRST NAME
+        // Last stays as LAST NAME
+        data.ownerName = `${last} ${tail}`.trim();
+      }
+    }
+  
+    else {
+      data.ownerName = cleanedOwners[0];
+    }
+  } 
+  else if (cleanedOwners.length > 1) {
+    data.ownerName = normalizeOwnerNames(cleanedOwners);
+  }  
 
   // ---------------------------
   // ADDRESS EXTRACTION
@@ -93,7 +136,7 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   // FOLIO / PARCEL ID
   // ---------------------------
   if (pd.FormattedPCN) {
-    data.folio = pd.FormattedPCN.replace(/-/g, "").trim();
+    data.folio = pd.FormattedPCN.trim();
   }
 
   // ---------------------------
@@ -102,6 +145,5 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   if (pd.LegalDesc) {
     data.legalDescription = pd.LegalDesc.replace(/\s+/g, " ").trim();
   }
-
   return data;
 }

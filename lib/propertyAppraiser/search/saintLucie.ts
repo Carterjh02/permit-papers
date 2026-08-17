@@ -22,6 +22,8 @@ export async function searchSaintLucie(address: string): Promise<Buffer> {
     // TODO: adjust these selectors to match Saint Lucie PA search form
     // These are placeholders that will compile and run.
     await page.fill("input[type='text']", address);
+    console.log("🟦 [PA_DEBUG] SaintLucie: Received address:", address);
+
     await page.click("input[type='submit']");
 
     // Give the site a moment to render results
@@ -29,6 +31,7 @@ export async function searchSaintLucie(address: string): Promise<Buffer> {
 
     const screenshot = await page.screenshot({ fullPage: true });
     return screenshot;
+    console.log("🟦 [PA_DEBUG] SaintLucie: Screenshot size:", screenshot.length);
   } finally {
     await closeBrowser(browser);
   }

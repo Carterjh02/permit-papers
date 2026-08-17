@@ -35,7 +35,7 @@ export default function JobCreateClient({
   };
 
   return (
-    <div className="space-y-4 card p-6">
+    <div className="space-y-4 p-6 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
       <form action={createJob} className="space-y-4" encType="multipart/form-data">
         <input type="hidden" name="company_id" value={companyId} />
         <input type="hidden" name="description" value={defaultDescription} />
@@ -47,92 +47,92 @@ export default function JobCreateClient({
           value={JSON.stringify(selectedTemplates)}
         />
 
-        <h2 className="text-lg font-semibold mt-6">Customer Information</h2>
+        <h2 className="text-lg font-semibold mt-6 text-[var(--text-color)]">Customer Information</h2>
 
         <div>
-          <label className="block text-sm font-medium">Customer Name</label>
-          <input name="customer_name" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Customer Name</label>
+          <input name="customer_name" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Customer Phone</label>
-          <input name="customer_phone" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Customer Phone</label>
+          <input name="customer_phone" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Customer Email</label>
-          <input name="customer_email" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Customer Email</label>
+          <input name="customer_email" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Full Address</label>
-          <textarea name="customer_address_full" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Full Address</label>
+          <textarea name="customer_address_full" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium">City</label>
-            <input name="customer_address_city" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">City</label>
+            <input name="customer_address_city" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">State</label>
-            <input name="customer_address_state" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">State</label>
+            <input name="customer_address_state" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Zip</label>
-            <input name="customer_address_zip" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Zip</label>
+            <input name="customer_address_zip" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
         </div>
 
-        <h2 className="text-lg font-semibold mt-6">Legal Description</h2>
+        <h2 className="text-lg font-semibold mt-6 text-[var(--text-color)]">Legal Description</h2>
 
         <div>
-          <label className="block text-sm font-medium">Legal Description</label>
-          <textarea name="legal_description" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Legal Description</label>
+          <textarea name="legal_description" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium">Lot</label>
-            <input name="lot" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Lot</label>
+            <input name="lot" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Block</label>
-            <input name="block" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Block</label>
+            <input name="block" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Subdivision</label>
-            <input name="subdivision" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Subdivision</label>
+            <input name="subdivision" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
         </div>
 
-        <h2 className="text-lg font-semibold mt-6">Job Details</h2>
+        <h2 className="text-lg font-semibold mt-6 text-[var(--text-color)]">Job Details</h2>
 
         <div>
-          <label className="block text-sm font-medium">Tax Folio</label>
-          <input name="customer_tax_folio" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Tax Folio</label>
+          <input name="customer_tax_folio" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Job Price</label>
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Job Price</label>
           <input
             name="job_price"
             type="number"
             step="0.01"
-            className="input"
+            className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           />
         </div>
 
         {/* Template selection UI */}
-        <h2 className="text-lg font-semibold mt-6">Templates</h2>
+        <h2 className="text-lg font-semibold mt-6 text-[var(--text-color)]">Templates</h2>
 
         <button
           type="button"
-          className="btn btn-secondary"
+          className="btn btn-primary"
           onClick={() => setShowBrowser(true)}
         >
           Add Template
@@ -140,17 +140,17 @@ export default function JobCreateClient({
 
         {selectedTemplates.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-sm text-gray-600">Selected Templates:</p>
+            <p className="text-sm text-[var(--text-color)] opacity-80">Selected Templates:</p>
             <ul className="space-y-1">
               {selectedTemplates.map((path) => (
                 <li
                   key={path}
-                  className="flex items-center justify-between text-sm bg-gray-50 px-3 py-1 rounded"
+                  className="flex items-center justify-between text-sm bg-[var(--card-bg)] border border-[var(--border-color)] px-3 py-1 rounded"
                 >
                   <span className="break-all">{path}</span>
                   <button
                     type="button"
-                    className="text-red-600 text-xs font-semibold"
+                    className="text-red-400 text-xs font-semibold"
                     onClick={() => handleRemoveTemplate(path)}
                   >
                     ✕

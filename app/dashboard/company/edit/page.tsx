@@ -230,8 +230,8 @@ export default async function CompanyAdminEditPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="card p-6 space-y-4 border border-gray-200 rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+    <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+      <h2 className="text-lg font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>
@@ -250,11 +250,11 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-800">{label}</label>
+      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
       <input
         name={name}
         defaultValue={defaultValue}
-        className="input"
+        className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
       />
     </div>
   );
@@ -269,8 +269,8 @@ function InputFile({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-800">{label}</label>
-      <input type="file" name={name} accept="image/*" className="input" />
+      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
+      <input type="file" name={name} accept="image/*" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
     </div>
   );
 }
@@ -286,11 +286,11 @@ function Textarea({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-800">{label}</label>
+      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
       <textarea
         name={name}
         defaultValue={defaultValue}
-        className="input"
+        className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
         rows={4}
       />
     </div>

@@ -22,7 +22,7 @@ interface PageProps {
 }
 
 /* ---------------------------------------------------------
-   UPDATED onTestPA WITH LOGS
+  onTestPA
 --------------------------------------------------------- */
 export async function onTestPA(jobId: string, input: {
   address?: string;
@@ -113,11 +113,6 @@ if (job.snippetPath) {
     templatePath: d.templatePath ?? "",
   }));
 
-  console.log("🟨 JobEditPage — initialTemplates for side panel", {
-    jobId: job.id,
-    initialTemplates,
-  });
-
   return (
     <div className="page-container space-y-6">
       <div className="flex justify-between items-center">
@@ -126,7 +121,7 @@ if (job.snippetPath) {
         </h1>
 
         <div className="flex gap-3">
-          <a href="/dashboard" className="btn btn-secondary">
+          <a href="/dashboard" className="btn btn-primary">
             Back to Dashboard
           </a>
 

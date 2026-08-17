@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { autoMapFields } from "@/lib/mapping/autoMapping";
 import { fillPdf } from "@/lib/pdf/fillPdf";
 import { bufferToBase64 } from "@/lib/pdf/pdfUtils";
+import { loadPreferences } from "@/lib/preferences/loadPreferences";
+import { FormattingPreferences } from "@/lib/utils/formatters";
 
 export async function POST(req: Request) {
   try {
@@ -124,11 +126,27 @@ export async function POST(req: Request) {
       job_number: job.jobNumber ?? "",
     };
 
+    // Load company formatting preferences
+    const prefs = await loadPreferences({
+      userId: job.createdBy,
+      companyId: job.companyId,
+    });
+
+    const formattingPrefs: FormattingPreferences = {
+      addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+      addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+      nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+      nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+      phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+      documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+    };
+
     const filledPdf = await fillPdf({
       templateBuffer: buffer,
       autoMapped,
       company: companyData,
       job: jobData,
+      formattingPrefs,
     });
 
     // Bump updatedAt so preview refreshes

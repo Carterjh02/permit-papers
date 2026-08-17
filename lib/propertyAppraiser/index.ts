@@ -61,18 +61,53 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
       const result = await searchBroward(normalizedAddress);
       screenshot = result.screenshot;
       html = result.html;
-
-      // ⭐ Broward now uses HTML parser
+    
+      // Save sketch if available
+      if (result.sketchBuffer) {
+        const sketchPath = `${job.company.companyCode}/jobs/${job.jobNumber}/sketch.png`;
+    
+        const { error: sketchUploadError } = await supabaseServer.storage
+          .from("companies")
+          .upload(sketchPath, result.sketchBuffer, {
+            upsert: true,
+            contentType: "image/png",
+          });
+    
+        if (sketchUploadError) {
+          console.error("❌ [PA] Sketch upload error:", sketchUploadError);
+        } else {
+          console.log("🟩 [PA] Sketch image saved:", sketchPath);
+          parsed.sketchPath = sketchPath;
+        }
+      }
+    
       parsed = parsePAData(html!, "broward");
       break;
     }
-
     case "palmBeach": {
       const result = await searchPalmBeach(normalizedAddress);
       screenshot = result.screenshot;
       html = result.html;
-
-      // ⭐ Palm Beach uses HTML parser
+    
+      // Save sketch if available
+      if (result.sketchBuffer) {
+        const sketchPath = `${job.company.companyCode}/jobs/${job.jobNumber}/sketch.png`;
+    
+        const { error: sketchUploadError } = await supabaseServer.storage
+          .from("companies")
+          .upload(sketchPath, result.sketchBuffer, {
+            upsert: true,
+            contentType: "image/png",
+          });
+    
+        if (sketchUploadError) {
+          console.error("❌ [PA] Sketch upload error:", sketchUploadError);
+        } else {
+          console.log("🟩 [PA] Sketch image saved:", sketchPath);
+          parsed.sketchPath = sketchPath;
+        }
+      }
+    
       parsed = parsePAData(html!, "palmBeach");
       break;
     }
@@ -80,7 +115,7 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
     case "saintLucie": {
       screenshot = await searchSaintLucie(normalizedAddress);
 
-      // ⭐ Saint Lucie still uses OCR
+      // Saint Lucie still uses OCR
       const downloadedBuffer = screenshot;
       const ocrText = await extractTextFromImage(downloadedBuffer);
       parsed = parsePAData(ocrText, "saintLucie");

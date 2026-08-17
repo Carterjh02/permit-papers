@@ -7,4 +7,6 @@ export interface ParsedPAData {
     city?: string;
     zip?: string;
     siteAddress?: string;
+    imageUrl?: string;
+    sketchPath?: string;
   }

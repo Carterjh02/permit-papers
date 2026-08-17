@@ -21,10 +21,11 @@ function normalizePalmBeachAddress(address: string) {
 
 export async function searchPalmBeach(
   address: string
-): Promise<{ screenshot: Buffer; html: string }> {
+): Promise<{ screenshot: Buffer; html: string; sketchBuffer?: Buffer }> {
   const { browser, page } = await openBrowser();
 
   try {
+
     const normalized = normalizePalmBeachAddress(address);
 
     await page.goto(countySearchUrls.palmBeach, { waitUntil: "networkidle" });
@@ -37,17 +38,58 @@ export async function searchPalmBeach(
       page.keyboard.press("Enter"),
     ]);
 
-    // Wait for the results table element to exist
+    // ---------------------------
+    // TABLE OR DIRECT DETAILS?
+    // ---------------------------
     const tableExists = await page.$("#searchGrid");
+
+    let parcelId: string | null = null;
+
     if (!tableExists) {
-      const html = await page.content();
-      const debugDir = path.join(process.cwd(), "debug");
+      // Check if already on details page
+      const detailsExists = await page.$("#MainContent_lblLocation");
+
+      if (detailsExists) {
+        const html = await page.content();
+      
+        /* const debugDir = path.join(process.cwd(), "debug");
+        if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir);
+        fs.writeFileSync(path.join(debugDir, "palmbeach-html.html"), html); */
+      
+        const screenshot = await page.screenshot({ fullPage: true });
+      
+        // ---------------------------
+        // Capture Palm Beach sketch image
+        // ---------------------------
+        let sketchBuffer: Buffer | undefined;
+      
+        try {
+          const sketchElement = await page.$('img[src*="GetBuildingSketch"]');
+          if (sketchElement) {
+            sketchBuffer = await sketchElement.screenshot();
+            console.log("🟩 [PA_DEBUG] Palm Beach sketch image captured (direct page).");
+          } else {
+            console.warn("⚠️ [PA_DEBUG] Palm Beach sketch element not found (direct page).");
+          }
+        } catch (err) {
+          console.error("❌ [PA_DEBUG] Palm Beach sketch capture failed:", err);
+        }
+      
+        return { screenshot, html, sketchBuffer };
+      }      
+
+      // No table AND not on details page → error
+      // const html = await page.content();
+      /* const debugDir = path.join(process.cwd(), "debug");
       if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir);
-      fs.writeFileSync(path.join(debugDir, "palmbeach-no-table.html"), html);
+      fs.writeFileSync(path.join(debugDir, "palmbeach-no-table.html"), html); */
+
       throw new Error("Palm Beach: searchGrid table not found");
     }
 
-    // Wait for DataTables to finish populating rows
+    // ---------------------------
+    // TABLE EXISTS → WAIT FOR ROWS
+    // ---------------------------
     await page.waitForFunction(
       () => {
         const table = document.querySelector("#searchGrid");
@@ -57,7 +99,6 @@ export async function searchPalmBeach(
     );
 
     const rows = await page.$$("#searchGrid tbody tr");
-    let parcelId: string | null = null;
 
     for (const row of rows) {
       const locationCell = await row.$("td:nth-child(3)");
@@ -72,13 +113,18 @@ export async function searchPalmBeach(
     }
 
     if (!parcelId) {
-      const html = await page.content();
-      const debugDir = path.join(process.cwd(), "debug");
+
+      // const html = await page.content();
+      /* const debugDir = path.join(process.cwd(), "debug");
       if (!fs.existsSync(debugDir)) fs.mkdirSync(debugDir);
-      fs.writeFileSync(path.join(debugDir, "palmbeach-no-match.html"), html);
+      fs.writeFileSync(path.join(debugDir, "palmbeach-no-match.html"), html); */
+
       throw new Error("Palm Beach: No matching row found");
     }
 
+    // ---------------------------
+    // LOAD DETAILS PAGE
+    // ---------------------------
     const detailsUrl = `https://pbcpao.gov/Property/Details?parcelId=${parcelId}`;
     await page.goto(detailsUrl, { waitUntil: "networkidle" });
 
@@ -92,7 +138,25 @@ export async function searchPalmBeach(
 
     const screenshot = await page.screenshot({ fullPage: true });
 
-    return { screenshot, html };
+    // ---------------------------
+    // Capture Palm Beach sketch image
+    // ---------------------------
+    let sketchBuffer: Buffer | undefined;
+
+    try {
+      // Find the sketch <img> element on the details page
+      const sketchElement = await page.$('img[src*="/Property/GetBuildingSketch"]');
+      if (sketchElement) {
+        sketchBuffer = await sketchElement.screenshot();
+        console.log("🟩 [PA_DEBUG] Palm Beach sketch image captured from results page.");
+      } else {
+        console.warn("⚠️ [PA_DEBUG] Palm Beach sketch element not found on results page.");
+      }
+    } catch (err) {
+      console.error("❌ [PA_DEBUG] Palm Beach sketch capture failed:", err);
+    }
+
+    return { screenshot, html, sketchBuffer };
   } finally {
     await closeBrowser(browser);
   }

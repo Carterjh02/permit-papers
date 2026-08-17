@@ -8,8 +8,8 @@ datasource db {
 }
 
 model Company {
-  id                 String   @id @default(cuid())
-  companyCode        String   @unique
+  id                 String              @id @default(cuid())
+  companyCode        String              @unique
   name               String
   email              String?
   phone              String?
@@ -17,8 +17,8 @@ model Company {
   licenseNumber      String?
   website            String?
   logoUrl            String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   descOfImprov       String?
   qualifierName      String?
   addressCity        String?
@@ -28,18 +28,61 @@ model Company {
   businessTaxReceipt String?
   jobs               Job[]
   users              User[]
+  preferences        CompanyPreferences?
+}
+
+model CompanyPreferences {
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Formatting preferences
+  defaultAddressFormat String? // "usps" | "full"
+  defaultAddressCase   String? // "upper" | "title"
+
+  defaultNameFormat String? // "first-last" | "last-first"
+  defaultNameCase   String? // "upper" | "title"
+
+  defaultPhoneFormat String? // "parentheses" | "dashes"
+
+  defaultDocumentFont String? // "inter" | "roboto" | "times" | "georgia"
+
+  // Future expansion
+  settings Json?
+
+  company Company @relation(fields: [companyId], references: [id])
 }
 
 model User {
-  id              String   @id @default(cuid())
-  username        String   @unique
+  id              String           @id @default(cuid())
+  username        String           @unique
   passwordHash    String
   role            String
   companyId       String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime         @default(now())
   activeCompanyId String?
   email           String?
-  company         Company? @relation(fields: [companyId], references: [id])
+  company         Company?         @relation(fields: [companyId], references: [id])
+  preferences     UserPreferences?
+}
+
+model UserPreferences {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // UI preferences
+  theme       String? // "light" | "dark"
+  font        String? // "inter" | "roboto"
+  density     String? // "comfortable" | "compact"
+  sidebarOpen Boolean? // true | false
+
+  // Future expansion
+  settings Json?
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Job {
@@ -75,20 +118,20 @@ model Job {
 }
 
 model FormTemplate {
-  id           String             @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
-  createdAt    DateTime           @default(now())
+  createdAt    DateTime @default(now())
   fieldNames   Json
   storagePath  String?
   description  String?
   county       String?
   path         String
-  updatedAt    DateTime           @updatedAt
+  updatedAt    DateTime @updatedAt
   formType     String
   mapping      Json?
   municipality String?
 
-  companyCode  String? 
+  companyCode  String?
   mappings     FormFieldMapping[] @relation("TemplateMappings")
   jobDocuments JobDocument[]
 }

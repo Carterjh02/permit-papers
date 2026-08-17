@@ -41,16 +41,16 @@ const EditableField = ({
   const [manualValue, setManualValue] = useState(form[name] ?? "");
 
   return (
-    <div className="border rounded-md">
-      <div className="flex justify-between items-center px-3 py-2 bg-gray-50">
+    <div className="border border-[var(--border-color)] rounded-md bg-[var(--card-bg)]">
+      <div className="flex justify-between items-center px-3 py-2 bg-[var(--card-bg)] border-b border-[var(--border-color)]">
         <div>
           <strong>{label}:</strong>{" "}
-          <span className="text-gray-700">{ocrValue || "—"}</span>
+          <span className="text-[var(--text-color)]">{ocrValue || "—"}</span>
         </div>
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-500 hover:underline"
         >
           {open ? "Close" : "Edit"}
         </button>
@@ -72,7 +72,7 @@ const EditableField = ({
               }));
             }}
             placeholder={`Enter ${label.toLowerCase()}`}
-            className="w-full border rounded p-2"
+            className="w-full border border-[var(--border-color)] rounded p-2 bg-[var(--input-bg)] text-[var(--text-color)]"
           />
         </div>
       )}
@@ -325,14 +325,14 @@ export default function JobFormClient({
   
       const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
   
-      // ⭐ Always update snippet preview immediately
+      // Always update snippet preview immediately
       setSnippetUrl(`${publicUrl}?t=${Date.now()}`);
   
-      // ⭐ Store OCR text + parsed fields
+      // Store OCR text + parsed fields
       setOcrText(ocrText ?? null);
       setOcrParsed(parsed ?? null);
   
-      // ⭐ Always open OCR modal when parsed exists
+      // Always open OCR modal when parsed exists
       if (parsed) {
         requestAnimationFrame(() => setShowOcrModal(true));
       }
@@ -467,20 +467,20 @@ const applyOcrToForm = () => {
 return (
   <>
     {/* ---------------------------------------------------------
-        OCR MODAL (MUST BE OUTSIDE THE GRID)
+        OCR MODAL
     --------------------------------------------------------- */}
     {showOcrModal && ocrParsed && (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
-          <h2 className="text-lg font-semibold">Confirm Extracted Information</h2>
+        <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
+          <h2 className="text-lg font-semibold text-[var(--text-color)]">Confirm Extracted Information</h2>
 
           {ocrText && (
-            <pre className="text-xs bg-gray-100 p-2 rounded max-h-32 overflow-auto">
+            <pre className="text-xs bg-[var(--input-bg)] p-2 rounded max-h-32 overflow-auto border border-[var(--border-color)] text-[var(--text-color)]">
               {ocrText}
             </pre>
           )}
 
-          <div className="space-y-3 text-sm">
+          <div className="space-y-3 text-sm text-[var(--text-color)]">
             <EditableField
               label="Name"
               ocrValue={ocrParsed.name}
@@ -498,7 +498,7 @@ return (
             <EditableField
               label="Address"
               ocrValue={ocrParsed.address}
-              name="customer_address_full"
+              name="customer_address_street"
               form={form}
               setForm={setForm}
             />
@@ -527,7 +527,7 @@ return (
 
           <div className="flex justify-end gap-3 pt-4">
             <button
-              className="btn btn-secondary"
+              className="btn btn-primary"
               onClick={() => setShowOcrModal(false)}
             >
               Cancel
@@ -583,17 +583,17 @@ return (
     --------------------------------------------------------- */}
     {showPaSearch && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded shadow-xl w-[450px] space-y-4">
-      <h2 className="text-lg font-semibold">Property Appraiser Search</h2>
+    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[450px] space-y-4 border border-[var(--border-color)]">
+      <h2 className="text-lg font-semibold text-[var(--text-color)]">Property Appraiser Search</h2>
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-[var(--text-color)] opacity-80">
         Enter any information you have — or use the extracted snippet values.
       </p>
 
       <div className="space-y-3">
         <input
           id="pa_name"
-          className="input input-bordered w-full"
+          className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           value={paSearchPayload?.name ?? ""}
           onChange={(e) =>
             setPaSearchPayload((prev) => ({ ...prev, name: e.target.value }))
@@ -603,7 +603,7 @@ return (
 
         <input
           id="pa_address"
-          className="input input-bordered w-full"
+          className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           value={paSearchPayload?.address ?? ""}
           onChange={(e) =>
             setPaSearchPayload((prev) => ({ ...prev, address: e.target.value }))
@@ -613,7 +613,7 @@ return (
 
         <input
           id="pa_city"
-          className="input input-bordered w-full"
+          className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           value={paSearchPayload?.city ?? ""}
           onChange={(e) =>
             setPaSearchPayload((prev) => ({ ...prev, city: e.target.value }))
@@ -623,7 +623,7 @@ return (
 
         <input
           id="pa_state"
-          className="input input-bordered w-full"
+          className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           value={paSearchPayload?.state ?? ""}
           onChange={(e) =>
             setPaSearchPayload((prev) => ({ ...prev, state: e.target.value }))
@@ -633,7 +633,7 @@ return (
 
         <input
           id="pa_zip"
-          className="input input-bordered w-full"
+          className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
           value={paSearchPayload?.zip ?? ""}
           onChange={(e) =>
             setPaSearchPayload((prev) => ({ ...prev, zip: e.target.value }))
@@ -644,7 +644,7 @@ return (
 
       <div className="flex justify-end gap-3 pt-4">
         <button
-          className="btn btn-secondary"
+          className="btn btn-primary"
           onClick={() => setShowPaSearch(false)}
         >
           Cancel
@@ -707,14 +707,14 @@ return (
     --------------------------------------------------------- */}
     {showPaConfirm && paResult && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded shadow-xl w-[500px] space-y-4">
-      <h2 className="text-lg font-semibold">Confirm Property Appraiser Data</h2>
+    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
+      <h2 className="text-lg font-semibold text-[var(--text-color)]">Confirm Property Appraiser Data</h2>
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-[var(--text-color)] opacity-80">
         Review the extracted property appraiser information and apply it to the form.
       </p>
 
-      <div className="space-y-3 text-sm">
+      <div className="space-y-3 text-sm text-[var(--text-color)]">
         <EditableField
           label="Owner Name"
           ocrValue={paResult.ownerName}
@@ -755,7 +755,7 @@ return (
 
       <div className="flex justify-end gap-3 pt-4">
         <button
-          className="btn btn-secondary"
+          className="btn btn-primary"
           onClick={() => setShowPaConfirm(false)}
         >
           Cancel
@@ -786,7 +786,7 @@ return (
       FORM BINDS SERVER ACTION DIRECTLY
     --------------------------------------------------------- */}
     <div className="grid grid-cols-[2fr,1fr] gap-6">
-      <form className="space-y-6 card p-6">
+      <form className="space-y-6 p-6 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         {/* Hidden fields required for server action */}
         <input type="hidden" name="job_price" value={jobPrice} />
         <input
@@ -819,11 +819,11 @@ return (
           SNIPPET UPLOAD
         --------------------------------------------------------- */}
         <div className="space-y-4 pb-6 border-b">
-          <h3 className="text-md font-semibold">Customer Snippet</h3>
+          <h3 className="text-md font-semibold text-[var(--text-color)]">Customer Snippet</h3>
 
           <div
             tabIndex={0}
-            className="border-2 border-dashed rounded-lg p-6 text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
+            className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center transition-colors hover:bg-[var(--card-bg)] focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
             onFocus={() => setShowPasteHint(true)}
             onBlur={() => setShowPasteHint(false)}
             onDragOver={(e) => {
@@ -855,7 +855,7 @@ return (
             }}
           >
             <p
-              className="text-sm text-gray-600 underline decoration-dotted cursor-pointer inline-block"
+              className="text-sm text-[var(--text-color)] opacity-80 underline decoration-dotted cursor-pointer inline-block"
               onClick={(e) => {
                 e.stopPropagation();
                 fileInputRef.current?.click();
@@ -865,7 +865,7 @@ return (
             </p>
 
             {showPasteHint && (
-              <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md animate-fadeIn">
+              <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-[var(--card-bg)] text-[var(--text-color)] text-xs px-3 py-1 rounded shadow-md animate-fadeIn border border-[var(--border-color)]">
                 Press Ctrl+V to paste an image
               </div>
             )}
@@ -889,14 +889,14 @@ return (
                 alt="Snippet Preview"
                 width={300}
                 height={200}
-                className="rounded border object-contain"
+                className="rounded border border-[var(--border-color)] object-contain"
                 loader={({ src }) => src}
                 unoptimized
               />
 
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-primary btn-sm"
                 onClick={() => setSnippetUrl(null)}
               >
                 Remove Snippet
@@ -909,9 +909,9 @@ return (
           PROPERTY APPRAISER SEARCH (MANUAL)
         --------------------------------------------------------- */}
         <div className="space-y-4 pb-6 border-b">
-          <h3 className="text-md font-semibold">Property Appraiser Search</h3>
+          <h3 className="text-md font-semibold text-[var(--text-color)]">Property Appraiser Search</h3>
 
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-[var(--text-color)] opacity-80">
             Search the county property appraiser using customer name, address, folio, or subdivision.
           </p>
 
@@ -931,13 +931,13 @@ return (
           CUSTOMER INFORMATION
         --------------------------------------------------------- */}
         <div className="space-y-4 pt-2">
-          <h3 className="text-md font-semibold">Customer Information</h3>
+          <h3 className="text-md font-semibold text-[var(--text-color)]">Customer Information</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Customer Name</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Name</label>
               <input
                 name="customer_name"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_name}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -948,10 +948,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Customer Phone</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Phone</label>
               <input
                 name="customer_phone"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_phone}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -962,10 +962,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium">Customer Email</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Email</label>
               <input
                 name="customer_email"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_email}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -982,13 +982,13 @@ return (
           PROPERTY LOCATION
         --------------------------------------------------------- */}
         <div className="space-y-4 border-t pt-4">
-          <h3 className="text-md font-semibold">Property Location</h3>
+          <h3 className="text-md font-semibold text-[var(--text-color)]">Property Location</h3>
           <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Street Address</label>
+            <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Street Address</label>
               <input
                 name="customer_address_street"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_address_street}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -999,10 +999,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">City</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">City</label>
               <input
                 name="customer_address_city"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_address_city}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -1013,10 +1013,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">State</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">State</label>
               <input
                 name="customer_address_state"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_address_state}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -1027,10 +1027,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">ZIP</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">ZIP</label>
               <input
                 name="customer_address_zip"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_address_zip}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -1041,10 +1041,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Tax/Folio Number</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Tax/Folio Number</label>
               <input
                 name="customer_tax_folio"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={form.customer_tax_folio}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -1055,10 +1055,10 @@ return (
               />
             </div>
             <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium">Legal Description</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Legal Description</label>
                 <textarea
                   name="legal_description"
-                  className="textarea textarea-bordered"
+                  className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                   value={form.legal_description}
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -1075,23 +1075,23 @@ return (
           JOB DESCRIPTION
         --------------------------------------------------------- */}
         <div className="space-y-4 border-t pt-4">
-          <h3 className="text-md font-semibold">Job Description</h3>
+          <h3 className="text-md font-semibold text-[var(--text-color)]">Job Description</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Job Value</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Job Value</label>
               <input
                 name="job_price_display"
                 inputMode="decimal"
-                className="input input-bordered"
+                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={jobPrice}
                 onChange={handlePriceChange}
               />
             </div>
             <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium">Description of Improvement</label>
+              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Description of Improvement</label>
               <textarea
                 name="desc_of_improvement"
-                className="textarea textarea-bordered"
+                className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 defaultValue={initialJob?.description ?? ""}
               />
             </div>
@@ -1115,13 +1115,13 @@ return (
       {/* ---------------------------------------------------------
          TEMPLATE SIDE PANEL
       --------------------------------------------------------- */}
-      <div className="card p-6 space-y-4">
+      <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Documents</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-color)]">Documents</h2>
 
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-primary btn-sm"
             onClick={() => setShowBrowser(true)}
           >
             Add Document
@@ -1129,7 +1129,7 @@ return (
         </div>
 
         {templates.length === 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-color)] opacity-60">
             No documents added yet. Use “Add Document” to select templates.
           </p>
         )}
@@ -1139,13 +1139,13 @@ return (
             {templates.map((t) => (
               <li
                 key={t.id}
-                className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded"
+                className="flex items-center justify-between text-sm bg-[var(--card-bg)] border border-[var(--border-color)] px-3 py-2 rounded"
               >
                 <span className="font-medium">{t.templateName}</span>
 
                 <button
                   type="button"
-                  className="text-red-600 text-xs font-semibold"
+                  className="text-red-400 text-xs font-semibold"
                   onClick={() => handleRemove(t.id)}
                 >
                   ✕

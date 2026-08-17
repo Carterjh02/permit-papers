@@ -65,43 +65,63 @@ export default async function JobPreviewPage({ params }: PageProps) {
 
   return (
     <div className="page-container space-y-6">
-      <h1 className="text-2xl font-bold">
+      <h1 className="text-2xl font-bold text-[var(--text-color)]">
         Preview Documents — Job {job.jobNumber}
       </h1>
-
+  
       <div className="flex justify-end gap-3">
         <form action={backToJob}>
           <button className="btn btn-secondary" type="submit">
             Back to Job
           </button>
         </form>
-
+  
         <Link href="/dashboard/jobs/new" className="btn btn-primary">
           Create New Job
         </Link>
       </div>
-
-      <h2 className="text-xl font-semibold mt-6">Documents</h2>
-
+  
+      <h2 className="text-xl font-semibold mt-6 text-[var(--text-color)]">
+        Documents
+      </h2>
+  
       {allPreviews.length === 0 && (
-        <p className="text-sm text-gray-500">No documents found.</p>
+        <p className="text-sm text-[var(--text-color)] opacity-80">
+          No documents found.
+        </p>
       )}
-
+  
       {allPreviews.length > 0 && (
         <div className="space-y-8">
           {allPreviews.map((p) => (
-            <div key={p.id} className="card p-4 space-y-3">
+            <div
+              key={p.id}
+              className="dashboard-card space-y-3"
+            >
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{p.name}</h3>
-                <a href={p.url} target="_blank" className="btn btn-primary btn-sm">
+              <h3 className="text-lg font-semibold text-[var(--text-color)]">
+                {p.name}
+              </h3>
+                <a
+                  href={p.url}
+                  target="_blank"
+                  className="btn btn-primary btn-sm"
+                >
                   Open / Download
                 </a>
               </div>
-              <iframe src={p.url} className="w-full h-[600px]" />
+
+              <div className="mt-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-md p-2">
+                <iframe
+                  src={p.url}
+                  className="w-full h-[600px] rounded-md"
+                />
+              </div>
             </div>
           ))}
         </div>
       )}
     </div>
   );
+  
 }

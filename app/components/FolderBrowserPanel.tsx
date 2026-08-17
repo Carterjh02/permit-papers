@@ -316,11 +316,11 @@ const handleUpload = async (file: File) => {
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="pointer-events-auto bg-white shadow-xl rounded-lg border border-gray-200 w-[75vw] h-[80vh] max-w-[1400px] flex flex-col resize overflow-hidden">
+      <div className="pointer-events-auto bg-[var(--card-bg)] shadow-xl rounded-lg border border-[var(--border-color)] w-[75vw] h-[80vh] max-w-[1400px] flex flex-col resize overflow-hidden">
 
         {/* HEADER */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <div className="font-semibold text-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-color)] bg-[var(--card-bg)]">
+          <div className="font-semibold text-lg text-[var(--text-color)]">
             {mode === "master" ? "Select Item" : "Select Document"}
           </div>
 
@@ -360,21 +360,21 @@ const handleUpload = async (file: File) => {
             )}
 
             {/* CLOSE */}
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button onClick={onClose} className="text-[var(--text-color)] opacity-70 hover:opacity-100">
               ✕
             </button>
           </div>
         </div>
 
         {/* FILTERS */}
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-4">
+        <div className="px-4 py-3 border-b border-[var(--border-color)] flex items-center gap-4 bg-[var(--card-bg)]">
           {/* COUNTY */}
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-600">County</label>
+            <label className="text-sm font-medium text-[var(--text-color)] opacity-80">County</label>
             <select
               value={selectedCounty}
               onChange={(e) => handleCountyChange(e.target.value)}
-              className="select select-bordered w-64"
+              className="select w-64 bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
             >
               <option value="">All Counties</option>
               {counties.map((c) => (
@@ -387,11 +387,11 @@ const handleUpload = async (file: File) => {
 
           {/* CITY */}
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-gray-600">City</label>
+            <label className="text-sm font-medium text-[var(--text-color)] opacity-80">City</label>
             <select
               value={selectedCity}
               onChange={(e) => handleCityChange(e.target.value)}
-              className="select select-bordered w-64"
+              className="select w-64 bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
               disabled={!selectedCounty}
             >
               <option value="">All Cities</option>
@@ -417,7 +417,7 @@ const handleUpload = async (file: File) => {
                   setExpandedPaths(new Set(["templates", "companies"])) // expand current root
                 }
               }}
-              className="btn btn-outline btn-sm"
+              className="dashboard-btn-transparent text-sm"
             >
               Clear Filter
             </button>
@@ -425,7 +425,7 @@ const handleUpload = async (file: File) => {
 
         {/* MASTER MODE — VIEW SWITCH */}
         {mode === "master" && (
-          <div className="px-4 py-2 border-b border-gray-100 text-sm flex gap-4">
+          <div className="px-4 py-2 border-b border-[var(--border-color)] text-sm flex gap-4 bg-[var(--card-bg)]">
             <button
               onClick={() => setActiveTree("root")}
               className={`text-blue-600 hover:underline ${activeTree === "root" ? "font-semibold" : ""}`}
@@ -452,14 +452,14 @@ const handleUpload = async (file: File) => {
         {/* TREE */}
         <div className="p-4 overflow-y-auto flex-1 space-y-8">
           {loading || !filteredTree ? (
-            <div className="text-center text-gray-500 py-10">Loading…</div>
+            <div className="text-center text-[var(--text-color)] opacity-60 py-10">Loading…</div>
           ) : (
             <>
               {/* JOB MODE — always show both */}
               {mode === "job" && (
                 <>
                   <div>
-                    <h3 className="text-md font-semibold mb-2">Templates</h3>
+                    <h3 className="text-md font-semibold mb-2 text-[var(--text-color)]">Templates</h3>
                     <FolderTree
                       root={filteredTree.templates}
                       variant="popup"
@@ -473,7 +473,7 @@ const handleUpload = async (file: File) => {
                   </div>
 
                   <div>
-                    <h3 className="text-md font-semibold mb-2">Companies</h3>
+                    <h3 className="text-md font-semibold mb-2 text-[var(--text-color)]">Companies</h3>
                     <FolderTree
                       root={filteredTree.companies}
                       variant="popup"
@@ -493,7 +493,7 @@ const handleUpload = async (file: File) => {
                 <>
                   {(activeTree === "root" || activeTree === "templates") && (
                     <div>
-                      <h3 className="text-md font-semibold mb-2">Templates</h3>
+                      <h3 className="text-md font-semibold mb-2 text-[var(--text-color)]">Templates</h3>
                       <FolderTree
                         root={filteredTree.templates}
                         variant="popup"
@@ -512,7 +512,7 @@ const handleUpload = async (file: File) => {
 
                   {(activeTree === "root" || activeTree === "companies") && (
                     <div>
-                      <h3 className="text-md font-semibold mb-2">Companies</h3>
+                      <h3 className="text-md font-semibold mb-2 text-[var(--text-color)]">Companies</h3>
                       <FolderTree
                         root={filteredTree.companies}
                         variant="popup"
@@ -538,7 +538,7 @@ const handleUpload = async (file: File) => {
 
       {/* CONFIRM SELECTION */}
         {selectedFiles.length > 0 && (
-          <div className="border-t border-gray-200 p-4 flex justify-end bg-gray-50">
+          <div className="border-t border-[var(--border-color)] p-4 flex justify-end bg-[var(--card-bg)]">
             <button
               type="button"
               onClick={() => {

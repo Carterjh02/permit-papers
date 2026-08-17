@@ -22,10 +22,10 @@ async function main() {
   await page.click("#searchButton");
   console.log("🟫 Clicked search button");
 
-  // ⭐ WAIT FOR DOM TO UPDATE (SPA behavior)
+  // WAIT FOR DOM TO UPDATE (SPA behavior)
   await page.waitForTimeout(5000);
 
-  // ⭐ Extract full rendered DOM
+  // Extract full rendered DOM
   const html = await page.evaluate(() => {
     return document.documentElement.outerHTML;
   });

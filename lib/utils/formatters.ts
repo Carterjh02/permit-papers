@@ -1,7 +1,18 @@
-// -----------------------------
-// Basic Helpers
-// -----------------------------
+// -------------------------------------------------------------
+// Formatting Preferences Interface
+// -------------------------------------------------------------
+export interface FormattingPreferences {
+  addressFormat: "usps" | "full";
+  addressCase: "upper" | "title";
+  nameFormat: "first-last" | "last-first";
+  nameCase: "upper" | "title";
+  phoneFormat: "parentheses" | "dashes";
+  documentFont: "inter" | "roboto" | "times" | "georgia";
+}
 
+// -------------------------------------------------------------
+// Basic Helpers
+// -------------------------------------------------------------
 export function toTitleCase(str?: string): string {
   if (!str) return "";
   return str
@@ -21,17 +32,21 @@ export function normalizeZip(str?: string): string {
   return digits.slice(0, 5);
 }
 
-export function normalizePhone(str?: string): string {
+export function formatPhone(str: string | undefined, mode: "parentheses" | "dashes"): string {
   if (!str) return "";
   const digits = str.replace(/\D/g, "");
   if (digits.length !== 10) return str.trim();
+
+  if (mode === "parentheses") {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
   return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// -----------------------------
+// -------------------------------------------------------------
 // Company Field Formatting
-// -----------------------------
-
+// -------------------------------------------------------------
 export interface CompanyFields {
   name?: string;
   qualifierName?: string;
@@ -39,7 +54,7 @@ export interface CompanyFields {
   addressCity?: string;
   addressState?: string;
   addressZip?: string;
-  address?: string; // <-- added
+  address?: string;
   phone?: string;
   email?: string;
   descOfImprov?: string;
@@ -49,41 +64,50 @@ export interface CompanyFields {
   companyCode?: string;
 }
 
-export function formatCompanyFields(company: CompanyFields): CompanyFields {
+export function formatCompanyFields(
+  company: CompanyFields,
+  prefs: FormattingPreferences
+): CompanyFields {
+  const applyCase = (value?: string) =>
+    prefs.addressCase === "upper" ? toUpper(value) : toTitleCase(value);
+
+  const applyNameCase = (value?: string) =>
+    prefs.nameCase === "upper" ? toUpper(value) : toTitleCase(value);
+
   return {
     ...company,
 
-    name: toTitleCase(company.name),
-    qualifierName: toTitleCase(company.qualifierName),
+    // Name formatting
+    name: applyNameCase(company.name),
+    qualifierName: applyNameCase(company.qualifierName),
 
-    addressStreet: toTitleCase(company.addressStreet),
-    addressCity: toTitleCase(company.addressCity),
+    // Address formatting
+    addressStreet: applyCase(company.addressStreet),
+    addressCity: applyCase(company.addressCity),
     addressState: toUpper(company.addressState),
     addressZip: normalizeZip(company.addressZip),
+    address: company.address?.trim(),
 
-    // NEW: normalize full address if present
-    address: company.address?.trim() || undefined,
+    // Phone formatting
+    phone: formatPhone(company.phone, prefs.phoneFormat),
 
-    phone: normalizePhone(company.phone),
+    // Misc
     email: company.email?.trim() || "",
     website: company.website?.trim() || "",
-
     descOfImprov: company.descOfImprov?.trim() || "",
     businessTaxReceipt: company.businessTaxReceipt?.trim() || "",
     licenseNumber: company.licenseNumber?.trim() || "",
-
-    // NEW: enforce uppercase companyCode
     companyCode: company.companyCode?.trim().toUpperCase(),
   };
 }
 
-// -----------------------------
+// -------------------------------------------------------------
 // Job Field Formatting
-// -----------------------------
-
+// -------------------------------------------------------------
 export interface JobFields {
   customerName?: string;
   customerAddress?: string;
+  customerAddressStreet?: string;
   customerCity?: string;
   customerState?: string;
   customerZip?: string;
@@ -96,32 +120,50 @@ export interface JobFields {
   companyCity?: string;
   companyState?: string;
   companyPhone?: string;
+
   jobValue?: number;
   legalDescription?: string;
+
+  description?: string;
+  taxFolioNumber?: string;
 }
 
-export function formatJobFields(job: JobFields): JobFields {
+export function formatJobFields(
+  job: JobFields,
+  prefs: FormattingPreferences
+): JobFields {
+  const applyCase = (value?: string) =>
+    prefs.addressCase === "upper" ? toUpper(value) : toTitleCase(value);
 
-  const result = {
+  const applyNameCase = (value?: string) =>
+    prefs.nameCase === "upper" ? toUpper(value) : toTitleCase(value);
+
+  return {
     ...job,
 
-    customerName: toTitleCase(job.customerName),
-    customerAddress: toTitleCase(job.customerAddress),
-    customerCity: toTitleCase(job.customerCity),
+    // Customer
+    customerName: applyNameCase(job.customerName),
+    customerAddress: applyCase(job.customerAddress),
+    customerAddressStreet: applyCase(job.customerAddress),
+    customerCity: applyCase(job.customerCity),
     customerState: toUpper(job.customerState),
     customerZip: normalizeZip(job.customerZip),
-    customerPhone: normalizePhone(job.customerPhone),
+    customerPhone: formatPhone(job.customerPhone, prefs.phoneFormat),
     customerEmail: job.customerEmail?.trim() || "",
 
-    companyName: toTitleCase(job.companyName),
-    companyQualifierName: toTitleCase(job.companyQualifierName),
-    companyAddress: toTitleCase(job.companyAddress),
-    companyCity: toTitleCase(job.companyCity),
+    // Company
+    companyName: applyNameCase(job.companyName),
+    companyQualifierName: applyNameCase(job.companyQualifierName),
+    companyAddress: applyCase(job.companyAddress),
+    companyCity: applyCase(job.companyCity),
     companyState: toUpper(job.companyState),
-    companyPhone: normalizePhone(job.companyPhone),
+    companyPhone: formatPhone(job.companyPhone, prefs.phoneFormat),
+
+    // Misc
     jobValue: job.jobValue != null ? Number(job.jobValue) : 0,
     legalDescription: job.legalDescription?.trim() || "",
-  };
 
-  return result;
+    description: job.description?.trim() || "",
+    taxFolioNumber: job.taxFolioNumber?.trim() || "",
+  };
 }

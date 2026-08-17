@@ -45,48 +45,48 @@ export default async function AdminEditUserPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit User</h1>
 
-        <Link href="/dashboard/users" className="btn btn-secondary">
+        <Link href="/dashboard/users" className="btn btn-primary">
           Back to Users
         </Link>
       </div>
 
       {/* UPDATE USER FORM */}
-      <form action={updateUserAction} className="card p-6 space-y-4 max-w-xl">
+      <form action={updateUserAction} className="p-6 space-y-4 max-w-xl bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         <input type="hidden" name="user_id" value={typedUser.id} />
 
         <div>
-          <label className="block text-sm font-medium">Username</label>
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Username</label>
           <input
             name="username"
-            className="input"
+            className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
             defaultValue={typedUser.username}
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Email</label>
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Email</label>
           <input
             name="email"
             type="email"
-            className="input"
+            className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
             defaultValue={typedUser.email ?? ""}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">
             New Password (leave blank to keep current)
           </label>
-          <input name="password" type="password" className="input" />
+          <input name="password" type="password" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         {/* Only admins should see company info */}
         {currentUser.role === "admin" && (
           <div>
-            <label className="block text-sm font-medium">Company</label>
+            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Company</label>
             <input
-              className="input bg-gray-100"
+              className="input bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] opacity-50"
               value={typedUser.companyId ?? ""}
               disabled
             />

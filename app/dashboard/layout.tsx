@@ -1,16 +1,48 @@
 "use client";
 
+import "./dashboard.css"; //dashboard-only styling
+
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const role = session?.user?.role;
 
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [font, setFont] = useState<
+    "inter" | "roboto" | "system-ui" | "georgia" | "source-sans"
+  >("inter");
+  const [density, setDensity] = useState<"comfortable" | "compact">(
+    "comfortable"
+  );
+
+  useEffect(() => {
+    async function fetchPrefs() {
+      if (!session?.user) return;
+
+      const prefs = await fetch("/api/preferences/load").then(r => r.json());
+
+      const effective = prefs.effectivePrefs;
+
+      setTheme(effective.theme);
+      setFont(effective.uiFont);
+      setDensity(effective.density);
+    }
+
+    fetchPrefs();
+  }, [session]);
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <nav className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200 shadow-sm sticky top-0 z-50 py-4 sm:py-5">
+    <div
+      className="dashboard-root"
+      data-theme={theme}
+      data-font={font}
+      data-density={density}
+    >
+      <nav className="dashboard-nav sticky top-0 z-50 py-4 sm:py-5">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
 
           <Link href="/" className="flex items-center">
@@ -25,27 +57,27 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </Link>
 
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="hover:text-blue-600">
+            <Link href="/dashboard" className="dashboard-link">
               Dashboard
             </Link>
 
-            <Link href="/dashboard/company" className="hover:text-blue-600">
+            <Link href="/dashboard/company" className="dashboard-link">
               Company
             </Link>
 
             {role === "admin" && (
-              <Link href="/dashboard/users" className="hover:text-blue-600">
+              <Link href="/dashboard/users" className="dashboard-link">
                 Users
               </Link>
             )}
 
-            <Link href="/dashboard/settings" className="hover:text-blue-600">
+            <Link href="/dashboard/settings" className="dashboard-link">
               Settings
             </Link>
 
             <button
               type="button"
-              className="btn btn-secondary"
+              className="dashboard-btn dashboard-btn-secondary"
               onClick={() => {
                 setTimeout(() => {
                   signOut({ callbackUrl: "/login" });
@@ -58,12 +90,16 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 dashboard-container">{children}</main>
     </div>
   );
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <SessionProvider>
       <DashboardLayoutInner>{children}</DashboardLayoutInner>
