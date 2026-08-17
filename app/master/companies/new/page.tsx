@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { formatCompanyFields } from "@/lib/utils/formatters";
+import { loadPreferences } from "@/lib/preferences/loadPreferences";
+import type { FormattingPreferences } from "@/lib/utils/formatters";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 
 export default async function NewCompanyPage() {
   async function createCompany(formData: FormData) {
@@ -34,7 +38,24 @@ export default async function NewCompanyPage() {
       throw new Error("Company code is required.");
     }
 
-    const formatted = formatCompanyFields(raw);
+    const session = await getServerSession(authOptions);
+    if (!session?.user) throw new Error("Not authenticated.");
+
+    const prefs = await loadPreferences({
+      userId: session.user.id,
+      companyId: null,
+    });
+    
+    const formattingPrefs: FormattingPreferences = {
+      addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+      addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+      nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+      nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+      phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+      documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+    };
+    
+    const formatted = formatCompanyFields(raw, formattingPrefs);
 
     const formattedAddress = [
       formatted.addressStreet,

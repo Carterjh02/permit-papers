@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { formatCompanyFields } from "@/lib/utils/formatters";
+import { loadPreferences } from "@/lib/preferences/loadPreferences";
+import type { FormattingPreferences } from "@/lib/utils/formatters";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 
 async function listAllFiles(prefix: string): Promise<string[]> {
   const files: string[] = [];
@@ -89,7 +93,32 @@ export async function updateCompanyAction(formData: FormData) {
     qualifierName: (formData.get("qualifier_name") as string) || undefined,
   };
 
-  const formatted = formatCompanyFields(raw);
+  // Fetch session again inside the server action
+  const session = await getServerSession(authOptions);
+  if (!session?.user) redirect("/login");
+  
+  // Fetch the company again inside the server action
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+  });
+  if (!company) throw new Error("Company not found");
+  
+  // Now load preferences
+  const prefs = await loadPreferences({
+    userId: session.user.id,
+    companyId: company.id,
+  });
+  
+  const formattingPrefs: FormattingPreferences = {
+    addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+    addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+    nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+    nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+    phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+    documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+  };
+
+  const formatted = formatCompanyFields(raw, formattingPrefs);
 
   const formattedAddress = [
     formatted.addressStreet,

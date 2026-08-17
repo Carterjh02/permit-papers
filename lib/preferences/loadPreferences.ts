@@ -50,7 +50,7 @@ const DEFAULTS: EffectivePreferences = {
 
 export async function loadPreferences(params: {
   userId: string;
-  companyId: string;
+  companyId: string | null;
 }): Promise<{
   companyPrefs: CompanyPreferencesShape | null;
   userPrefs: UserPreferencesShape | null;
@@ -59,9 +59,12 @@ export async function loadPreferences(params: {
   const { userId, companyId } = params;
 
   const [companyPrefsRaw, userPrefsRaw] = await Promise.all([
-    prisma.companyPreferences.findUnique({
-      where: { companyId },
-    }),
+    companyId
+      ? prisma.companyPreferences.findUnique({
+          where: { companyId },
+        })
+      : Promise.resolve(null),
+  
     prisma.userPreferences.findUnique({
       where: { userId },
     }),

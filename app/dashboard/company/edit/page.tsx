@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import Image from "next/image";
 import { formatCompanyFields } from "@/lib/utils/formatters";
+import { loadPreferences } from "@/lib/preferences/loadPreferences";
+import type { FormattingPreferences } from "@/lib/utils/formatters";
 
 type Role = "user" | "admin" | "master";
 
@@ -72,7 +74,21 @@ export default async function CompanyAdminEditPage() {
         (formData.get("businessTaxReceipt") as string) || undefined,
     };
 
-    const formatted = formatCompanyFields(raw);
+    const prefs = await loadPreferences({
+      userId: session.user.id,
+      companyId: company!.id,
+    });
+    
+    const formattingPrefs: FormattingPreferences = {
+      addressFormat: prefs.companyPrefs?.defaultAddressFormat ?? "usps",
+      addressCase: prefs.companyPrefs?.defaultAddressCase ?? "title",
+      nameFormat: prefs.companyPrefs?.defaultNameFormat ?? "first-last",
+      nameCase: prefs.companyPrefs?.defaultNameCase ?? "title",
+      phoneFormat: prefs.companyPrefs?.defaultPhoneFormat ?? "parentheses",
+      documentFont: prefs.companyPrefs?.defaultDocumentFont ?? "inter",
+    };
+
+    const formatted = formatCompanyFields(raw, formattingPrefs);
 
     const formattedAddress = [
       formatted.addressStreet,
