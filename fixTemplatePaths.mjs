@@ -21,7 +21,7 @@ function normalizePath(path) {
 }
 
 async function main() {
-  console.log("🔧 Fixing templatePath values in JobDocument...");
+  console.log("🔧 Fixing templatePath values in JobDocument....");
 
   const docs = await prisma.jobDocument.findMany();
 
