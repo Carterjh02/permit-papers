@@ -13,6 +13,9 @@ import { formatJobFields, formatCompanyFields, CompanyFields } from "@/lib/utils
 import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
 import { loadPreferences } from "@/lib/preferences/loadPreferences";
 import { FormattingPreferences } from "@/lib/utils/formatters";
+import { ParsedPAData } from "@/lib/propertyAppraiser/types";
+import { parsePAData } from "@/lib/propertyAppraiser/parse";
+import { extractTextFromImage } from "@/lib/ocr";
 
 /* -----------------------------------------------------------
    GENERATE PREVIEWS
@@ -260,6 +263,119 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
   return job;
 }
 
+interface PADataResultFromEdge {
+  county: "broward" | "palmBeach" | "saintLucie";
+  htmlPath: string | null;
+  screenshotPath: string | null;
+  sketchPath: string | null;
+  parcelPhotoPath: string | null;
+  jobId: string;
+  jobNumber: number;
+  companyCode: string;
+}
+
+export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
+  const {
+    county,
+    htmlPath,
+    screenshotPath,
+    sketchPath,
+    parcelPhotoPath,
+  } = paData;
+
+  /* -----------------------------------------------------------
+     1. DOWNLOAD HTML 
+  ----------------------------------------------------------- */
+  let htmlString: string | undefined = undefined;
+
+  if (htmlPath) {
+    const { data: htmlFile, error: htmlErr } = await supabaseServer.storage
+      .from("companies")
+      .download(htmlPath);
+
+    if (htmlErr) {
+      console.error("❌ Failed downloading HTML:", htmlErr);
+    } else {
+      htmlString = await htmlFile.text();
+    }
+  }
+
+  /* -----------------------------------------------------------
+     2. DOWNLOAD SCREENSHOT
+  ----------------------------------------------------------- */
+  let screenshotBuffer: Buffer | undefined = undefined;
+
+  if (screenshotPath) {
+    const { data: screenshotFile, error: screenshotErr } = await supabaseServer.storage
+      .from("companies")
+      .download(screenshotPath);
+
+    if (screenshotErr) {
+      console.error("❌ Failed downloading screenshot:", screenshotErr);
+    } else {
+      screenshotBuffer = Buffer.from(await screenshotFile.arrayBuffer());
+    }
+  }
+
+  /* -----------------------------------------------------------
+     3. PARSE PA DATA
+  ----------------------------------------------------------- */
+  let parsed: ParsedPAData = {};
+
+  if (county === "saintLucie") {
+    // OCR-only county
+    if (screenshotBuffer) {
+      const ocrText = await extractTextFromImage(screenshotBuffer);
+      parsed = parsePAData(ocrText, county);
+    }
+  } else {
+    // HTML-based counties
+    if (htmlString) {
+      parsed = parsePAData(htmlString, county);
+    }
+  }
+
+  // Attach sketch path if available
+  if (sketchPath) {
+    parsed.sketchPath = sketchPath;
+  }
+
+  // Attach parcel photo path if available
+  if (parcelPhotoPath) {
+    parsed.parcelPhotoPath = parcelPhotoPath;
+  }
+
+  /* -----------------------------------------------------------
+     4. SAVE TO DATABASE — INCLUDING ASSET PATHS
+  ----------------------------------------------------------- */
+  await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      customerName: parsed.ownerName ?? null,
+      customerAddress: parsed.street ?? null,
+      customerCity: parsed.city ?? null,
+      customerState: "FL",
+      customerZip: parsed.zip ?? null,
+      taxFolioNumber: parsed.folio ?? null,
+      legalDescription: parsed.legalDescription ?? null,
+
+      // persist PA asset paths
+      paHtmlPath: htmlPath ?? null,
+      paScreenshotPath: screenshotPath ?? null,
+      paSketchPath: sketchPath ?? null,
+      paParcelPhotoPath: parcelPhotoPath ?? null,
+    },
+  });
+
+  /* -----------------------------------------------------------
+     5. RETURN PARSED DATA TO CLIENT
+  ----------------------------------------------------------- */
+  return {
+    ...paData,
+    parsed,
+  };
+}
+
 // ------------------------------------------------------------
 // FIELD CLEANERS
 // ------------------------------------------------------------
@@ -462,6 +578,8 @@ export async function uploadSnippetImmediately(jobId: string, file: File) {
     signedUrl: snippetSignedUrl,
     ocrText: fullText,
     parsed,
+    jobNumber: job.jobNumber,
+    companyCode: job.company.companyCode,
   };
 }
 

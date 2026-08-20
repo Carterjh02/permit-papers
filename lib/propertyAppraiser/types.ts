@@ -9,4 +9,5 @@ export interface ParsedPAData {
     siteAddress?: string;
     imageUrl?: string;
     sketchPath?: string;
+    parcelPhotoPath?: string | null;
   }

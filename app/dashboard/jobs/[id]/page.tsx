@@ -22,38 +22,6 @@ interface PageProps {
 }
 
 /* ---------------------------------------------------------
-  onTestPA
---------------------------------------------------------- */
-export async function onTestPA(jobId: string, input: {
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  folio?: string;
-  subdivision?: string;
-  county?: string;
-}) {
-  "use server";
-
-  const { runPropertyAppraiserSearch } = await import(
-    "@/lib/propertyAppraiser/index"
-  );
-
-  const result = await runPropertyAppraiserSearch({
-    jobId,
-    address: input.address ?? "",
-    city: input.city ?? "",
-    state: input.state ?? "",
-    zip: input.zip ?? "",
-    folio: input.folio ?? "",
-    subdivision: input.subdivision ?? "",
-    county: input.county ?? "",
-  });
-
-  return result;
-}
-
-/* ---------------------------------------------------------
    PAGE COMPONENT
 --------------------------------------------------------- */
 export default async function JobEditPage({ params }: PageProps) {
@@ -167,9 +135,10 @@ if (job.snippetPath) {
             publicUrl: result.signedUrl,
             ocrText: result.ocrText,
             parsed: result.parsed,
+            jobNumber: result.jobNumber,
+            companyCode: result.companyCode,
           };
         }}
-        onTestPA={onTestPA}
       />
     </div>
   );

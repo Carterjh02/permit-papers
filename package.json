@@ -16,7 +16,9 @@
     "@supabase/supabase-js": "^2.105.4",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
+    "cors": "^2.8.6",
     "cross-env": "^10.1.0",
+    "express": "^5.2.1",
     "immer": "^11.1.8",
     "jsonwebtoken": "^9.0.3",
     "konva": "^10.3.0",
@@ -38,6 +40,8 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",

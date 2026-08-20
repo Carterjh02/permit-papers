@@ -1,5 +1,6 @@
 "use client";
 
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 import { useState, useRef } from "react";
 import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
@@ -7,6 +8,7 @@ import Image from "next/image";
 import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
 import { detectCounty } from "@/lib/propertyAppraiser/detectCounty";
 import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
+import { savePADataAction } from "./serverActions";
 
 /* ---------------------------------------------------------
    EditableField
@@ -102,6 +104,7 @@ interface JobFormClientProps {
     snippetSignedUrl?: string | null;
     companyId?: string;
     createdBy?: string;
+    jobNumber?: number;
   };
   initialTemplates: {
     id: string;
@@ -131,17 +134,10 @@ interface JobFormClientProps {
       zip?: string;
       folio?: string;
     };
+    jobNumber: number;
+    companyCode: string;
   }>;
-  onTestPA: (
-    jobId: string,
-    input: PaSearchPayload
-  ) => Promise<{
-    county: "broward" | "palmBeach" | "saintLucie";
-    paPath: string;
-    ocrText?: string;
-    parsed: ParsedPAData;
-    html? : string;
-  }>;
+
 }
 
 interface PaSearchPayload {
@@ -165,7 +161,6 @@ export default function JobFormClient({
   onRemoveTemplate,
   onCreateMinimalJob,
   onUploadSnippet,
-  onTestPA,
 }: JobFormClientProps) {
   const { showToast } = useToast();
 
@@ -181,6 +176,12 @@ export default function JobFormClient({
   const [paSearchPayload, setPaSearchPayload] =
     useState<PaSearchPayload | null>(null);
   const [paResult, setPaResult] = useState<ParsedPAData | null>(null);
+
+  const [jobMeta, setJobMeta] = useState({
+    jobNumber: initialJob?.jobNumber ?? null,
+    companyCode: companyCode,
+  });
+
 
   function applyPaToForm(pa: ParsedPAData | null) {
     if (!pa) return;
@@ -323,7 +324,15 @@ export default function JobFormClient({
         { duration: 3000 }
       );
   
-      const { publicUrl, ocrText, parsed } = await onUploadSnippet(id, file);
+      const { publicUrl, ocrText, parsed, jobNumber, companyCode } =
+      await onUploadSnippet(id, file);
+
+      setJobMeta(prev => ({
+        ...prev,
+        jobNumber,
+        companyCode,
+      }));
+      
   
       // Always update snippet preview immediately
       setSnippetUrl(`${publicUrl}?t=${Date.now()}`);
@@ -470,121 +479,206 @@ return (
         OCR MODAL
     --------------------------------------------------------- */}
     {showOcrModal && ocrParsed && (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
-          <h2 className="text-lg font-semibold text-[var(--text-color)]">Confirm Extracted Information</h2>
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
+      <h2 className="text-lg font-semibold text-[var(--text-color)]">
+        Confirm Extracted Information
+      </h2>
 
-          {ocrText && (
-            <pre className="text-xs bg-[var(--input-bg)] p-2 rounded max-h-32 overflow-auto border border-[var(--border-color)] text-[var(--text-color)]">
-              {ocrText}
-            </pre>
-          )}
+      {ocrText && (
+        <pre className="text-xs bg-[var(--input-bg)] p-2 rounded max-h-32 overflow-auto border border-[var(--border-color)] text-[var(--text-color)]">
+          {ocrText}
+        </pre>
+      )}
 
-          <div className="space-y-3 text-sm text-[var(--text-color)]">
-            <EditableField
-              label="Name"
-              ocrValue={ocrParsed.name}
-              name="customer_name"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="Phone"
-              ocrValue={ocrParsed.phone}
-              name="customer_phone"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="Address"
-              ocrValue={ocrParsed.address}
-              name="customer_address_street"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="City"
-              ocrValue={ocrParsed.city}
-              name="customer_address_city"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="State"
-              ocrValue={ocrParsed.state}
-              name="customer_address_state"
-              form={form}
-              setForm={setForm}
-            />
-            <EditableField
-              label="ZIP"
-              ocrValue={ocrParsed.zip}
-              name="customer_address_zip"
-              form={form}
-              setForm={setForm}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowOcrModal(false)}
-            >
-              Cancel
-            </button>
-
-            {/* NEW BUTTON — Run PA Search */}
-            <button
-              className="btn btn-primary"
-              onClick={async () => {
-                if (!ocrParsed) return;
-
-              // Preserve snippet-only fields
-              setSnippetExtraFields({
-                phone: ocrParsed.phone ?? "",
-                email: ocrParsed.email ?? "",
-              });
-
-              const id = await ensureJobExists();
-
-              const county = detectCounty({
-                address: ocrParsed.address ?? "",
-                city: ocrParsed.city ?? "",
-                state: ocrParsed.state ?? "",
-                zip: ocrParsed.zip ?? "",
-              }) ?? undefined;
-
-              const result = await onTestPA(id, {
-                address: normalizeAddress(form.customer_address_street || ocrParsed.address || ""),
-                city: form.customer_address_city || ocrParsed.city || "",
-                state: form.customer_address_state || ocrParsed.state || "FL",
-                zip: form.customer_address_zip || ocrParsed.zip || "",
-                county,
-              });
-
-                setPaResult(result.parsed);
-                setShowOcrModal(false);
-                setShowPaConfirm(true);
-              }}
-            >
-              Run PA Search
-            </button>
-
-            <button className="btn btn-primary" onClick={applyOcrToForm}>
-              Apply to Form
-            </button>
-          </div>
-        </div>
+      <div className="space-y-3 text-sm text-[var(--text-color)]">
+        <EditableField
+          label="Name"
+          ocrValue={ocrParsed.name}
+          name="customer_name"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="Phone"
+          ocrValue={ocrParsed.phone}
+          name="customer_phone"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="Address"
+          ocrValue={ocrParsed.address}
+          name="customer_address_street"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="City"
+          ocrValue={ocrParsed.city}
+          name="customer_address_city"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="State"
+          ocrValue={ocrParsed.state}
+          name="customer_address_state"
+          form={form}
+          setForm={setForm}
+        />
+        <EditableField
+          label="ZIP"
+          ocrValue={ocrParsed.zip}
+          name="customer_address_zip"
+          form={form}
+          setForm={setForm}
+        />
       </div>
-    )}
+
+      <div className="flex justify-end gap-3 pt-4">
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowOcrModal(false)}
+        >
+          Cancel
+        </button>
+
+        {/* Run PA Search Button */}
+        <button
+          className="btn btn-primary"
+          onClick={async () => {
+            console.log("🔵 [PA SEARCH] Button clicked");
+            if (!ocrParsed) return;
+
+            // Preserve snippet-only fields
+            setSnippetExtraFields({
+              phone: ocrParsed.phone ?? "",
+              email: ocrParsed.email ?? "",
+            });
+
+            // Ensure job exists
+            const id = localJobId ?? (await ensureJobExists());
+
+            // Build address
+            const finalAddress = normalizeAddress(
+              form?.customer_address_street ||
+                ocrParsed?.address ||
+                paSearchPayload?.address ||
+                ""
+            );
+
+            const finalCity =
+              form?.customer_address_city ||
+              ocrParsed?.city ||
+              paSearchPayload?.city ||
+              "";
+
+            const finalState =
+              form?.customer_address_state ||
+              ocrParsed?.state ||
+              paSearchPayload?.state ||
+              "FL";
+
+            const finalZip =
+              form?.customer_address_zip ||
+              ocrParsed?.zip ||
+              paSearchPayload?.zip ||
+              "";
+
+            const initialCounty = detectCounty({
+              address: ocrParsed.address ?? "",
+              city: ocrParsed.city ?? "",
+              state: ocrParsed.state ?? "",
+              zip: ocrParsed.zip ?? "",
+            });
+
+            const finalCounty =
+              initialCounty ||
+              paSearchPayload?.county ||
+              detectCounty({
+                address: finalAddress,
+                city: finalCity,
+                state: finalState,
+                zip: finalZip,
+              });
+
+            // CLOUD PA SEARCH
+            let res;
+            try {
+              res = await fetch(
+                "https://ednxswgrxrtamljupapf.supabase.co/functions/v1/pa-search",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    county: finalCounty,
+                    address: finalAddress,
+                    jobId: id,
+                    jobNumber: jobMeta.jobNumber,
+                    companyCode: jobMeta.companyCode,
+                  }),
+                }
+              );
+            } catch (err) {
+              const message =
+                err instanceof Error ? err.message : "Unknown error occurred";
+            
+              showToast("PA search failed: " + message);
+              return;
+            }
+
+            const rawText = await res.text();
+            let data;
+            try {
+              data = JSON.parse(rawText);
+            } catch {
+              showToast("PA search returned invalid JSON");
+              return;
+            }
+
+            if (data.error) {
+              showToast("PA search failed: " + data.error);
+              return;
+            }
+
+            const saved = await savePADataAction(id, data);
+
+            setPaResult(saved.parsed);
+
+            //   IMPORTANT: Close ONLY OCR modal
+            setShowOcrModal(false);
+
+            //   IMPORTANT: Open PA Confirm modal independently
+            setShowPaConfirm(true);
+          }}
+        >
+          Run PA Search
+        </button>
+
+        <button className="btn btn-primary" onClick={applyOcrToForm}>
+          Apply to Form
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
     {/* ---------------------------------------------------------
         PROPERTY APPRAISER SEARCH MODAL (OUTSIDE FORM)
     --------------------------------------------------------- */}
-    {showPaSearch && (
+    {/* ---------------------------------------------------------
+    PROPERTY APPRAISER SEARCH MODAL (OUTSIDE FORM)
+--------------------------------------------------------- */}
+{showPaSearch && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[450px] space-y-4 border border-[var(--border-color)]">
-      <h2 className="text-lg font-semibold text-[var(--text-color)]">Property Appraiser Search</h2>
+      <h2 className="text-lg font-semibold text-[var(--text-color)]">
+        Property Appraiser Search
+      </h2>
 
       <p className="text-sm text-[var(--text-color)] opacity-80">
         Enter any information you have — or use the extracted snippet values.
@@ -653,27 +747,17 @@ return (
         <button
           className="btn btn-primary"
           onClick={async () => {
+            const { address, city, state, zip, county } = paSearchPayload ?? {};
 
-            const {
-              address,
-              city,
-              state,
-              zip,
-              folio,
-              county,
-            } = paSearchPayload ?? {};
-
-            if (!address || address.trim() === "") {
+            if (!address?.trim()) {
               showToast("Please enter an address before running PA search.");
               return;
             }
-
-            if (!city || city.trim() === "") {
+            if (!city?.trim()) {
               showToast("City is required.");
               return;
             }
-        
-            if (!zip || zip.trim() === "") {
+            if (!zip?.trim()) {
               showToast("ZIP code is required.");
               return;
             }
@@ -681,17 +765,51 @@ return (
             // Ensure job exists
             const id = localJobId ?? (await ensureJobExists());
 
-            const result = await onTestPA(id, {
-              address: normalizeAddress(address),
-              city,
-              state,
-              zip,
-              folio,
-              county,
-            });
+            const finalAddress = normalizeAddress(address);
+            const finalCounty =
+              county ||
+              detectCounty({
+                address: finalAddress,
+                city,
+                state: state ?? "FL",
+                zip,
+              });
 
-            setPaResult(result.parsed);
+            // CLOUD PA SEARCH — ALWAYS
+            const res = await fetch(
+              "https://ednxswgrxrtamljupapf.supabase.co/functions/v1/pa-search",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                  county: finalCounty,
+                  address: finalAddress,
+                  jobId: id,
+                  jobNumber: jobMeta.jobNumber,
+                  companyCode: jobMeta.companyCode,
+                }),
+              }
+            );
+
+            const data = await res.json();
+
+            if (data.error) {
+              showToast("PA search failed: " + data.error);
+              return;
+            }
+
+            // Save to server
+            const saved = await savePADataAction(id, data);
+
+            setPaResult(saved.parsed);
+
+            // Close ONLY this modal
             setShowPaSearch(false);
+
+            // Open PA Confirm modal
             setShowPaConfirm(true);
           }}
         >
@@ -708,7 +826,9 @@ return (
     {showPaConfirm && paResult && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
     <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
-      <h2 className="text-lg font-semibold text-[var(--text-color)]">Confirm Property Appraiser Data</h2>
+      <h2 className="text-lg font-semibold text-[var(--text-color)]">
+        Confirm Property Appraiser Data
+      </h2>
 
       <p className="text-sm text-[var(--text-color)] opacity-80">
         Review the extracted property appraiser information and apply it to the form.
@@ -722,6 +842,7 @@ return (
           form={form}
           setForm={setForm}
         />
+
         <EditableField
           label="Street Address"
           ocrValue={paResult.street}
@@ -729,13 +850,14 @@ return (
           form={form}
           setForm={setForm}
         />
+
         <EditableField
           label="City"
           ocrValue={paResult.city}
           name="customer_address_city"
           form={form}
           setForm={setForm}
-          />
+        />
 
         <EditableField
           label="ZIP Code"
@@ -744,6 +866,7 @@ return (
           form={form}
           setForm={setForm}
         />
+
         <EditableField
           label="Legal Description"
           ocrValue={paResult.legalDescription}
@@ -760,9 +883,11 @@ return (
         >
           Cancel
         </button>
+
         <button
           className="btn btn-primary"
           onClick={() => {
+            // Apply parsed PA data to form
             applyPaToForm(paResult);
 
             // Overwrite with snippet-only fields when they exist

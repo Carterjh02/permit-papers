@@ -12,33 +12,6 @@ import {
   removeTemplateAction,
 } from "../serverActions";
 
-export async function onTestPA(jobId: string, input: {
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  folio?: string;
-  subdivision?: string;
-  county?: string;
-}) {
-  "use server";
-
-  const { runPropertyAppraiserSearch } = await import(
-    "@/lib/propertyAppraiser/index"
-  );
-
-  return await runPropertyAppraiserSearch({
-    jobId,
-    address: input.address ?? "",
-    city: input.city ?? "",
-    state: input.state ?? "",
-    zip: input.zip ?? "",
-    folio: input.folio ?? "",
-    subdivision: input.subdivision ?? "",
-    county: input.county ?? "",
-  });
-}
-
 export default async function NewJobPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
@@ -118,9 +91,10 @@ export default async function NewJobPage() {
             publicUrl: result.signedUrl,
             ocrText: result.ocrText,
             parsed: result.parsed,
+            jobNumber: result.jobNumber,
+            companyCode: result.companyCode,
           };
         }}
-        onTestPA={onTestPA}
       />
     </div>
   );

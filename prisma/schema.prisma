@@ -115,6 +115,10 @@ model Job {
   company          Company       @relation(fields: [companyId], references: [id])
   documents        JobDocument[]
   jobFiles         JobFile[]
+  paHtmlPath       String? 
+  paScreenshotPath String?
+  paSketchPath     String?
+  paParcelPhotoPath String?
 }
 
 model FormTemplate {
