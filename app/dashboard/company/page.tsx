@@ -27,8 +27,8 @@ export default async function CompanyInfoPage() {
   }
 
   return (
-    <div className="page-container space-y-8">
-      <h1 className="text-2xl font-bold">Company Information</h1>
+    <div className="page-container space-y-[var(--section-gap)]">
+      <h1 className="text-2xl-d font-bold">Company Information</h1>
 
       {/* Company Info */}
       <Section title="Company Info">
@@ -61,7 +61,7 @@ export default async function CompanyInfoPage() {
 
       {/* Metadata */}
       <Section title="Record Details">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-[var(--block-gap)]">
           <Info
             label="Created At"
             value={company.createdAt.toLocaleDateString()}
@@ -75,7 +75,7 @@ export default async function CompanyInfoPage() {
 
       {(user.role === "admin" || user.role === "master") && (
         <div>
-          <Link href="/dashboard/company/edit" className="btn btn-primary">
+          <Link href="/dashboard/company/edit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
             Edit Company Info
           </Link>
         </div>
@@ -86,11 +86,11 @@ export default async function CompanyInfoPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
+    <div className="p-[var(--section-gap)] space-y-[var(--block-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+      <h2 className="text-lg-d font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
         {title}
       </h2>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-[var(--block-gap)]">{children}</div>
     </div>
   );
 }
@@ -104,7 +104,7 @@ function Info({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">
+      <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
         {label}
       </label>
       <p className="text-[var(--text-color)]">{value || "—"}</p>

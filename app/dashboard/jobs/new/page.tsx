@@ -38,11 +38,11 @@ export default async function NewJobPage() {
   const defaultDescription = company?.descOfImprov ?? "";
 
   return (
-    <div className="page-container space-y-6">
-      <h1 className="text-2xl font-bold">Create New Job</h1>
+    <div className="page-container space-y-[var(--section-gap)]">
+      <h1 className="text-2xl-d font-bold">Create New Job</h1>
 
-      <div className="flex justify-end">
-        <a href="/dashboard" className="btn btn-primary">
+      <div className="flex justify-end gap-[var(--block-gap)]">
+        <a href="/dashboard" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Back to Dashboard
         </a>
       </div>

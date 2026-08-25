@@ -44,7 +44,7 @@ const EditableField = ({
 
   return (
     <div className="border border-[var(--border-color)] rounded-md bg-[var(--card-bg)]">
-      <div className="flex justify-between items-center px-3 py-2 bg-[var(--card-bg)] border-b border-[var(--border-color)]">
+      <div className="flex justify-between items-center px-[var(--row-padding-x)] py-[var(--row-padding-y)] bg-[var(--card-bg)] border-b border-[var(--border-color)]">
         <div>
           <strong>{label}:</strong>{" "}
           <span className="text-[var(--text-color)]">{ocrValue || "—"}</span>
@@ -52,7 +52,7 @@ const EditableField = ({
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="text-sm text-blue-500 hover:underline"
+          className="text-[length:var(--base-font-size)] text-blue-500 hover:underline"
         >
           {open ? "Close" : "Edit"}
         </button>
@@ -318,7 +318,7 @@ export default function JobFormClient({
       const id = await ensureJobExists();
   
       showToast(
-        <div className="text-sm font-medium text-gray-700">
+        <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
           Uploading snippet…
         </div>,
         { duration: 3000 }
@@ -347,7 +347,7 @@ export default function JobFormClient({
       }
   
       showToast(
-        <div className="text-sm font-medium text-green-700">
+        <div className="text-[length:var(--base-font-size)] font-medium text-green-700">
           Snippet uploaded successfully.
         </div>,
         { duration: 3000 }
@@ -355,7 +355,7 @@ export default function JobFormClient({
     } catch (err) {
       console.error(err);
       showToast(
-        <div className="text-sm font-medium text-red-700">
+        <div className="text-[length:var(--base-font-size)] font-medium text-red-700">
           Failed to upload snippet.
         </div>,
         { duration: 3000 }
@@ -480,18 +480,18 @@ return (
     --------------------------------------------------------- */}
     {showOcrModal && ocrParsed && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
+    <div className="bg-[var(--card-bg)] p-[var(--section-gap)] rounded shadow-xl w-[500px] space-y-[var(--block-gap)] border border-[var(--border-color)]">
       <h2 className="text-lg font-semibold text-[var(--text-color)]">
         Confirm Extracted Information
       </h2>
 
       {ocrText && (
-        <pre className="text-xs bg-[var(--input-bg)] p-2 rounded max-h-32 overflow-auto border border-[var(--border-color)] text-[var(--text-color)]">
+        <pre className="text-sm-d bg-[var(--input-bg)] p-2 rounded max-h-32 overflow-auto border border-[var(--border-color)] text-[var(--text-color)]">
           {ocrText}
         </pre>
       )}
 
-      <div className="space-y-3 text-sm text-[var(--text-color)]">
+      <div className="space-y-[var(--block-gap)] text-[length:var(--base-font-size)] text-[var(--text-color)]">
         <EditableField
           label="Name"
           ocrValue={ocrParsed.name}
@@ -536,7 +536,7 @@ return (
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-[var(--section-gap)]">
         <button
           className="btn btn-primary"
           onClick={() => setShowOcrModal(false)}
@@ -548,7 +548,13 @@ return (
         <button
           className="btn btn-primary"
           onClick={async () => {
-            console.log("🔵 [PA SEARCH] Button clicked");
+            showToast(
+              <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
+                Running property appraiser search…
+              </div>,
+              { duration: 10000 }
+            );
+          
             if (!ocrParsed) return;
 
             // Preserve snippet-only fields
@@ -627,7 +633,12 @@ return (
               const message =
                 err instanceof Error ? err.message : "Unknown error occurred";
             
-              showToast("PA search failed: " + message);
+                showToast(
+                  <div className="text-[length:var(--base-font-size)] font-medium text-red-700">
+                    PA search failed: {message}
+                  </div>,
+                  { duration: 3000 }
+                );
               return;
             }
 
@@ -649,10 +660,17 @@ return (
 
             setPaResult(saved.parsed);
 
-            //   IMPORTANT: Close ONLY OCR modal
+            showToast(
+              <div className="text-[length:var(--base-font-size)] font-medium text-green-700">
+                Property appraiser data loaded!
+              </div>,
+              { duration: 3000 }
+            );
+
+            // Close ONLY OCR modal
             setShowOcrModal(false);
 
-            //   IMPORTANT: Open PA Confirm modal independently
+            // Open PA Confirm modal independently
             setShowPaConfirm(true);
           }}
         >
@@ -668,23 +686,20 @@ return (
 )}
 
     {/* ---------------------------------------------------------
-        PROPERTY APPRAISER SEARCH MODAL (OUTSIDE FORM)
-    --------------------------------------------------------- */}
-    {/* ---------------------------------------------------------
     PROPERTY APPRAISER SEARCH MODAL (OUTSIDE FORM)
 --------------------------------------------------------- */}
 {showPaSearch && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[450px] space-y-4 border border-[var(--border-color)]">
+    <div className="bg-[var(--card-bg)] p-[var(--section-gap)] rounded shadow-xl w-[450px] space-y-[var(--block-gap)] border border-[var(--border-color)]">
       <h2 className="text-lg font-semibold text-[var(--text-color)]">
         Property Appraiser Search
       </h2>
 
-      <p className="text-sm text-[var(--text-color)] opacity-80">
+      <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80">
         Enter any information you have — or use the extracted snippet values.
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-[var(--block-gap)]">
         <input
           id="pa_name"
           className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -736,7 +751,7 @@ return (
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-[var(--section-gap)]">
         <button
           className="btn btn-primary"
           onClick={() => setShowPaSearch(false)}
@@ -747,6 +762,12 @@ return (
         <button
           className="btn btn-primary"
           onClick={async () => {
+            showToast(
+              <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
+                Running property appraiser search…
+              </div>,
+              { duration: 10000 }
+            );
             const { address, city, state, zip, county } = paSearchPayload ?? {};
 
             if (!address?.trim()) {
@@ -825,16 +846,16 @@ return (
     --------------------------------------------------------- */}
     {showPaConfirm && paResult && (
   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-[var(--card-bg)] p-6 rounded shadow-xl w-[500px] space-y-4 border border-[var(--border-color)]">
+    <div className="bg-[var(--card-bg)] p-[var(--section-gap)] rounded shadow-xl w-[500px] space-y-[var(--block-gap)] border border-[var(--border-color)]">
       <h2 className="text-lg font-semibold text-[var(--text-color)]">
         Confirm Property Appraiser Data
       </h2>
 
-      <p className="text-sm text-[var(--text-color)] opacity-80">
+      <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80">
         Review the extracted property appraiser information and apply it to the form.
       </p>
 
-      <div className="space-y-3 text-sm text-[var(--text-color)]">
+      <div className="space-y-[var(--block-gap)] text-[length:var(--base-font-size)] text-[var(--text-color)]">
         <EditableField
           label="Owner Name"
           ocrValue={paResult.ownerName}
@@ -876,7 +897,7 @@ return (
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-[var(--section-gap)]">
         <button
           className="btn btn-primary"
           onClick={() => setShowPaConfirm(false)}
@@ -910,8 +931,8 @@ return (
     {/* ---------------------------------------------------------
       FORM BINDS SERVER ACTION DIRECTLY
     --------------------------------------------------------- */}
-    <div className="grid grid-cols-[2fr,1fr] gap-6">
-      <form className="space-y-6 p-6 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+    <div className="grid grid-cols-[2fr,1fr] gap-[var(--section-gap)]">
+      <form className="pb-[calc(var(--section-gap)*3)] space-y-[var(--section-gap)] p-[var(--section-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         {/* Hidden fields required for server action */}
         <input type="hidden" name="job_price" value={jobPrice} />
         <input
@@ -943,12 +964,12 @@ return (
         {/* ---------------------------------------------------------
           SNIPPET UPLOAD
         --------------------------------------------------------- */}
-        <div className="space-y-4 pb-6 border-b">
-          <h3 className="text-md font-semibold text-[var(--text-color)]">Customer Snippet</h3>
+        <div className="space-y-[var(--block-gap)] pb-[var(--section-gap)] border-b">
+          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Customer Snippet</h3>
 
           <div
             tabIndex={0}
-            className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center transition-colors hover:bg-[var(--card-bg)] focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
+            className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-[var(--section-gap)] text-center transition-colors hover:bg-[var(--card-bg)] focus:outline-none focus:ring-2 focus:ring-blue-300 relative"
             onFocus={() => setShowPasteHint(true)}
             onBlur={() => setShowPasteHint(false)}
             onDragOver={(e) => {
@@ -980,7 +1001,7 @@ return (
             }}
           >
             <p
-              className="text-sm text-[var(--text-color)] opacity-80 underline decoration-dotted cursor-pointer inline-block"
+              className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80 underline decoration-dotted cursor-pointer inline-block"
               onClick={(e) => {
                 e.stopPropagation();
                 fileInputRef.current?.click();
@@ -990,7 +1011,7 @@ return (
             </p>
 
             {showPasteHint && (
-              <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-[var(--card-bg)] text-[var(--text-color)] text-xs px-3 py-1 rounded shadow-md animate-fadeIn border border-[var(--border-color)]">
+              <div className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-[var(--card-bg)] text-[var(--text-color)] text-sm-d px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded shadow-md animate-fadeIn border border-[var(--border-color)]">
                 Press Ctrl+V to paste an image
               </div>
             )}
@@ -1008,7 +1029,7 @@ return (
           />
 
           {snippetUrl && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-[var(--block-gap)] space-y-[var(--block-gap)]">
               <Image
                 src={snippetUrl}
                 alt="Snippet Preview"
@@ -1021,7 +1042,7 @@ return (
 
               <button
                 type="button"
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
                 onClick={() => setSnippetUrl(null)}
               >
                 Remove Snippet
@@ -1033,17 +1054,24 @@ return (
         {/* ---------------------------------------------------------
           PROPERTY APPRAISER SEARCH (MANUAL)
         --------------------------------------------------------- */}
-        <div className="space-y-4 pb-6 border-b">
-          <h3 className="text-md font-semibold text-[var(--text-color)]">Property Appraiser Search</h3>
+        <div className="space-y-[var(--block-gap)] pb-[var(--section-gap)] border-b">
+          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Property Appraiser Search</h3>
 
-          <p className="text-sm text-[var(--text-color)] opacity-80">
+          <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80">
             Search the county property appraiser using customer name, address, folio, or subdivision.
           </p>
 
           <button
             type="button"
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
             onClick={() => {
+              showToast(
+                <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
+                  Opening property appraiser search…
+                </div>,
+                { duration: 2500 }
+              );
+            
               setPaSearchPayload(null);
               setShowPaSearch(true);
             }}
@@ -1055,11 +1083,11 @@ return (
         {/* ---------------------------------------------------------
           CUSTOMER INFORMATION
         --------------------------------------------------------- */}
-        <div className="space-y-4 pt-2">
-          <h3 className="text-md font-semibold text-[var(--text-color)]">Customer Information</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Name</label>
+        <div className="space-y-[var(--block-gap)] pt-2">
+          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Customer Information</h3>
+          <div className="grid grid-cols-2 gap-[var(--block-gap)]">
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Customer Name</label>
               <input
                 name="customer_name"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1072,8 +1100,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Phone</label>
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Customer Phone</label>
               <input
                 name="customer_phone"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1086,8 +1114,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Customer Email</label>
+            <div className="flex flex-col gap-[var(--block-gap)] col-span-2">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Customer Email</label>
               <input
                 name="customer_email"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1106,11 +1134,11 @@ return (
         {/* ---------------------------------------------------------
           PROPERTY LOCATION
         --------------------------------------------------------- */}
-        <div className="space-y-4 border-t pt-4">
-          <h3 className="text-md font-semibold text-[var(--text-color)]">Property Location</h3>
-          <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Street Address</label>
+        <div className="space-y-[var(--block-gap)] border-t pt-[var(--section-gap)]">
+          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Property Location</h3>
+          <div className="grid grid-cols-2 gap-[var(--block-gap)]">
+          <div className="flex flex-col gap-[var(--block-gap)]">
+            <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Street Address</label>
               <input
                 name="customer_address_street"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1123,8 +1151,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">City</label>
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">City</label>
               <input
                 name="customer_address_city"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1137,8 +1165,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">State</label>
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">State</label>
               <input
                 name="customer_address_state"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1151,8 +1179,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">ZIP</label>
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">ZIP</label>
               <input
                 name="customer_address_zip"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1165,8 +1193,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Tax/Folio Number</label>
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Tax/Folio Number</label>
               <input
                 name="customer_tax_folio"
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1179,8 +1207,8 @@ return (
                 }
               />
             </div>
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Legal Description</label>
+            <div className="flex flex-col gap-[var(--block-gap)] col-span-2">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Legal Description</label>
                 <textarea
                   name="legal_description"
                   className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1199,11 +1227,11 @@ return (
         {/* ---------------------------------------------------------
           JOB DESCRIPTION
         --------------------------------------------------------- */}
-        <div className="space-y-4 border-t pt-4">
-          <h3 className="text-md font-semibold text-[var(--text-color)]">Job Description</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Job Value</label>
+        <div className="space-y-[var(--block-gap)] border-t pt-[var(--section-gap)]">
+          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Job Description</h3>
+          <div className="grid grid-cols-2 gap-[var(--block-gap)]">
+            <div className="flex flex-col gap-[var(--block-gap)]">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Job Value</label>
               <input
                 name="job_price_display"
                 inputMode="decimal"
@@ -1212,8 +1240,8 @@ return (
                 onChange={handlePriceChange}
               />
             </div>
-            <div className="flex flex-col gap-1 col-span-2">
-              <label className="text-sm font-medium text-[var(--text-color)] opacity-80">Description of Improvement</label>
+            <div className="flex flex-col gap-[var(--block-gap)] col-span-2">
+              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Description of Improvement</label>
               <textarea
                 name="desc_of_improvement"
                 className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -1226,59 +1254,69 @@ return (
         {/* ---------------------------------------------------------
           SAVE BUTTON
         --------------------------------------------------------- */}
-        <div className="flex justify-end mt-6">
+        <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end z-50">
           <button
             type="submit"
             className="btn btn-primary"
             formAction={onSave}
+            onClick={() => {
+              showToast(
+                <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
+                  Generating preview…
+                </div>,
+                { duration: 4000 }
+              );
+            }}
           >
             {mode === "create" ? "Save & Preview" : "Update & Preview"}
           </button>
         </div>
       </form>
 
-      {/* ---------------------------------------------------------
-         TEMPLATE SIDE PANEL
-      --------------------------------------------------------- */}
-      <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--text-color)]">Documents</h2>
+        {/* ---------------------------------------------------------
+          TEMPLATE SIDE PANEL (Sticky Scroll Behavior)
+        --------------------------------------------------------- */}
+        <div className="relative">
+        <div className="md:sticky md:top-[calc(var(--section-gap)*2.5)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-lg p-[var(--section-gap)] space-y-[var(--block-gap)] z-40 md:w-[32rem] min-h-[42rem] w-full">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--text-color)]">Documents</h2>
 
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => setShowBrowser(true)}
-          >
-            Add Document
-          </button>
-        </div>
+            <button
+              type="button"
+              className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
+              onClick={() => setShowBrowser(true)}
+            >
+              Add Document
+            </button>
+          </div>
 
-        {templates.length === 0 && (
-          <p className="text-sm text-[var(--text-color)] opacity-60">
-            No documents added yet. Use “Add Document” to select templates.
-          </p>
-        )}
+          {templates.length === 0 && (
+            <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-60">
+              No documents added yet. Use “Add Document” to select templates.
+            </p>
+          )}
 
-        {templates.length > 0 && (
-          <ul className="space-y-2">
-            {templates.map((t) => (
-              <li
-                key={t.id}
-                className="flex items-center justify-between text-sm bg-[var(--card-bg)] border border-[var(--border-color)] px-3 py-2 rounded"
-              >
-                <span className="font-medium">{t.templateName}</span>
-
-                <button
-                  type="button"
-                  className="text-red-400 text-xs font-semibold"
-                  onClick={() => handleRemove(t.id)}
+          {templates.length > 0 && (
+            <ul className="space-y-[var(--block-gap)]">
+              {templates.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between text-[length:var(--base-font-size)] bg-[var(--card-bg)] border border-[var(--border-color)] px-[var(--row-padding-x)] py-[var(--row-padding-y)] rounded"
                 >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <span className="font-medium">{t.templateName}</span>
+
+                  <button
+                    type="button"
+                    className="text-red-400 text-sm-d font-semibold"
+                    onClick={() => handleRemove(t.id)}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {showBrowser && (

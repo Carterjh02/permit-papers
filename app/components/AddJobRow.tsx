@@ -1,17 +1,12 @@
 "use client";
 
-export function AddJobRow() {
+export function AddJobRowContent() {
   return (
-    <tr
-      className="bg-[var(--card-bg)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition"
+    <div
+      className="add-job-cell cursor-pointer"
       onClick={() => (window.location.href = "/dashboard/jobs/new")}
     >
-      <td
-        colSpan={6}
-        className="py-3 px-4 font-medium text-center text-[var(--text-color)]"
-      >
-        + Add Job
-      </td>
-    </tr>
+      + Add Job
+    </div>
   );
 }

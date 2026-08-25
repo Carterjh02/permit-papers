@@ -82,14 +82,14 @@ if (job.snippetPath) {
   }));
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl-d font-bold">
           Edit Job — {job.jobNumber}
         </h1>
 
-        <div className="flex gap-3">
-          <a href="/dashboard" className="btn btn-primary">
+        <div className="flex gap-[var(--block-gap)]">
+          <a href="/dashboard" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
             Back to Dashboard
           </a>
 

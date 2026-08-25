@@ -46,27 +46,27 @@ export default async function AdminNewUserPage() {
   }
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">New User</h1>
-        <Link href="/dashboard/users" className="btn btn-secondary">
+        <h1 className="text-2xl-d font-bold">New User</h1>
+        <Link href="/dashboard/users" className="btn btn-secondary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Back to Users
         </Link>
       </div>
 
-      <form action={createUser} className="card p-6 space-y-4 max-w-xl">
+      <form action={createUser} className="card p-[var(--section-gap)] space-y-[var(--block-gap)] max-w-xl">
         <div>
-          <label className="block text-sm font-medium">Username</label>
+          <label className="block text-sm-d font-medium">Username</label>
           <input name="username" className="input" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Email</label>
+          <label className="block text-sm-d font-medium">Email</label>
           <input name="email" type="email" className="input" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Password</label>
+          <label className="block text-sm-d font-medium">Password</label>
           <input
             name="password"
             type="password"
@@ -77,7 +77,7 @@ export default async function AdminNewUserPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Company</label>
+          <label className="block text-sm-d font-medium">Company</label>
           <input
             className="input bg-gray-100"
             value={admin.companyId ?? ""}
@@ -85,7 +85,7 @@ export default async function AdminNewUserPage() {
           />
         </div>
 
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Create User
         </button>
       </form>

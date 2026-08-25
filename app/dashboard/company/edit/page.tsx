@@ -159,15 +159,15 @@ export default async function CompanyAdminEditPage() {
   }
 
   return (
-    <div className="page-container space-y-8">
-      <h1 className="text-2xl font-bold">Edit Company Info</h1>
+    <div className="page-container space-y-[var(--section-gap)]">
+      <h1 className="text-2xl-d font-bold">Edit Company Info</h1>
 
-      <form action={updateCompany} className="space-y-8">
+      <form action={updateCompany} className="space-y-[var(--section-gap)]">
         {/* Company Info */}
         <Section title="Company Info">
           {company.logoUrl && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-800 mb-1">
+            <div className="mb-[var(--block-gap)]">
+              <p className="text-sm-d font-medium text-gray-800 mb-[calc(var(--block-gap)*0.5)]">
                 Current Logo
               </p>
               <Image
@@ -175,7 +175,7 @@ export default async function CompanyAdminEditPage() {
                 alt="Company Logo"
                 width={200}
                 height={200}
-                className="h-20 w-auto rounded border object-contain"
+                className="h-[calc(var(--row-height)*2)] w-auto rounded border object-contain"
               />
             </div>
           )}
@@ -236,7 +236,7 @@ export default async function CompanyAdminEditPage() {
           />
         </Section>
 
-        <button className="btn btn-primary" type="submit">
+        <button className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]" type="submit">
           Save Changes
         </button>
       </form>
@@ -246,11 +246,11 @@ export default async function CompanyAdminEditPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="p-6 space-y-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
+    <div className="p-[var(--section-gap)] space-y-[var(--block-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+      <h2 className="text-lg-d font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
         {title}
       </h2>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-[var(--block-gap)]">{children}</div>
     </div>
   );
 }
@@ -266,7 +266,7 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
+      <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">{label}</label>
       <input
         name={name}
         defaultValue={defaultValue}
@@ -285,7 +285,7 @@ function InputFile({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
+      <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">{label}</label>
       <input type="file" name={name} accept="image/*" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
     </div>
   );
@@ -302,7 +302,7 @@ function Textarea({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">{label}</label>
+      <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">{label}</label>
       <textarea
         name={name}
         defaultValue={defaultValue}

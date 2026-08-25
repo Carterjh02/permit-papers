@@ -41,21 +41,21 @@ export default async function AdminEditUserPage({
   const typedUser = user;
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Edit User</h1>
+        <h1 className="text-2xl-d font-bold">Edit User</h1>
 
-        <Link href="/dashboard/users" className="btn btn-primary">
+        <Link href="/dashboard/users" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Back to Users
         </Link>
       </div>
 
       {/* UPDATE USER FORM */}
-      <form action={updateUserAction} className="p-6 space-y-4 max-w-xl bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+      <form action={updateUserAction} className="p-[var(--section-gap)] space-y-[var(--block-gap)] max-w-xl bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         <input type="hidden" name="user_id" value={typedUser.id} />
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Username</label>
+          <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">Username</label>
           <input
             name="username"
             className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
@@ -65,7 +65,7 @@ export default async function AdminEditUserPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Email</label>
+          <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">Email</label>
           <input
             name="email"
             type="email"
@@ -75,7 +75,7 @@ export default async function AdminEditUserPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">
+          <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
             New Password (leave blank to keep current)
           </label>
           <input name="password" type="password" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
@@ -84,7 +84,7 @@ export default async function AdminEditUserPage({
         {/* Only admins should see company info */}
         {currentUser.role === "admin" && (
           <div>
-            <label className="block text-sm font-medium text-[var(--text-color)] opacity-80">Company</label>
+            <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">Company</label>
             <input
               className="input bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-color)] opacity-50"
               value={typedUser.companyId ?? ""}
@@ -93,8 +93,8 @@ export default async function AdminEditUserPage({
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4">
-          <button type="submit" className="btn btn-primary">
+        <div className="flex items-center justify-between pt-[var(--section-gap)]">
+          <button type="submit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
             Save Changes
           </button>
         </div>
@@ -102,9 +102,9 @@ export default async function AdminEditUserPage({
 
       {/* DELETE USER FORM — only admins can delete */}
       {currentUser.role === "admin" && (
-        <form action={deleteUserAction} className="mt-6 max-w-xl">
+        <form action={deleteUserAction} className="mt-[var(--section-gap)] max-w-xl">
           <input type="hidden" name="user_id" value={typedUser.id} />
-          <button type="submit" className="btn btn-danger">
+          <button type="submit" className="btn btn-danger py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
             Delete User
           </button>
         </form>

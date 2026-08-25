@@ -74,9 +74,9 @@ export default async function AdminUsersPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Users</h1>
+        <h1 className="text-2xl-d font-bold">Users</h1>
         <Link href="/dashboard/users/new" className="btn btn-primary">
           New User
         </Link>
@@ -101,21 +101,21 @@ export default async function AdminUsersPage({
       <DataTable
         headers={
           <>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Username</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Email</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Created</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] border-b border-[var(--border-color)]">Actions</th>
+            <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] border-b border-[var(--border-color)]">Username</th>
+            <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] border-b border-[var(--border-color)]">Email</th>
+            <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] border-b border-[var(--border-color)]">Created</th>
+            <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] border-b border-[var(--border-color)]">Actions</th>
           </>
         }
       >
         {typedUsers.map((u) => (
           <tr key={u.id} className="border-b border-[var(--border-color)] last:border-0">
-            <td className="py-2 pr-4 text-[var(--text-color)]">{u.username}</td>
-            <td className="py-2 pr-4 text-[var(--text-color)]">{u.email ?? "-"}</td>
-            <td className="py-2 pr-4 text-[var(--text-color)]">
+            <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">{u.username}</td>
+            <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">{u.email ?? "-"}</td>
+            <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">
               {u.createdAt?.toLocaleDateString?.() ?? "-"}
             </td>
-            <td className="py-2 pr-4 text-[var(--text-color)]">
+            <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">
               <Link
                 href={`/dashboard/users/${u.id}/edit`}
                 className="text-blue-600 hover:underline"
@@ -128,19 +128,19 @@ export default async function AdminUsersPage({
 
         {typedUsers.length === 0 && (
           <tr>
-            <td colSpan={4} className="py-4 text-center text-[var(--text-color)] opacity-60">
+            <td colSpan={4} className="py-[var(--row-padding-y)] text-center text-[var(--text-color)] opacity-60">
               No users found.
             </td>
           </tr>
         )}
       </DataTable>
 
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm-d">
         <span>
           Page {page} of {totalPages} ({total} total)
         </span>
 
-        <div className="flex gap-2">
+        <div className="flex gap-[var(--block-gap)]">
           {page > 1 && (
             <Link
               href={`?${new URLSearchParams({
@@ -149,7 +149,7 @@ export default async function AdminUsersPage({
                 dir,
                 page: String(page - 1),
               })}`}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
             >
               Previous
             </Link>
@@ -163,7 +163,7 @@ export default async function AdminUsersPage({
                 dir,
                 page: String(page + 1),
               })}`}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
             >
               Next
             </Link>

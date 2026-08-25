@@ -16,12 +16,13 @@ interface PalmBeachModel {
 
 /**
  * Parse Palm Beach Property Appraiser HTML using embedded JSON model
+ * (Restored legacy logic — identical behavior to deployed version)
  */
 export function parsePalmBeachPA(html: string): ParsedPAData {
   const data: ParsedPAData = {};
 
   /* ---------------------------------------------------------
-     EXTRACT JSON MODEL (more robust)
+     EXTRACT JSON MODEL (robust for Browserless)
   --------------------------------------------------------- */
   const modelMatch = html.match(/var\s+model\s*=\s*(\{[\s\S]*?\});/i);
   if (!modelMatch) {
@@ -41,13 +42,14 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   const owners = model.ownerInfo || [];
 
   /* ---------------------------------------------------------
-     OWNER NAME (clean + normalize)
+     OWNER NAME — RESTORED OLD LOGIC
+     (This is the part that was working 100% before)
   --------------------------------------------------------- */
 
   // 1. Clean raw Palm Beach owner strings
   let cleanedOwners = owners
-    .map((o) => o.replace(/&/g, "").trim())
-    .filter((o) => o.length > 0);
+    .map(o => o.replace(/&/g, "").trim())
+    .filter(o => o.length > 0);
 
   // 2. Palm Beach sometimes returns 3+ owners; keep only first two
   if (cleanedOwners.length > 2) {
@@ -63,7 +65,9 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
       const last = parts[0];
       const first = parts[1];
       data.ownerName = `${first} ${last}`.trim();
-    } else if (parts.length >= 3) {
+    }
+
+    else if (parts.length >= 3) {
       const last = parts[0];
       const second = parts[1];
       const tail = parts[parts.length - 1];
@@ -75,15 +79,20 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
         // Tail is a full name → treat tail as FIRST NAME
         data.ownerName = `${last} ${tail}`.trim();
       }
-    } else {
+    }
+
+    else {
       data.ownerName = cleanedOwners[0];
     }
-  } else if (cleanedOwners.length > 1) {
+  }
+
+  else if (cleanedOwners.length > 1) {
+    // Multi-owner → use Broward-style normalization (same as deployed version)
     data.ownerName = normalizeOwnerNames(cleanedOwners);
   }
 
   /* ---------------------------------------------------------
-     ADDRESS EXTRACTION
+     ADDRESS EXTRACTION — RESTORED OLD LOGIC
   --------------------------------------------------------- */
   const line1 = pd.AddressLine1?.trim();
   const line3 = pd.AddressLine3?.trim();
@@ -91,18 +100,18 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   data.siteAddress = line1;
   data.street = line1;
 
-  let mailingCity: string | undefined;
-  let mailingZip: string | undefined;
+  let mailingCity: string | undefined = undefined;
+  let mailingZip: string | undefined = undefined;
 
   if (line3) {
     const parts = line3.split(/\s+/);
 
-    // ZIP = first 5 digits found
-    const zipSegment = parts.find((p) => /\d{5}/.test(p)) || "";
+    // ZIP is always first 5 digits
+    const zipSegment = parts.find((p: string) => /\d{5}/.test(p)) || "";
     const zipMatch = zipSegment.match(/\d{5}/);
     mailingZip = zipMatch ? zipMatch[0] : undefined;
 
-    // City = everything before "FL"
+    // City is everything before the state (FL)
     const flIndex = parts.indexOf("FL");
     if (flIndex > 0) {
       mailingCity = parts.slice(0, flIndex).join(" ");
@@ -110,7 +119,7 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   }
 
   /* ---------------------------------------------------------
-     PARTIAL MATCH RULE
+     PARTIAL MATCH RULE — RESTORED OLD LOGIC
   --------------------------------------------------------- */
   function normalize(s: string): string {
     return s.replace(/\s+/g, " ").trim().toUpperCase();

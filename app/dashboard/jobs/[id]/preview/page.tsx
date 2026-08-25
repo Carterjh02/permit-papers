@@ -64,12 +64,12 @@ export default async function JobPreviewPage({ params }: PageProps) {
   }
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <h1 className="text-2xl font-bold text-[var(--text-color)]">
         Preview Documents — Job {job.jobNumber}
       </h1>
   
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-[var(--block-gap)]">
         <form action={backToJob}>
           <button className="btn btn-secondary" type="submit">
             Back to Job
@@ -81,40 +81,40 @@ export default async function JobPreviewPage({ params }: PageProps) {
         </Link>
       </div>
   
-      <h2 className="text-xl font-semibold mt-6 text-[var(--text-color)]">
+      <h2 className="text-xl-d font-semibold mt-[var(--section-gap)] text-[var(--text-color)]">
         Documents
       </h2>
   
       {allPreviews.length === 0 && (
-        <p className="text-sm text-[var(--text-color)] opacity-80">
+        <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80">
           No documents found.
         </p>
       )}
   
       {allPreviews.length > 0 && (
-        <div className="space-y-8">
+        <div className="space-y-[calc(var(--section-gap)*1.5)]">
           {allPreviews.map((p) => (
             <div
               key={p.id}
-              className="dashboard-card space-y-3"
+              className="dashboard-card space-y-[var(--block-gap)]"
             >
               <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-[var(--text-color)]">
+              <h3 className="text-lg-d font-semibold text-[var(--text-color)]">
                 {p.name}
               </h3>
                 <a
                   href={p.url}
                   target="_blank"
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]"
                 >
                   Open / Download
                 </a>
               </div>
 
-              <div className="mt-3 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-md p-2">
+              <div className="mt-[var(--block-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-md p-[var(--block-gap)]">
                 <iframe
                   src={p.url}
-                  className="w-full h-[600px] rounded-md"
+                  className="w-full h-[calc(var(--row-height)*20)] rounded-md"
                 />
               </div>
             </div>

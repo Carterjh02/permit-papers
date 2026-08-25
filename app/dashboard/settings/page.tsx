@@ -180,7 +180,7 @@ useEffect(() => {
   
   if (!session) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-[var(--section-gap)] py-[calc(var(--section-gap)*2)]">
         <p className="text-[var(--text-color)]">Loading settings...</p>
       </div>
     );
@@ -205,20 +205,20 @@ useEffect(() => {
   const tabs = role === "admin" ? adminTabs : userTabs;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-[var(--section-gap)] py-[calc(var(--section-gap)*2)] space-y-[calc(var(--section-gap)*2)]">
 
-      <h1 className="text-3xl font-bold">Settings</h1>
+      <h1 className="text-2xl-d font-bold">Settings</h1>
       <p className="text-[var(--text-color)]">
         Manage your account, company information, and support preferences.
       </p>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-3 border-b border-[var(--border-color)] pb-4">
+      <div className="flex flex-wrap gap-[var(--block-gap)] border-b border-[var(--border-color)] pb-[var(--section-gap)]">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-md text-sm-d-d font-medium ${
               activeTab === tab.id
                 ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
                 : "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)]"
@@ -230,19 +230,19 @@ useEffect(() => {
       </div>
 
       {/* Content */}
-      <div className="bg-[var(--card-bg)] shadow rounded-lg p-6 min-h-[300px]">
+      <div className="bg-[var(--card-bg)] shadow rounded-lg p-[var(--section-gap)] min-h-[calc(var(--row-height)*12)]">
 
         {/* ADMIN: Company Profile */}
         {role === "admin" && activeTab === "company" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">Company Profile</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Update your company information, licenses, and contact details.
             </p>
 
             <Link
               href="/dashboard/company"
-              className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
+              className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
             >
               Edit Company Information
             </Link>
@@ -252,19 +252,19 @@ useEffect(() => {
         {/* ADMIN: Formatting Preferences */}
         {role === "admin" && activeTab === "formatting" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Formatting Preferences</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">Formatting Preferences</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Configure company-wide formatting rules for names, addresses, phone numbers, and document fonts.
             </p>
 
-            <div className="space-y-6">
+            <div className="space-y-[var(--section-gap)]">
 
               {/* Address Format */}
-              <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Address Format</h3>
-                  <div className="space-y-2">
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Address Format</h3>
+                  <div className="space-y-[var(--block-gap)]">
                     {["usps", "full"].map((v) => (
-                      <label key={v} className="flex items-center gap-3">
+                      <label key={v} className="flex items-center gap-[var(--block-gap)]">
                         <input
                           type="radio"
                           name="addressFormat"
@@ -279,11 +279,11 @@ useEffect(() => {
                 </div>
 
                 {/* Address Case */}
-                <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Address Case</h3>
-                  <div className="space-y-2">
+                <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Address Case</h3>
+                  <div className="space-y-[var(--block-gap)]">
                     {["upper", "title"].map((v) => (
-                      <label key={v} className="flex items-center gap-3">
+                      <label key={v} className="flex items-center gap-[var(--block-gap)]">
                         <input
                           type="radio"
                           name="addressCase"
@@ -298,11 +298,11 @@ useEffect(() => {
                 </div>
 
                 {/* Name Format */}
-                <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Name Format</h3>
-                  <div className="space-y-2">
+                <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Name Format</h3>
+                  <div className="space-y-[var(--block-gap)]">
                     {["first-last", "last-first"].map((v) => (
-                      <label key={v} className="flex items-center gap-3">
+                      <label key={v} className="flex items-center gap-[var(--block-gap)]">
                         <input
                           type="radio"
                           name="nameFormat"
@@ -317,11 +317,11 @@ useEffect(() => {
                 </div>
 
                 {/* Name Case */}
-                <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                  <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Name Case</h3>
-                  <div className="space-y-2">
+                <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                  <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Name Case</h3>
+                  <div className="space-y-[var(--block-gap)]">
                     {["upper", "title"].map((v) => (
-                      <label key={v} className="flex items-center gap-3">
+                      <label key={v} className="flex items-center gap-[var(--block-gap)]">
                         <input
                           type="radio"
                           name="nameCase"
@@ -337,11 +337,11 @@ useEffect(() => {
               </div>
 
               {/* Phone Format */}
-              <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Phone Format</h3>
-                <div className="space-y-2">
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Phone Format</h3>
+                <div className="space-y-[var(--block-gap)]">
                   {["parentheses", "dashes"].map((v) => (
-                    <label key={v} className="flex items-center gap-3">
+                    <label key={v} className="flex items-center gap-[var(--block-gap)]">
                       <input
                         type="radio"
                         name="phoneFormat"
@@ -355,10 +355,10 @@ useEffect(() => {
                 </div>
 
                 {/* Document Font */}
-                <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                  <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Document Font</h3>
+                <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                  <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Document Font</h3>
                     {["inter", "roboto", "times", "georgia"].map((v) => (
-                      <label key={v} className="flex items-center gap-3">
+                      <label key={v} className="flex items-center gap-[var(--block-gap)]">
                         <input
                           type="radio"
                           name="documentFont"
@@ -389,7 +389,7 @@ useEffect(() => {
                   await saveCompanyPreferences();
                   showToast("Company formatting preferences saved!", "success");
                 }}
-                className="dashboard-btn dashboard-btn-primary mt-6"
+                className="dashboard-btn dashboard-btn-primary mt-[var(--section-gap)]"
               >
                 Save Formatting Preferences
               </button>
@@ -397,7 +397,7 @@ useEffect(() => {
               {/* RESET BUTTON */}
               <button
                 onClick={() => openResetModal("company")}
-                className="dashboard-btn dashboard-btn-secondary mt-3 ml-2"
+                className="dashboard-btn dashboard-btn-secondary mt-[var(--block-gap)] ml-[var(--block-gap)]"
               >
                 Reset to Defaults
               </button>
@@ -407,8 +407,8 @@ useEffect(() => {
         {/* ADMIN: Subscription & Billing */}
         {role === "admin" && activeTab === "billing" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Subscription & Billing</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">Subscription & Billing</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               View your subscription tier, job usage, and manage billing details.
             </p>
 
@@ -417,7 +417,7 @@ useEffect(() => {
               <p className="text-[var(--text-color)]">Jobs Used This Cycle: <strong>Loading...</strong></p>
             </div>
 
-            <button className="mt-4 px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]">
+            <button className="mt-[var(--section-gap)] px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]">
               Manage Billing
             </button>
           </div>
@@ -426,14 +426,14 @@ useEffect(() => {
         {/* ADMIN: User Management */}
         {role === "admin" && activeTab === "users" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">User Management</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">User Management</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Add, remove, and update users for your company.
             </p>
 
             <Link
               href="/dashboard/users"
-              className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
+              className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
             >
               Manage Users
             </Link>
@@ -443,14 +443,14 @@ useEffect(() => {
         {/* BOTH: My Account */}
         {activeTab === "account" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">My Account</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">My Account</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Update your personal information and login details.
             </p>
 
             <Link
               href={`/dashboard/users/${session?.user?.id}/edit`}
-              className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
+              className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-primary-hover)]"
             >
               Edit My Account
             </Link>
@@ -459,20 +459,20 @@ useEffect(() => {
 
         {/* BOTH: User Preferences */}
         {activeTab === "userprefs" && (
-        <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-          <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">User Preferences</h3>
-            <p className="text-[var(--text-color)] mb-4">
+        <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+          <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">User Preferences</h3>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Customize your personal UI experience.
             </p>
 
-            <div className="space-y-6">
+            <div className="space-y-[var(--section-gap)]">
 
               {/* Theme */}
-              <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">Theme</h3>
-                <div className="space-y-2">
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">Theme</h3>
+                <div className="space-y-[var(--block-gap)]">
                   {["light", "dark"].map((v) => (
-                    <label key={v} className="flex items-center gap-3">
+                    <label key={v} className="flex items-center gap-[var(--block-gap)]">
                       <input
                         type="radio"
                         name="theme"
@@ -487,11 +487,11 @@ useEffect(() => {
               </div>
 
               {/* UI Font */}
-              <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">UI Font</h3>
-                <div className="space-y-2">
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">UI Font</h3>
+                <div className="space-y-[var(--block-gap)]">
                   {["inter", "roboto", "system-ui", "georgia", "source-sans"].map((v) => (
-                    <label key={v} className="flex items-center gap-3">
+                    <label key={v} className="flex items-center gap-[var(--block-gap)]">
                       <input
                         type="radio"
                         name="uiFont"
@@ -517,11 +517,11 @@ useEffect(() => {
               </div>
 
               {/* Density */}
-              <div className="border-t border-[var(--border-color)] mt-8 pt-6">
-                <h3 className="text-lg font-semibold mb-4 text-[var(--text-color)]">UI Density</h3>
-                <div className="space-y-2">
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">UI Density</h3>
+                <div className="space-y-[var(--block-gap)]">
                   {["comfortable", "compact"].map((v) => (
-                    <label key={v} className="flex items-center gap-3">
+                    <label key={v} className="flex items-center gap-[var(--block-gap)]">
                       <input
                         type="radio"
                         name="density"
@@ -541,7 +541,7 @@ useEffect(() => {
                   await saveUserPreferences();
                   showToast("User preferences saved!", "success");
                 }}
-                className="dashboard-btn dashboard-btn-primary mt-6"
+                className="dashboard-btn dashboard-btn-primary mt-[var(--section-gap)]"
               >
                 Save User Preferences
               </button>
@@ -549,7 +549,7 @@ useEffect(() => {
               {/* RESET BUTTON */}
               <button
                 onClick={() => openResetModal("user")}
-                className="dashboard-btn dashboard-btn-secondary mt-3 ml-2"
+                className="dashboard-btn dashboard-btn-secondary mt-[var(--block-gap)] ml-[var(--block-gap)]"
               >
                 Reset to Defaults
               </button>
@@ -560,12 +560,12 @@ useEffect(() => {
         {/* BOTH: Support */}
         {activeTab === "support" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Support</h2>
-            <p className="text-[var(--text-color)] mb-4">
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">Support</h2>
+            <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Contact support or submit a request for help.
             </p>
 
-            <button className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-secondary-hover)]">
+            <button className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded-md hover:bg-[var(--btn-secondary-hover)]">
               Contact Support
             </button>
           </div>
@@ -574,17 +574,17 @@ useEffect(() => {
       {/* RESET CONFIRMATION MODAL */}
       {showResetModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-[var(--card-bg)] rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-semibold mb-4">Reset Preferences</h3>
-            <p className="text-[var(--text-color)] mb-6">
+          <div className="bg-[var(--card-bg)] rounded-lg shadow-lg p-[var(--section-gap)] w-full max-w-md">
+            <h3 className="text-xl-d font-semibold mb-[var(--block-gap)]">Reset Preferences</h3>
+            <p className="text-[var(--text-color)] mb-[var(--section-gap)]">
               Are you sure you want to reset all{" "}
               {resetTarget === "company" ? "company formatting" : "user"} preferences to defaults?
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-[var(--block-gap)]">
               <button
                 onClick={closeResetModal}
-                className="px-4 py-2 bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] rounded hover:bg-[var(--btn-secondary-hover)]"
+                className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] rounded hover:bg-[var(--btn-secondary-hover)]"
               >
                 Cancel
               </button>
@@ -598,7 +598,7 @@ useEffect(() => {
                   }
                   closeResetModal();
                 }}
-                className="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded hover:bg-[var(--btn-primary-hover)]"
+                className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] rounded hover:bg-[var(--btn-primary-hover)]"
               >
                 Reset
               </button>
@@ -610,9 +610,9 @@ useEffect(() => {
       {toast && (
         <div
           className={`
-            fixed bottom-6 right-6 px-4 py-3 rounded shadow-lg 
+            fixed bottom-6 right-6 px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded shadow-lg 
             bg-[var(--card-bg)] 
-            text-sm font-medium
+            text-sm-d-d font-medium
             ${toast.type === "success" ? "text-green-600" : "text-red-600"}
           `}
         >

@@ -9,8 +9,7 @@ import { redirect } from "next/navigation";
 import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
-import { DataTable } from "@/app/components/DataTable";
-import { AddJobRow } from "@/app/components/AddJobRow";
+import { AddJobRowContent } from "@/app/components/AddJobRow";
 
 import JobActions from "./JobActions";
 
@@ -34,7 +33,7 @@ interface PageProps {
   }>;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 40;
 
 export default async function DashboardPage({
   searchParams: searchParamsPromise,
@@ -50,7 +49,7 @@ export default async function DashboardPage({
     user.role === "master" ? user.activeCompanyId : user.companyId;
 
   if (!companyId) {
-    return <div className="p-10">No active company selected.</div>;
+    return <div className="p-[var(--section-gap)]">No active company selected.</div>;
   }
 
   const company = await prisma.company.findUnique({
@@ -99,7 +98,7 @@ export default async function DashboardPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="page-container space-y-6">
+    <div className="page-container space-y-[var(--section-gap)]">
       <h1 className="text-2xl font-bold">{company?.name} — Dashboard</h1>
 
       <FilterPanel>
@@ -110,7 +109,7 @@ export default async function DashboardPage({
         />
 
         <div>
-          <label className="block text-sm font-medium text-[var(--text-color)]">Status</label>
+          <label className="block text-[length:var(--base-font-size)] font-medium text-[var(--text-color)]">Status</label>
           <select name="status" defaultValue={status} className="input">
             <option value="">All</option>
             <option value="open">Open</option>
@@ -129,102 +128,130 @@ export default async function DashboardPage({
         />
       </FilterPanel>
 
-      <DataTable
-        className="dashboard-table"
-        headers={
-          <>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Job #</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Customer</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Address</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Created</th>
-            <th className="text-left py-2 pr-4 text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Actions</th>
-          </>
-        }
-      >
-        <AddJobRow />
+        <div className="relative overflow-y-auto max-h-[calc(var(--row-height)*25)]">
+        <table className="dashboard-table w-full">
 
-        {jobs.map(
-          (j: {
-            id: string;
-            jobNumber: number; // FIXED
-            customerName: string | null;
-            customerAddress: string | null;
-            customerCity: string | null;
-            customerState: string | null;
-            customerZip: string | null;
-            createdAt: Date;
-          }) => {
-          const fullAddress = [
-            j.customerAddress,
-            j.customerCity,
-            j.customerState,
-            j.customerZip,
-          ]
-          .filter(Boolean)
-          .join(", ");
+          {/* Sticky Add Job Row */}
+          <thead className="add-job-head">
+            <tr>
+              <th colSpan={6}>
+                <AddJobRowContent />
+              </th>
+            </tr>
+          </thead>
 
-        return (
-          <tr key={j.id} className="border-b border-[var(--border-color)] last:border-0">
-          <td className="py-2 pr-4 text-[var(--text-color)]">{j.jobNumber}</td>
-          <td className="py-2 pr-4 text-[var(--text-color)]">{j.customerName ?? "-"}</td>
-          <td className="py-2 pr-4 text-[var(--text-color)]">{fullAddress || "-"}</td>
-          <td className="py-2 pr-4 text-[var(--text-color)]">
-            {j.createdAt.toLocaleDateString()}
-          </td>
+          {/* Sticky Table Header */}
+          <thead>
+            <tr>
+              <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Job #</th>
+              <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Customer</th>
+              <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Address</th>
+              <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Created</th>
+              <th className="text-left py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)] bg-[rgba(255,255,255,0.03)]">Actions</th>
+            </tr>
+          </thead>
 
-          <td className="py-2 pr-4 text-[var(--text-color)]">
-            <JobActions jobId={j.id} jobNumber={j.jobNumber} />
-          </td>
-        </tr>
-      );
-    }
-  )}
+          <tbody>
+            {jobs.map((j) => {
+              const fullAddress = [
+                j.customerAddress,
+                j.customerCity,
+                j.customerState,
+                j.customerZip,
+              ].filter(Boolean).join(", ");
 
+              return (
+                <tr key={j.id} className="border-b border-[var(--border-color)] last:border-0">
+                  <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">{j.jobNumber}</td>
+                  <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">{j.customerName ?? "-"}</td>
+                  <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">{fullAddress || "-"}</td>
+                  <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">
+                    {j.createdAt.toLocaleDateString()}
+                  </td>
+                  <td className="py-[var(--row-padding-y)] pr-[var(--row-padding-x)] text-[var(--text-color)]">
+                    <JobActions jobId={j.id} jobNumber={j.jobNumber} />
+                  </td>
+                </tr>
+              );
+            })}
 
-        {jobs.length === 0 && (
-          <tr>
-            <td colSpan={5} className="py-4 text-center text-[var(--text-color)] opacity-60">
-              No jobs found.
-            </td>
-          </tr>
-        )}
-      </DataTable>
+            {jobs.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-4 text-center text-[var(--text-color)] opacity-60">
+                  No jobs found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="flex items-center justify-between text-sm text-[var(--text-color)]">
+      <div className="flex items-center justify-between text-[length:var(--base-font-size)] text-[var(--text-color)]">
         <span>
           Page {page} of {totalPages} ({total} total)
         </span>
 
-        <div className="flex gap-2">
-          {page > 1 && (
-            <Link
-              href={`?${new URLSearchParams({
-                q,
-                status,
-                sort,
-                dir,
-                page: String(page - 1),
-              }).toString()}`}
-              className="px-3 py-1 rounded bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]"
-            >
-              Previous
-            </Link>
-          )}
+        <div className="flex gap-[var(--block-gap)]">
 
-          {page < totalPages && (
-            <Link
-              href={`?${new URLSearchParams({
-                q,
-                status,
-                sort,
-                dir,
-                page: String(page + 1),
-              }).toString()}`}
-              className="px-3 py-1 rounded bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]"
-            >
-              Next
-            </Link>
-          )}
+        {/* First Page */}
+        {page > 1 && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: "1" })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--selected-bg)] transition"
+          >
+            First
+          </Link>
+        )}
+
+        {/* Previous */}
+        {page > 1 && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: String(page - 1) })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--selected-bg)] transition"
+          >
+            Previous
+          </Link>
+        )}
+
+        {/* Jump Back 3 */}
+        {page > 3 && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: String(page - 3) })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--selected-bg)] transition"
+          >
+            -3
+          </Link>
+        )}
+
+        {/* Jump Forward 3 */}
+        {page < totalPages - 3 && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: String(page + 3) })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-color)] hover:bg-[var(--selected-bg)] transition"
+          >
+            +3
+          </Link>
+        )}
+
+        {/* Next */}
+        {page < totalPages && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: String(page + 1) })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)] transition"
+          >
+            Next
+          </Link>
+        )}
+
+        {/* Last Page */}
+        {page < totalPages && (
+          <Link
+            href={`?${new URLSearchParams({ q, status, sort, dir, page: String(totalPages) })}`}
+            className="px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)] transition"          
+          >
+            Last
+          </Link>
+        )}
         </div>
       </div>
     </div>
