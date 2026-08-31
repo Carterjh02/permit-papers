@@ -9,6 +9,7 @@ import { SearchBar } from "@/app/components/SearchBar";
 import { SortControls } from "@/app/components/SortControls";
 import { FilterPanel } from "@/app/components/FilterPanel";
 import { DataTable } from "@/app/components/DataTable";
+import { TutorialStep } from "@/app/components/tutorial/TutorialStep";
 
 interface PageProps {
   searchParams: Promise<{
@@ -76,9 +77,9 @@ export default async function AdminUsersPage({
   return (
     <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl-d font-bold">Users</h1>
-        <Link href="/dashboard/users/new" className="btn btn-primary">
-          New User
+        <h1 className="text-2xl-d font-bold" id="users-overview">Users</h1>
+        <Link href="/dashboard/users/new" className="btn btn-primary" id="btn-new-user">
+           New User
         </Link>
       </div>
 

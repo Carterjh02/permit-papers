@@ -160,11 +160,12 @@ export default async function CompanyAdminEditPage() {
 
   return (
     <div className="page-container space-y-[var(--section-gap)]">
+  
       <h1 className="text-2xl-d font-bold">Edit Company Info</h1>
-
+  
       <form action={updateCompany} className="space-y-[var(--section-gap)]">
         {/* Company Info */}
-        <Section title="Company Info">
+        <Section title="Company Info" id="company-info-section">
           {company.logoUrl && (
             <div className="mb-[var(--block-gap)]">
               <p className="text-sm-d font-medium text-gray-800 mb-[calc(var(--block-gap)*0.5)]">
@@ -179,74 +180,46 @@ export default async function CompanyAdminEditPage() {
               />
             </div>
           )}
-
+  
           <InputFile label="Upload New Logo" name="logo" />
-
+  
           <Input label="Company Name" name="name" defaultValue={company.name} />
           <Input label="Email" name="email" defaultValue={company.email ?? ""} />
           <Input label="Phone" name="phone" defaultValue={company.phone ?? ""} />
           <Input label="Website" name="website" defaultValue={company.website ?? ""} />
         </Section>
-
+  
         {/* Address Info */}
-        <Section title="Address Info">
-          <Input
-            label="Street"
-            name="addressStreet"
-            defaultValue={company.addressStreet ?? ""}
-          />
-          <Input
-            label="City"
-            name="addressCity"
-            defaultValue={company.addressCity ?? ""}
-          />
-          <Input
-            label="State"
-            name="addressState"
-            defaultValue={company.addressState ?? ""}
-          />
-          <Input
-            label="Zip"
-            name="addressZip"
-            defaultValue={company.addressZip ?? ""}
-          />
-        </Section>
+        <Section title="Address Info" id="company-address-section">
 
+          <Input label="Street" name="addressStreet" defaultValue={company.addressStreet ?? ""} />
+          <Input label="City" name="addressCity" defaultValue={company.addressCity ?? ""} />
+          <Input label="State" name="addressState" defaultValue={company.addressState ?? ""} />
+          <Input label="Zip" name="addressZip" defaultValue={company.addressZip ?? ""} />
+        </Section>
+  
         {/* Contractor Info */}
-        <Section title="Contractor Info">
-          <Input
-            label="License Number"
-            name="licenseNumber"
-            defaultValue={company.licenseNumber ?? ""}
-          />
-          <Input
-            label="Qualifier Name"
-            name="qualifierName"
-            defaultValue={company.qualifierName ?? ""}
-          />
-          <Textarea
-            label="Description of Improvement"
-            name="descOfImprov"
-            defaultValue={company.descOfImprov ?? ""}
-          />
-          <Input
-            label="Business Tax Receipt Number"
-            name="businessTaxReceipt"
-            defaultValue={company.businessTaxReceipt ?? ""}
-          />
-        </Section>
+        <Section title="Contractor Info" id="company-contractor-section">
 
-        <button className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]" type="submit">
+          <Input label="License Number" name="licenseNumber" defaultValue={company.licenseNumber ?? ""} />
+          <Input label="Qualifier Name" name="qualifierName" defaultValue={company.qualifierName ?? ""} />
+          <Textarea label="Description of Improvement" name="descOfImprov" defaultValue={company.descOfImprov ?? ""} />
+          <Input label="Business Tax Receipt Number" name="businessTaxReceipt" defaultValue={company.businessTaxReceipt ?? ""} />
+        </Section>
+  
+        <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end z-50">
+        <button className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]" type="submit" id="btn-company-save">
           Save Changes
         </button>
+        </div>
       </form>
     </div>
-  );
+  );  
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string; }) {
   return (
-    <div className="p-[var(--section-gap)] space-y-[var(--block-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
+    <div id={id} className="p-[var(--section-gap)] space-y-[var(--block-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
       <h2 className="text-lg-d font-semibold text-[var(--text-color)] border-b border-[var(--border-color)] pb-2">
         {title}
       </h2>

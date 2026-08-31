@@ -340,7 +340,43 @@ export async function fillPdf({
     // Job Price (RAW)
     // -------------------------
     else if (normalizedName === "job_price") {
-      value = String(job["job_price"] ?? "");
+      const raw = Number(job["job_price"] ?? 0);
+    
+      const hasDecimal = raw % 1 !== 0;
+    
+      if (hasDecimal) {
+        value = `$${raw.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
+      } else {
+        value = `$${raw.toLocaleString("en-US", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        })}`;
+      }
+    }
+
+    // -------------------------
+    // Customer Phone Split (RAW)
+    // -------------------------
+    else if (normalizedName === "customer_phone1" || normalizedName === "customer_phone2") {
+      const rawPhone = String(job["customer_phone"] ?? "").replace(/\D/g, "");
+
+      if (rawPhone.length === 10) {
+        const area = rawPhone.slice(0, 3);
+        const prefix = rawPhone.slice(3, 6);
+        const line = rawPhone.slice(6);
+
+        if (normalizedName === "customer_phone1") {
+          value = `(${area})`;
+        } else {
+          value = `${prefix}-${line}`;
+        }
+      } else {
+        // fallback: leave blank if phone is invalid
+        value = "";
+      }
     }
 
     // -------------------------

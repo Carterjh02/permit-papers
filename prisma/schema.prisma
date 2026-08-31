@@ -55,16 +55,17 @@ model CompanyPreferences {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  username        String           @unique
+  id              String            @id @default(cuid())
+  username        String            @unique
   passwordHash    String
   role            String
   companyId       String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime          @default(now())
   activeCompanyId String?
   email           String?
-  company         Company?         @relation(fields: [companyId], references: [id])
+  company         Company?          @relation(fields: [companyId], references: [id])
   preferences     UserPreferences?
+  tutorial        TutorialProgress?
 }
 
 model UserPreferences {
@@ -85,39 +86,57 @@ model UserPreferences {
   user User @relation(fields: [userId], references: [id])
 }
 
+model TutorialProgress {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Tutorial state
+  enabled           Boolean  @default(true)
+  currentSection    String? // "welcome", "company-setup", "user-management", "formatting", "job-flow"
+  currentStep       Int?     @default(0)
+  completedSections String[] @default([])
+
+  // Future expansion
+  metadata Json?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
 model Job {
-  id               String        @id @default(cuid())
-  companyId        String
-  title            String?
-  customerName     String?
-  customerPhone    String?
-  customerAddress  String?
-  customerCity     String?
-  customerState    String?
-  customerZip      String?
-  legalDescription String?
-  lotNumber        String?
-  blockNumber      String?
-  subdivision      String?
-  buildingNumber   String?
-  unitNumber       String?
-  taxFolioNumber   String?
-  jobValue         Float?
-  description      String?
-  createdBy        String
-  createdAt        DateTime      @default(now())
-  status           String?       @default("open")
-  customerEmail    String?
-  snippetPath      String?
-  snippetSignedUrl String?       @db.Text
-  updatedAt        DateTime?     @updatedAt
-  jobNumber        Int
-  company          Company       @relation(fields: [companyId], references: [id])
-  documents        JobDocument[]
-  jobFiles         JobFile[]
-  paHtmlPath       String? 
-  paScreenshotPath String?
-  paSketchPath     String?
+  id                String        @id @default(cuid())
+  companyId         String
+  title             String?
+  customerName      String?
+  customerPhone     String?
+  customerAddress   String?
+  customerCity      String?
+  customerState     String?
+  customerZip       String?
+  legalDescription  String?
+  lotNumber         String?
+  blockNumber       String?
+  subdivision       String?
+  buildingNumber    String?
+  unitNumber        String?
+  taxFolioNumber    String?
+  jobValue          Float?
+  description       String?
+  createdBy         String
+  createdAt         DateTime      @default(now())
+  status            String?       @default("open")
+  customerEmail     String?
+  snippetPath       String?
+  snippetSignedUrl  String?       @db.Text
+  updatedAt         DateTime?     @updatedAt
+  jobNumber         Int
+  company           Company       @relation(fields: [companyId], references: [id])
+  documents         JobDocument[]
+  jobFiles          JobFile[]
+  paHtmlPath        String?
+  paScreenshotPath  String?
+  paSketchPath      String?
   paParcelPhotoPath String?
 }
 

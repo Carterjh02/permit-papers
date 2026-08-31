@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 
-
 export default function DashboardSettingsPage() {
   const { data: session } = useSession();
 
@@ -27,6 +26,7 @@ export default function DashboardSettingsPage() {
   const [userTheme, setUserTheme] = useState("light");
   const [userFont, setUserFont] = useState("inter");
   const [userDensity, setUserDensity] = useState("comfortable");
+  const [tutorialEnabled, setTutorialEnabled] = useState<boolean>(true);
 
   // Toast system
 const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -151,6 +151,21 @@ function closeResetModal() {
     }
   }
 
+  async function toggleTutorialEnabled() {
+    await fetch("/api/tutorial/update", {
+      method: "POST",
+      body: JSON.stringify({ enabled: !tutorialEnabled }),
+    });
+    setTutorialEnabled(!tutorialEnabled);
+  }
+  
+  async function restartSection(section: string) {
+    await fetch("/api/tutorial/restart", {
+      method: "POST",
+      body: JSON.stringify({ section }),
+    });
+  }
+
 useEffect(() => {
   async function loadPrefs() {
     if (!session?.user) return;
@@ -215,20 +230,21 @@ useEffect(() => {
       {/* Tabs */}
       <div className="flex flex-wrap gap-[var(--block-gap)] border-b border-[var(--border-color)] pb-[var(--section-gap)]">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-md text-sm-d-d font-medium ${
-              activeTab === tab.id
-                ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
-                : "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)]"
-            }`}
-          >
-            {tab.label}
-          </button>
+          <div key={tab.id} className="relative">
+            <button
+              onClick={() => setActiveTab(tab.id)}
+              id={tab.id === "formatting" ? "tab-formatting" : undefined}
+              className={`px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-md text-sm-d-d font-medium ${
+                activeTab === tab.id
+                  ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+                  : "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          </div>
         ))}
       </div>
-
       {/* Content */}
       <div className="bg-[var(--card-bg)] shadow rounded-lg p-[var(--section-gap)] min-h-[calc(var(--row-height)*12)]">
 
@@ -252,7 +268,7 @@ useEffect(() => {
         {/* ADMIN: Formatting Preferences */}
         {role === "admin" && activeTab === "formatting" && (
           <div>
-            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]">Formatting Preferences</h2>
+            <h2 className="text-xl-d font-semibold mb-[var(--block-gap)]" id="formatting-overview">Formatting Preferences</h2>
             <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
               Configure company-wide formatting rules for names, addresses, phone numbers, and document fonts.
             </p>
@@ -384,7 +400,9 @@ useEffect(() => {
               </div>
 
               {/* SAVE BUTTON */}
+              <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end z-50">
               <button
+                id="btn-formatting-save"
                 onClick={async () => {
                   await saveCompanyPreferences();
                   showToast("Company formatting preferences saved!", "success");
@@ -401,6 +419,7 @@ useEffect(() => {
               >
                 Reset to Defaults
               </button>
+              </div>
             </div>
         )}
 
@@ -535,7 +554,63 @@ useEffect(() => {
                 </div>
               </div>
 
+              {/* Tutorial Preferences */}
+              <div className="border-t border-[var(--border-color)] mt-[var(--section-gap)] pt-[var(--section-gap)]">
+                <h3 className="text-lg-d font-semibold mb-[var(--block-gap)] text-[var(--text-color)]">
+                  Tutorial Preferences
+                </h3>
+
+                <p className="text-[var(--text-color)] mb-[var(--block-gap)]">
+                  Manage your onboarding tutorial settings.
+                </p>
+
+                {/* Toggle Tutorial */}
+                <div className="flex items-center justify-between mb-[var(--section-gap)]">
+                  <span className="text-[var(--text-color)]">Tutorial Enabled</span>
+                  <button
+                    onClick={() => toggleTutorialEnabled()}
+                    className={`px-4 py-2 rounded-md font-medium ${
+                      tutorialEnabled
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-300 text-gray-700"
+                    }`}
+                  >
+                    {tutorialEnabled ? "On" : "Off"}
+                  </button>
+                </div>
+
+                {/* Admin-only sections */}
+                {role === "admin" && (
+                  <div className="space-y-[var(--block-gap)]">
+                    <button
+                      onClick={() => restartSection("company-setup")}
+                      className="dashboard-btn dashboard-btn-secondary"
+                    >
+                      Restart Company Setup Tutorial
+                    </button>
+
+                    <button
+                      onClick={() => restartSection("user-management")}
+                      className="dashboard-btn dashboard-btn-secondary"
+                    >
+                      Restart User Management Tutorial
+                    </button>
+                  </div>
+                )}
+
+                {/* Shared section */}
+                <div className="mt-[var(--block-gap)]">
+                  <button
+                    onClick={() => restartSection("job-flow")}
+                    className="dashboard-btn dashboard-btn-secondary"
+                  >
+                    Restart Job Tutorial
+                  </button>
+                </div>
+              </div>
+
               {/* SAVE BUTTON */}
+              <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end z-50">
               <button
                 onClick={async () => {
                   await saveUserPreferences();
@@ -553,6 +628,7 @@ useEffect(() => {
               >
                 Reset to Defaults
               </button>
+              </div>
             </div>
           </div>
         )}   

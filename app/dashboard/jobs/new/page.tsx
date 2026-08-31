@@ -11,6 +11,7 @@ import {
   addTemplateAction,
   removeTemplateAction,
 } from "../serverActions";
+import { TutorialStep } from "@/app/components/tutorial/TutorialStep";
 
 export default async function NewJobPage() {
   const session = await getServerSession(authOptions);
@@ -40,7 +41,6 @@ export default async function NewJobPage() {
   return (
     <div className="page-container space-y-[var(--section-gap)]">
       <h1 className="text-2xl-d font-bold">Create New Job</h1>
-
       <div className="flex justify-end gap-[var(--block-gap)]">
         <a href="/dashboard" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Back to Dashboard

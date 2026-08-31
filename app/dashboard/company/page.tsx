@@ -28,7 +28,8 @@ export default async function CompanyInfoPage() {
 
   return (
     <div className="page-container space-y-[var(--section-gap)]">
-      <h1 className="text-2xl-d font-bold">Company Information</h1>
+  
+      <h1 className="text-2xl-d font-bold" id="company-info-overview">Company Information</h1>
 
       {/* Company Info */}
       <Section title="Company Info">
@@ -38,50 +39,40 @@ export default async function CompanyInfoPage() {
         <Info label="Phone" value={company.phone} />
         <Info label="Website" value={company.website} />
       </Section>
-
+  
       {/* Address Info */}
       <Section title="Address Info">
         <Info label="Street" value={company.addressStreet} />
         <Info label="City" value={company.addressCity} />
         <Info label="State" value={company.addressState} />
         <Info label="Zip" value={company.addressZip} />
-        <Info label="Zip" value={company.addressZip} />
       </Section>
-
+  
       {/* Contractor Info */}
       <Section title="Contractor Info">
         <Info label="License Number" value={company.licenseNumber} />
         <Info label="Qualifier Name" value={company.qualifierName} />
         <Info label="Description of Improvement" value={company.descOfImprov} />
-        <Info
-          label="Business Tax Receipt Number"
-          value={company.businessTaxReceipt}
-        />
+        <Info label="Business Tax Receipt Number" value={company.businessTaxReceipt} />
       </Section>
-
+  
       {/* Metadata */}
       <Section title="Record Details">
         <div className="grid grid-cols-2 gap-[var(--block-gap)]">
-          <Info
-            label="Created At"
-            value={company.createdAt.toLocaleDateString()}
-          />
-          <Info
-            label="Updated At"
-            value={company.updatedAt.toLocaleDateString()}
-          />
+          <Info label="Created At" value={company.createdAt.toLocaleDateString()} />
+          <Info label="Updated At" value={company.updatedAt.toLocaleDateString()} />
         </div>
       </Section>
-
+  
       {(user.role === "admin" || user.role === "master") && (
-        <div>
-          <Link href="/dashboard/company/edit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
+        <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end z-50">
+          <Link href="/dashboard/company/edit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]" id="btn-edit-company">
             Edit Company Info
           </Link>
         </div>
       )}
     </div>
-  );
+  );  
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

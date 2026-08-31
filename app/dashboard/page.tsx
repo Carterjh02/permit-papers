@@ -98,7 +98,8 @@ export default async function DashboardPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="page-container space-y-[var(--section-gap)]">
+    <div id="welcome-1" className="page-container space-y-[var(--section-gap)]">
+  
       <h1 className="text-2xl font-bold">{company?.name} — Dashboard</h1>
 
       <FilterPanel>

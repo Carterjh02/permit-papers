@@ -931,7 +931,7 @@ return (
     {/* ---------------------------------------------------------
       FORM BINDS SERVER ACTION DIRECTLY
     --------------------------------------------------------- */}
-    <div className="grid grid-cols-[2fr,1fr] gap-[var(--section-gap)]">
+    <div className="md:flex items-start gap-[var(--section-gap)]">
       <form className="pb-[calc(var(--section-gap)*3)] space-y-[var(--section-gap)] p-[var(--section-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         {/* Hidden fields required for server action */}
         <input type="hidden" name="job_price" value={jobPrice} />
@@ -1276,8 +1276,7 @@ return (
         {/* ---------------------------------------------------------
           TEMPLATE SIDE PANEL (Sticky Scroll Behavior)
         --------------------------------------------------------- */}
-        <div className="relative">
-        <div className="md:sticky md:top-[calc(var(--section-gap)*2.5)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-lg p-[var(--section-gap)] space-y-[var(--block-gap)] z-40 md:w-[32rem] min-h-[42rem] w-full">
+        <div className="md:sticky md:top-[150px] md:self-start bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-lg p-[var(--section-gap)] space-y-[var(--block-gap)] z-40 md:w-[32rem] min-h-[43rem] overflow-y-auto w-full">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-[var(--text-color)]">Documents</h2>
 
@@ -1288,7 +1287,7 @@ return (
             >
               Add Document
             </button>
-          </div>
+        </div>
 
           {templates.length === 0 && (
             <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-60">
@@ -1317,7 +1316,6 @@ return (
             </ul>
           )}
         </div>
-      </div>
 
       {showBrowser && (
       <FolderBrowserPanel

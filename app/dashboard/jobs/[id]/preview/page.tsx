@@ -67,9 +67,8 @@ export default async function JobPreviewPage({ params }: PageProps) {
     <div className="page-container space-y-[var(--section-gap)]">
       <h1 className="text-2xl font-bold text-[var(--text-color)]">
         Preview Documents — Job {job.jobNumber}
-      </h1>
-  
-      <div className="flex justify-end gap-[var(--block-gap)]">
+      </h1>  
+      <div className="fixed bottom-0 left-0 right-0 bg-[var(--card-bg)] border-t border-[var(--border-color)] shadow-lg p-2 flex justify-end gap-[var(--block-gap)] z-50">
         <form action={backToJob}>
           <button className="btn btn-secondary" type="submit">
             Back to Job

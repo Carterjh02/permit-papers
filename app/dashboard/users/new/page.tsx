@@ -13,6 +13,16 @@ export default async function AdminNewUserPage() {
 
   const admin = session.user;
 
+  // Fix: guard against null companyId
+  if (!admin.companyId) {
+    throw new Error("Admin has no company assigned.");
+  }
+  
+  // Fetch company so we can show companyCode
+  const company = await prisma.company.findUnique({
+    where: { id: admin.companyId },
+  });
+
   if (admin.role !== "admin") redirect("/dashboard");
 
   async function createUser(formData: FormData) {
@@ -48,7 +58,7 @@ export default async function AdminNewUserPage() {
   return (
     <div className="page-container space-y-[var(--section-gap)]">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl-d font-bold">New User</h1>
+        <h1 className="text-2xl-d font-bold" id="user-create-form">New User</h1>
         <Link href="/dashboard/users" className="btn btn-secondary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
           Back to Users
         </Link>
@@ -80,12 +90,12 @@ export default async function AdminNewUserPage() {
           <label className="block text-sm-d font-medium">Company</label>
           <input
             className="input bg-gray-100"
-            value={admin.companyId ?? ""}
+            value={company?.companyCode ?? ""}
             disabled
           />
         </div>
 
-        <button type="submit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]">
+        <button type="submit" className="btn btn-primary py-[var(--btn-padding-y)] px-[var(--btn-padding-x)]" id="btn-create-user">
           Create User
         </button>
       </form>
