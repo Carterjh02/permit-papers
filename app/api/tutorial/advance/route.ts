@@ -11,7 +11,7 @@ export async function POST() {
   }
 
   const userId = session.user.id;
-  const role = session.user.role;
+  const role = session.user.role === "master" ? "admin" : session.user.role;
 
   const tutorial = await prisma.tutorialProgress.findUnique({
     where: { userId },
@@ -37,9 +37,24 @@ export async function POST() {
     return Response.json({ tutorial: updated });
   }
 
-  // Otherwise → section complete → move to next section
+  // Otherwise → section complete
+  // SPECIAL CASE: job-flow1 is the final section
+  if (tutorial.currentSection === "job-flow1") {
+    const updated = await prisma.tutorialProgress.update({
+      where: { userId },
+      data: {
+        completedSections: [...tutorial.completedSections, tutorial.currentSection!],
+        enabled: false,                 //  FINISH TUTORIAL
+        updatedAt: new Date(),
+      },
+    });
+  
+    return Response.json({ tutorial: updated });
+  }
+  
+  // Otherwise → move to next section
   const nextSection = getNextSection(tutorial.currentSection!, role);
-
+  
   const updated = await prisma.tutorialProgress.update({
     where: { userId },
     data: {
@@ -49,6 +64,6 @@ export async function POST() {
       updatedAt: new Date(),
     },
   });
-
+  
   return Response.json({ tutorial: updated });
 }

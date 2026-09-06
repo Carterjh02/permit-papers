@@ -5,7 +5,15 @@ import { useTutorial } from "./TutorialProvider";
 import { getStep } from "@/lib/tutorial/tutorialConfig";
 
 export function TutorialStep() {
-  const { state, role, nextStep, skipSection, finishTutorial } = useTutorial();
+  const {
+    state,
+    role,
+    nextStep,
+    previousStep,
+    gotoSection,
+    skipSection,
+    finishTutorial,
+  } = useTutorial();
 
   if (!state?.enabled) return null;
 
@@ -18,10 +26,20 @@ export function TutorialStep() {
   return (
     <TutorialToast
       message={step.message}
-      targetId={step.target}
+
+      // Positioning
       x={step.x}
       y={step.y}
+      xPercent={step.xPercent}
+      yPercent={step.yPercent}
       zIndex={step.zIndex}
+
+      // Branching
+      extraButtons={step.extraButtons}
+      onBackAction={previousStep}
+      onGotoSection={gotoSection}
+
+      // Default actions
       onNextAction={nextStep}
       onSkipAction={skipSection}
       onFinishAction={finishTutorial}

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import ContractorTabsView from "./ContractorTabsView";
 
 export default async function CompanyInfoPage() {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,36 @@ export default async function CompanyInfoPage() {
 
   const company = await prisma.company.findUnique({
     where: { id: companyId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      website: true,
+  
+      address: true,
+      addressStreet: true,
+      addressCity: true,
+      addressState: true,
+      addressZip: true,
+  
+      // Window / Door Contractor
+      licenseNumber: true,
+      qualifierName: true,
+      descOfImprov: true,
+      businessTaxReceipt: true,
+  
+      // Roofing Contractor
+      roofingLicenseNumber: true,
+      roofingQualifierName: true,
+      roofingDescOfImprov: true,
+      roofingBusinessTaxReceipt: true,
+  
+      logoUrl: true,
+      companyCode: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   if (!company) {
@@ -35,6 +66,7 @@ export default async function CompanyInfoPage() {
       <Section title="Company Info">
         <Info label="Company Name" value={company.name} />
         <Info label="Company Code" value={company.companyCode} />
+        <Info label="Business Tax Receipt" value={company.businessTaxReceipt} />
         <Info label="Email" value={company.email} />
         <Info label="Phone" value={company.phone} />
         <Info label="Website" value={company.website} />
@@ -48,13 +80,11 @@ export default async function CompanyInfoPage() {
         <Info label="Zip" value={company.addressZip} />
       </Section>
   
-      {/* Contractor Info */}
+      {/* Contractor Info (Tabbed View) */}
       <Section title="Contractor Info">
-        <Info label="License Number" value={company.licenseNumber} />
-        <Info label="Qualifier Name" value={company.qualifierName} />
-        <Info label="Description of Improvement" value={company.descOfImprov} />
-        <Info label="Business Tax Receipt Number" value={company.businessTaxReceipt} />
+        <ContractorTabsView company={company} />
       </Section>
+
   
       {/* Metadata */}
       <Section title="Record Details">

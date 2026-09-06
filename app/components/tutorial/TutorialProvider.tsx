@@ -19,6 +19,8 @@ interface TutorialContextValue {
   state: TutorialState | null;
   role: "admin" | "user";
   nextStep: () => Promise<void>;
+  previousStep: () => Promise<void>;
+  gotoSection: (section: string) => Promise<void>;
   skipSection: () => Promise<void>;
   finishTutorial: () => Promise<void>;
 }
@@ -39,11 +41,15 @@ export function TutorialProvider({
     sessionStorage.setItem("tutorialJustAdvanced", "true");
     await fetch("/api/tutorial/advance", { method: "POST" });
   }
+  
+  async function previousStep() {
+    await fetch("/api/tutorial/back", { method: "POST" });
+  }
 
   async function skipSection() {
     await fetch("/api/tutorial/update", {
       method: "POST",
-      body: JSON.stringify({ enabled: false }),
+      body: JSON.stringify({ skip: true }),
     });
   }
 
@@ -54,6 +60,24 @@ export function TutorialProvider({
     });
   }
 
+  async function gotoSection(section: string) {
+    await fetch("/api/tutorial/goto", {
+      method: "POST",
+      body: JSON.stringify({ section }),
+    });
+  }  
+
+  function normalizePage(path: string): string {
+    // Matches: /dashboard/jobs/<dynamic>/preview
+    const previewPattern = /^\/dashboard\/jobs\/[^/]+\/preview$/;
+  
+    if (previewPattern.test(path)) {
+      return "/dashboard/jobs/preview";
+    }
+  
+    return path;
+  }
+
   useEffect(() => {
     if (!tutorial?.enabled) return;
   
@@ -62,25 +86,70 @@ export function TutorialProvider({
   
     const step = getStep(section!, stepIndex, role);
     if (!step) return;
-
-    if (section === "welcome") {
+  
+    const currentPage = normalizePage(window.location.pathname);
+    const lastPage = sessionStorage.getItem("tutorialLastPage") || null;
+  
+    const nextStepObj = getStep(section!, stepIndex + 1, role);
+  
+    const justClickedNext =
+      sessionStorage.getItem("tutorialJustAdvanced") === "true";
+  
+    sessionStorage.setItem("tutorialLastPage", currentPage);
+  
+    // AUTO-ADVANCE FIRST: If the next step has a page and the user navigates to it
+    const nextPage = nextStepObj?.page || null;
+    
+    if (
+      nextPage &&
+      currentPage === nextPage &&
+      lastPage !== currentPage
+    ) {
+      // Clear the flag BEFORE auto‑advance so the next effect run behaves correctly
+      sessionStorage.removeItem("tutorialJustAdvanced");
+    
+      nextStep().then(() => {
+        window.dispatchEvent(new Event("tutorialReload"));
+      });
+      return;
+    }
+    
+    // CASE 1: Current step requires a page
+    if (step.page) {
+      if (currentPage !== step.page) {
+    
+        if (nextPage && currentPage === nextPage) {
+          return;
+        }
+    
+        window.dispatchEvent(
+          new CustomEvent("tutorialShowNavigateMessage", {
+            detail: { page: step.page },
+          })
+        );
+        return;
+      }
+    
+      // User is on the correct page → DO NOT reload here
+      // Auto‑advance already handles reload when appropriate
       return;
     }
   
-    // Prevent auto‑advance immediately after clicking Next
-    const justClickedNext = sessionStorage.getItem("tutorialJustAdvanced") === "true";
+    // CASE 3: No page requirements
     if (justClickedNext) {
       sessionStorage.removeItem("tutorialJustAdvanced");
       return;
     }
-  }, [tutorial, role]);
-
+  }, [tutorial, role]);  
+  
   return (
     <TutorialContext.Provider
       value={{
         state: tutorial,
         role,
         nextStep,
+        previousStep,
+        gotoSection,
         skipSection,
         finishTutorial,
       }}

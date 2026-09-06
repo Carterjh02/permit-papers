@@ -246,7 +246,7 @@ useEffect(() => {
         ))}
       </div>
       {/* Content */}
-      <div className="bg-[var(--card-bg)] shadow rounded-lg p-[var(--section-gap)] min-h-[calc(var(--row-height)*12)]">
+      <div className="bg-[var(--card-bg)] shadow rounded-lg p-[var(--section-gap)] min-h-[calc(var(--row-height)*12)] ">
 
         {/* ADMIN: Company Profile */}
         {role === "admin" && activeTab === "company" && (
@@ -570,39 +570,36 @@ useEffect(() => {
                   <button
                     onClick={() => toggleTutorialEnabled()}
                     className={`px-4 py-2 rounded-md font-medium ${
-                      tutorialEnabled
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-300 text-gray-700"
+                      tutorialEnabled ? "bg-green-600 text-white" : "bg-gray-300 text-gray-700"
                     }`}
                   >
                     {tutorialEnabled ? "On" : "Off"}
                   </button>
                 </div>
 
-                {/* Admin-only sections */}
-                {role === "admin" && (
-                  <div className="space-y-[var(--block-gap)]">
-                    <button
-                      onClick={() => restartSection("company-setup")}
-                      className="dashboard-btn dashboard-btn-secondary"
-                    >
-                      Restart Company Setup Tutorial
-                    </button>
+                {/* Stacked tutorial sections */}
+                <div className="flex flex-col items-start gap-[var(--block-gap)]">
+                  {role === "admin" && (
+                    <>
+                      <button
+                        onClick={() => restartSection("company-setup")}
+                        className="dashboard-btn dashboard-btn-secondary w-auto min-w-[16rem]"
+                      >
+                        Restart Company Setup Tutorial
+                      </button>
 
-                    <button
-                      onClick={() => restartSection("user-management")}
-                      className="dashboard-btn dashboard-btn-secondary"
-                    >
-                      Restart User Management Tutorial
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={() => restartSection("user-management")}
+                        className="dashboard-btn dashboard-btn-secondary w-auto min-w-[16rem]"
+                      >
+                        Restart User Management Tutorial
+                      </button>
+                    </>
+                  )}
 
-                {/* Shared section */}
-                <div className="mt-[var(--block-gap)]">
                   <button
                     onClick={() => restartSection("job-flow")}
-                    className="dashboard-btn dashboard-btn-secondary"
+                    className="dashboard-btn dashboard-btn-secondary w-auto min-w-[16rem]"
                   >
                     Restart Job Tutorial
                   </button>
@@ -631,7 +628,7 @@ useEffect(() => {
               </div>
             </div>
           </div>
-        )}   
+        )}
 
         {/* BOTH: Support */}
         {activeTab === "support" && (

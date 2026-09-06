@@ -86,6 +86,10 @@ export async function fillPdf({
     descOfImprov: String(company["desc_of_improv"] ?? ""),
     businessTaxReceipt: String(company["company_tax_id"] ?? ""),
     licenseNumber: String(company["company_license"] ?? ""),
+    roofingLicenseNumber: String(company["roofing_license_number"] ?? ""),
+    roofingQualifierName: String(company["roofing_qualifier_name"] ?? ""),
+    roofingDescOfImprov: String(company["roofing_desc_of_improv"] ?? ""),
+    roofingBusinessTaxReceipt: String(company["roofing_business_tax_receipt"] ?? ""),
     companyCode: String(company["company_code"] ?? ""),
   };
   
@@ -125,10 +129,16 @@ export async function fillPdf({
     "company_address_city_state_zip",
     "desc_of_improvement",
     "desc_of_improv",
+    "roofing_license_number",
+    "roofing_qualifier_name",
+    "roofing_desc_of_improv",
+    "roofing_business_tax_receipt",
 
     // Customer / Job
     "customer_name",
     "customer_phone",
+    "customer_phone1",
+    "customer_phone2",
     "customer_email",
     "customer_name_address",
     "customer_address_full",

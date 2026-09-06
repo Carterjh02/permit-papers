@@ -463,6 +463,18 @@ label {
   font-size: 0.95rem;
 }
 
+.tutorial-toast p {
+  margin-bottom: 0.75rem;
+  word-wrap: break-word;
+  max-width: 100%;
+  text-align: center;
+}
+
+.tutorial-toast hr {
+  border-color: var(--border-color);
+  margin: 0.4rem 0;
+}
+
 /* Light theme accent */
 [data-theme="light"] .tutorial-toast {
   --accent-color: #ffca28;

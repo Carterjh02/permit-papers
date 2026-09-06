@@ -42,17 +42,25 @@ export async function GET() {
     "user-management",
     "formatting",
     "job-flow",
+    "job-flow1",
   ];
 
-  const userFlow = ["welcome", "job-flow"];
+  const userFlow = ["welcome", "job-flow", "job-flow1"];
 
   const flow = role === "admin" ? adminFlow : userFlow;
 
+  // Branch sections must NOT be overwritten
+  const branchSections = [
+    "snippet-workflow",
+    "property-workflow",
+    "manual-workflow",
+  ];
+
   const completed = tutorial.completedSections ?? [];
   const currentSection = tutorial.currentSection ?? "welcome";
-  
-  // If currentSection is already correct, do nothing
-  if (flow.includes(currentSection)) {
+
+  // If currentSection is valid OR a branch section → do nothing
+  if (flow.includes(currentSection) || branchSections.includes(currentSection)) {
     return NextResponse.json({ tutorial });
   }
 

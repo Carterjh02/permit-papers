@@ -49,18 +49,31 @@ export function formatPhone(str: string | undefined, mode: "parentheses" | "dash
 // -------------------------------------------------------------
 export interface CompanyFields {
   name?: string;
+
+  // Window / Door Contractor
   qualifierName?: string;
+  licenseNumber?: string;
+  descOfImprov?: string;
+  businessTaxReceipt?: string;
+
+  // Roofing Contractor
+  roofingQualifierName?: string;
+  roofingLicenseNumber?: string;
+  roofingDescOfImprov?: string;
+  roofingBusinessTaxReceipt?: string;
+
+  // Address
   addressStreet?: string;
   addressCity?: string;
   addressState?: string;
   addressZip?: string;
   address?: string;
+
+  // Contact
   phone?: string;
   email?: string;
-  descOfImprov?: string;
-  businessTaxReceipt?: string;
   website?: string;
-  licenseNumber?: string;
+
   companyCode?: string;
 }
 

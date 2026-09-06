@@ -52,6 +52,23 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   useEffect(() => {
+    let lastPath = window.location.pathname;
+  
+    const interval = setInterval(() => {
+      const currentPath = window.location.pathname;
+  
+      if (currentPath !== lastPath) {
+        lastPath = currentPath;
+  
+        // When the page changes, reload tutorial state
+        window.dispatchEvent(new Event("tutorialReload"));
+      }
+    }, 150);
+  
+    return () => clearInterval(interval);
+  }, []);
+  
+  useEffect(() => {
     async function fetchPrefs() {
       if (!session?.user) return;
 

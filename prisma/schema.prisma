@@ -8,27 +8,31 @@ datasource db {
 }
 
 model Company {
-  id                 String              @id @default(cuid())
-  companyCode        String              @unique
-  name               String
-  email              String?
-  phone              String?
-  address            String?
-  licenseNumber      String?
-  website            String?
-  logoUrl            String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  descOfImprov       String?
-  qualifierName      String?
-  addressCity        String?
-  addressState       String?
-  addressStreet      String?
-  addressZip         String?
-  businessTaxReceipt String?
-  jobs               Job[]
-  users              User[]
-  preferences        CompanyPreferences?
+  id                        String              @id @default(cuid())
+  companyCode               String              @unique
+  name                      String
+  email                     String?
+  phone                     String?
+  address                   String?
+  website                   String?
+  logoUrl                   String?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  addressCity               String?
+  addressState              String?
+  addressStreet             String?
+  addressZip                String?
+  businessTaxReceipt        String?
+  descOfImprov              String?
+  qualifierName             String?
+  licenseNumber             String?
+  roofingLicenseNumber      String?
+  roofingQualifierName      String?
+  roofingDescOfImprov       String?
+  roofingBusinessTaxReceipt String?
+  jobs                      Job[]
+  users                     User[]
+  preferences               CompanyPreferences?
 }
 
 model CompanyPreferences {
