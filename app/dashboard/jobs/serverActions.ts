@@ -266,7 +266,11 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
 interface PADataResultFromEdge {
   county: "broward" | "palmBeach" | "saintLucie" | "miamidade";
 
-  html?: string;
+  htmlPath?: string;
+  screenshotPath?: string;
+  sketchPath?: string;
+  parcelPhotoPath?: string;
+
   screenshot?: Uint8Array;
   sketchBuffer?: Uint8Array;
   parcelPhotoBuffer?: Uint8Array;
@@ -279,7 +283,7 @@ interface PADataResultFromEdge {
 export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
   const {
     county,
-    html,
+    htmlPath,
     screenshot,
     sketchBuffer,
     parcelPhotoBuffer,
@@ -290,7 +294,19 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   /* -----------------------------------------------------------
      1. DOWNLOAD HTML 
   ----------------------------------------------------------- */
-  const htmlString = paData.html;
+  let htmlString: string | undefined = undefined;
+
+  if (htmlPath) {
+    const { data: htmlFile, error: htmlErr } = await supabaseServer.storage
+      .from("companies")
+      .download(htmlPath);
+
+    if (htmlErr) {
+      console.error("❌ Failed downloading HTML:", htmlErr);
+    } else {
+      htmlString = await htmlFile.text();
+    }
+  }
 
   /* -----------------------------------------------------------
     2. UPLOAD SCREENSHOT / SKETCH / PARCEL PHOTO (if provided)
@@ -352,8 +368,8 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
       parsed = parsePAData(ocrText, county);
     }
   } else {
-    if (html) {
-      parsed = parsePAData(html, county);
+    if (htmlString) {
+      parsed = parsePAData(htmlString, county);
     }
   }
 
@@ -374,6 +390,7 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
       taxFolioNumber: parsed.folio ?? null,
       legalDescription: parsed.legalDescription ?? null,
 
+      paHtmlPath: htmlPath ?? undefined,
       paScreenshotPath: screenshotPathFinal ?? undefined,
       paSketchPath: sketchPathFinal ?? undefined,
       paParcelPhotoPath: parcelPhotoPathFinal ?? undefined,
@@ -381,14 +398,8 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   });
 
   return {
-    county,
-    jobId,
-    jobNumber,
-    companyCode,
+    ...paData,
     parsed,
-    screenshotPath: screenshotPathFinal,
-    sketchPath: sketchPathFinal,
-    parcelPhotoPath: parcelPhotoPathFinal,
   };
 }
 
