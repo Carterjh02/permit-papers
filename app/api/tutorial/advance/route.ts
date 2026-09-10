@@ -52,9 +52,26 @@ export async function POST() {
     return Response.json({ tutorial: updated });
   }
   
-  // Otherwise → move to next section
+  // Determine next section
   const nextSection = getNextSection(tutorial.currentSection!, role);
   
+  // STOP if next section is already completed
+  if (nextSection && tutorial.completedSections.includes(nextSection)) {
+    const updated = await prisma.tutorialProgress.update({
+      where: { userId },
+      data: {
+        completedSections: [...tutorial.completedSections, tutorial.currentSection!],
+        enabled: false,
+        currentSection: null,
+        currentStep: null,
+        updatedAt: new Date(),
+      },
+    });
+  
+    return Response.json({ tutorial: updated });
+  }
+  
+  // Otherwise → move to next section
   const updated = await prisma.tutorialProgress.update({
     where: { userId },
     data: {

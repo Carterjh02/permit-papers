@@ -57,6 +57,20 @@ export default async function CompanyAdminEditPage() {
       roofingQualifierName: true,
       roofingDescOfImprov: true,
       roofingBusinessTaxReceipt: true,
+
+      mechanicalLicenseNumber: true,
+      mechanicalQualifierName: true,
+      mechanicalDescOfImprov: true,
+    
+      //  Electrical Contractor
+      electricLicenseNumber: true,
+      electricQualifierName: true,
+      electricDescOfImprov: true,
+    
+      // Company Contact
+      companyContactName: true,
+      companyContactPhone: true,
+      companyContactEmail: true,
   
       logoUrl: true,
       companyCode: true,

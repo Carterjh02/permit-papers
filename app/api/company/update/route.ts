@@ -117,6 +117,21 @@ export async function POST(req: Request) {
       roofingDescOfImprov: formatted.roofingDescOfImprov,
       roofingBusinessTaxReceipt: formatted.roofingBusinessTaxReceipt,
 
+      // Mechanical Contractor
+      mechanicalLicenseNumber: formatted.mechanicalLicenseNumber,
+      mechanicalQualifierName: formatted.mechanicalQualifierName,
+      mechanicalDescOfImprov: formatted.mechanicalDescOfImprov,
+
+      // Electrical Contractor
+      electricLicenseNumber: formatted.electricLicenseNumber,
+      electricQualifierName: formatted.electricQualifierName,
+      electricDescOfImprov: formatted.electricDescOfImprov,
+
+      // Company Contact
+      companyContactName: formatted.companyContactName,
+      companyContactPhone: formatted.companyContactPhone,
+      companyContactEmail: formatted.companyContactEmail,
+
       ...(logoUrl && { logoUrl }),
     },
   });

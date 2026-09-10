@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import ContractorTabs from "./ContractorTabs";
 import { formatCompanyFields } from "@/lib/utils/formatters";
-import type { Company } from "@prisma/client";
 
 interface LoadedPrefs {
   userPrefs: Record<string, unknown> | null;
@@ -33,6 +32,18 @@ interface CompanyForEdit {
     roofingQualifierName: string | null;
     roofingDescOfImprov: string | null;
     roofingBusinessTaxReceipt: string | null;
+
+    mechanicalLicenseNumber: string | null;
+    mechanicalQualifierName: string | null;
+    mechanicalDescOfImprov: string | null;
+
+    electricLicenseNumber: string | null;
+    electricQualifierName: string | null;
+    electricDescOfImprov: string | null;
+
+    companyContactName: string | null;
+    companyContactPhone: string | null;
+    companyContactEmail: string | null;
   
     logoUrl: string | null;
     companyCode: string;
@@ -68,6 +79,18 @@ export default function EditCompanyClient({ company, prefs }: Props) {
     roofingQualifierName: company.roofingQualifierName ?? "",
     roofingDescOfImprov: company.roofingDescOfImprov ?? "",
     roofingBusinessTaxReceipt: company.roofingBusinessTaxReceipt ?? "",
+
+    mechanicalLicenseNumber: company.mechanicalLicenseNumber ?? "",
+    mechanicalQualifierName: company.mechanicalQualifierName ?? "",
+    mechanicalDescOfImprov: company.mechanicalDescOfImprov ?? "",
+
+    electricLicenseNumber: company.electricLicenseNumber ?? "",
+    electricQualifierName: company.electricQualifierName ?? "",
+    electricDescOfImprov: company.electricDescOfImprov ?? "",
+
+    companyContactName: company.companyContactName ?? "",
+    companyContactPhone: company.companyContactPhone ?? "",
+    companyContactEmail: company.companyContactEmail ?? "",
 
     // Logo file
     logo: null as File | null,
@@ -202,6 +225,35 @@ export default function EditCompanyClient({ company, prefs }: Props) {
             value={formData.addressZip}
             onChange={(e) =>
               setFormData({ ...formData, addressZip: e.target.value })
+            }
+          />
+        </Section>
+
+        <Section title="Company Contact" id="company-contact-section">
+          <Input
+            label="Contact Name"
+            name="companyContactName"
+            value={formData.companyContactName}
+            onChange={(e) =>
+              setFormData({ ...formData, companyContactName: e.target.value })
+            }
+          />
+
+          <Input
+            label="Contact Phone"
+            name="companyContactPhone"
+            value={formData.companyContactPhone}
+            onChange={(e) =>
+              setFormData({ ...formData, companyContactPhone: e.target.value })
+            }
+          />
+
+          <Input
+           label="Contact Email"
+            name="companyContactEmail"
+            value={formData.companyContactEmail}
+            onChange={(e) =>
+              setFormData({ ...formData, companyContactEmail: e.target.value })
             }
           />
         </Section>

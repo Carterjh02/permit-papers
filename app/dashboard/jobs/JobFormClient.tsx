@@ -552,7 +552,7 @@ return (
               <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
                 Running property appraiser search…
               </div>,
-              { duration: 10000 }
+              { duration: 30000 }
             );
           
             if (!ocrParsed) return;
@@ -613,12 +613,11 @@ return (
             let res;
             try {
               res = await fetch(
-                "https://ednxswgrxrtamljupapf.supabase.co/functions/v1/pa-search",
+                `${process.env.NEXT_PUBLIC_SCRAPER_URL}/pa-search`,
                 {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                   },
                   body: JSON.stringify({
                     county: finalCounty,
@@ -766,7 +765,7 @@ return (
               <div className="text-[length:var(--base-font-size)] font-medium text-gray-700">
                 Running property appraiser search…
               </div>,
-              { duration: 10000 }
+              { duration: 30000 }
             );
             const { address, city, state, zip, county } = paSearchPayload ?? {};
 
@@ -798,12 +797,11 @@ return (
 
             // CLOUD PA SEARCH — ALWAYS
             const res = await fetch(
-              "https://ednxswgrxrtamljupapf.supabase.co/functions/v1/pa-search",
+              `${process.env.NEXT_PUBLIC_SCRAPER_URL}/pa-search`,
               {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
                 },
                 body: JSON.stringify({
                   county: finalCounty,
@@ -815,7 +813,18 @@ return (
               }
             );
 
-            const data = await res.json();
+            // NEW DEBUGGING BLOCK
+            const text = await res.text();
+            console.error("RAW PA RESPONSE:", text);
+            
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch (err) {
+              console.error("JSON PARSE ERROR:", err);
+              showToast("PA search failed: Invalid response from server.");
+              return;
+            }
 
             if (data.error) {
               showToast("PA search failed: " + data.error);
@@ -1058,7 +1067,7 @@ return (
           <h3 className="text-md-d font-semibold text-[var(--text-color)]">Property Appraiser Search</h3>
 
           <p className="text-[length:var(--base-font-size)] text-[var(--text-color)] opacity-80">
-            Search the county property appraiser using customer name, address, folio, or subdivision.
+            Search the county property appraiser using customer address.
           </p>
 
           <button

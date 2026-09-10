@@ -164,6 +164,8 @@ function closeResetModal() {
       method: "POST",
       body: JSON.stringify({ section }),
     });
+  
+    window.location.reload();
   }
 
 useEffect(() => {

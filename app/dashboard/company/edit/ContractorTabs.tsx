@@ -23,6 +23,18 @@ interface FullFormData {
   roofingDescOfImprov: string;
   roofingBusinessTaxReceipt: string;
 
+  mechanicalLicenseNumber: string;
+  mechanicalQualifierName: string;
+  mechanicalDescOfImprov: string;
+
+  electricLicenseNumber: string;
+  electricQualifierName: string;
+  electricDescOfImprov: string;
+
+  companyContactName: string;
+  companyContactPhone: string;
+  companyContactEmail: string;
+
   logo: File | null;
 }
 
@@ -35,6 +47,8 @@ export default function ContractorTabs({ formData, setFormData }: ContractorTabs
   const tabs = [
     { id: "windowdoor", label: "Window / Door Contractor" },
     { id: "roofing", label: "Roofing Contractor" },
+    { id: "mechanical", label: "Mechanical Contractor" },
+    { id: "electric", label: "Electrical Contractor" },
   ];
 
   const [activeTab, setActiveTab] = useState("windowdoor");
@@ -118,6 +132,82 @@ export default function ContractorTabs({ formData, setFormData }: ContractorTabs
               value={formData.roofingDescOfImprov}
               onChange={(e) =>
                 setFormData({ ...formData, roofingDescOfImprov: e.target.value })
+              }
+            />
+          </>
+        )}
+
+        {activeTab === "mechanical" && (
+          <>
+            <Input
+              label="Mechanical License Number"
+              name="mechanicalLicenseNumber"
+              value={formData.mechanicalLicenseNumber}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  mechanicalLicenseNumber: e.target.value,
+                })
+              }
+            />
+            <Input
+              label="Mechanical Qualifier Name"
+              name="mechanicalQualifierName"
+              value={formData.mechanicalQualifierName}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  mechanicalQualifierName: e.target.value,
+                })
+              }
+            />
+            <Textarea
+              label="Mechanical Description of Improvement"
+              name="mechanicalDescOfImprov"
+              value={formData.mechanicalDescOfImprov}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  mechanicalDescOfImprov: e.target.value,
+                })
+              }
+            />
+          </>
+        )}
+
+        {activeTab === "electric" && (
+          <>
+            <Input
+              label="Electrical License Number"
+              name="electricLicenseNumber"
+              value={formData.electricLicenseNumber}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  electricLicenseNumber: e.target.value,
+                })
+              }
+            />
+            <Input
+              label="Electrical Qualifier Name"
+              name="electricQualifierName"
+              value={formData.electricQualifierName}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  electricQualifierName: e.target.value,
+                })
+              }
+            />
+            <Textarea
+              label="Electrical Description of Improvement"
+              name="electricDescOfImprov"
+              value={formData.electricDescOfImprov}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  electricDescOfImprov: e.target.value,
+                })
               }
             />
           </>

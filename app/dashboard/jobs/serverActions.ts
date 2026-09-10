@@ -264,11 +264,13 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
 }
 
 interface PADataResultFromEdge {
-  county: "broward" | "palmBeach" | "saintLucie";
-  htmlPath: string | null;
-  screenshotPath: string | null;
-  sketchPath: string | null;
-  parcelPhotoPath: string | null;
+  county: "broward" | "palmBeach" | "saintLucie" | "miamidade";
+
+  html?: string;
+  screenshot?: Uint8Array;
+  sketchBuffer?: Uint8Array;
+  parcelPhotoBuffer?: Uint8Array;
+
   jobId: string;
   jobNumber: number;
   companyCode: string;
@@ -277,73 +279,86 @@ interface PADataResultFromEdge {
 export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
   const {
     county,
-    htmlPath,
-    screenshotPath,
-    sketchPath,
-    parcelPhotoPath,
+    html,
+    screenshot,
+    sketchBuffer,
+    parcelPhotoBuffer,
+    jobNumber,
+    companyCode,
   } = paData;
 
   /* -----------------------------------------------------------
      1. DOWNLOAD HTML 
   ----------------------------------------------------------- */
-  let htmlString: string | undefined = undefined;
-
-  if (htmlPath) {
-    const { data: htmlFile, error: htmlErr } = await supabaseServer.storage
-      .from("companies")
-      .download(htmlPath);
-
-    if (htmlErr) {
-      console.error("❌ Failed downloading HTML:", htmlErr);
-    } else {
-      htmlString = await htmlFile.text();
-    }
-  }
+  const htmlString = paData.html;
 
   /* -----------------------------------------------------------
-     2. DOWNLOAD SCREENSHOT
+    2. UPLOAD SCREENSHOT / SKETCH / PARCEL PHOTO (if provided)
   ----------------------------------------------------------- */
-  let screenshotBuffer: Buffer | undefined = undefined;
+  let screenshotPathFinal: string | undefined = undefined;
+  let sketchPathFinal: string | undefined = undefined;
+  let parcelPhotoPathFinal: string | undefined = undefined;
 
-  if (screenshotPath) {
-    const { data: screenshotFile, error: screenshotErr } = await supabaseServer.storage
+  if (screenshot) {
+    const screenshotUpload = await supabaseServer.storage
       .from("companies")
-      .download(screenshotPath);
+      .upload(
+        `companies/${companyCode}/jobs/${jobNumber}/pa/screenshot.png`,
+        Buffer.from(screenshot),
+        { contentType: "image/png", upsert: true }
+      );
 
-    if (screenshotErr) {
-      console.error("❌ Failed downloading screenshot:", screenshotErr);
-    } else {
-      screenshotBuffer = Buffer.from(await screenshotFile.arrayBuffer());
+    if (!screenshotUpload.error) {
+      screenshotPathFinal = screenshotUpload.data.path;
+    }
+  }
+
+  if (sketchBuffer) {
+    const sketchUpload = await supabaseServer.storage
+      .from("companies")
+      .upload(
+        `companies/${companyCode}/jobs/${jobNumber}/pa/sketch.png`,
+        Buffer.from(sketchBuffer),
+        { contentType: "image/png", upsert: true }
+      );
+
+    if (!sketchUpload.error) {
+      sketchPathFinal = sketchUpload.data.path;
+    }
+  }
+
+  if (parcelPhotoBuffer) {
+    const parcelUpload = await supabaseServer.storage
+      .from("companies")
+      .upload(
+        `companies/${companyCode}/jobs/${jobNumber}/pa/parcel-photo.png`,
+        Buffer.from(parcelPhotoBuffer),
+        { contentType: "image/png", upsert: true }
+      );
+
+    if (!parcelUpload.error) {
+      parcelPhotoPathFinal = parcelUpload.data.path;
     }
   }
 
   /* -----------------------------------------------------------
-     3. PARSE PA DATA
+    3. PARSE PA DATA
   ----------------------------------------------------------- */
   let parsed: ParsedPAData = {};
 
   if (county === "saintLucie") {
-    // OCR-only county
-    if (screenshotBuffer) {
-      const ocrText = await extractTextFromImage(screenshotBuffer);
+    if (screenshot) {
+      const ocrText = await extractTextFromImage(Buffer.from(screenshot));
       parsed = parsePAData(ocrText, county);
     }
   } else {
-    // HTML-based counties
-    if (htmlString) {
-      parsed = parsePAData(htmlString, county);
+    if (html) {
+      parsed = parsePAData(html, county);
     }
   }
 
-  // Attach sketch path if available
-  if (sketchPath) {
-    parsed.sketchPath = sketchPath;
-  }
-
-  // Attach parcel photo path if available
-  if (parcelPhotoPath) {
-    parsed.parcelPhotoPath = parcelPhotoPath;
-  }
+  parsed.sketchPath = sketchPathFinal ?? undefined;
+  parsed.parcelPhotoPath = parcelPhotoPathFinal ?? undefined;
 
   /* -----------------------------------------------------------
      4. SAVE TO DATABASE — INCLUDING ASSET PATHS
@@ -359,20 +374,21 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
       taxFolioNumber: parsed.folio ?? null,
       legalDescription: parsed.legalDescription ?? null,
 
-      // persist PA asset paths
-      paHtmlPath: htmlPath ?? null,
-      paScreenshotPath: screenshotPath ?? null,
-      paSketchPath: sketchPath ?? null,
-      paParcelPhotoPath: parcelPhotoPath ?? null,
+      paScreenshotPath: screenshotPathFinal ?? undefined,
+      paSketchPath: sketchPathFinal ?? undefined,
+      paParcelPhotoPath: parcelPhotoPathFinal ?? undefined,
     },
   });
 
-  /* -----------------------------------------------------------
-     5. RETURN PARSED DATA TO CLIENT
-  ----------------------------------------------------------- */
   return {
-    ...paData,
+    county,
+    jobId,
+    jobNumber,
+    companyCode,
     parsed,
+    screenshotPath: screenshotPathFinal,
+    sketchPath: sketchPathFinal,
+    parcelPhotoPath: parcelPhotoPathFinal,
   };
 }
 

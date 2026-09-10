@@ -1,3 +1,5 @@
+import { getCountyFromZip } from "./counties";
+
 export function detectCounty(input: {
   address?: string;
   city?: string;
@@ -16,6 +18,8 @@ export function detectCounty(input: {
   if (countyHint.includes("broward")) return "broward";
   if (countyHint.includes("palm")) return "palmBeach";
   if (countyHint.includes("lucie")) return "saintLucie";
+  if (countyHint.includes("dade") || countyHint.includes("miami"))
+    return "miamidade";
 
   // subdivision hints
   if (
@@ -38,6 +42,14 @@ export function detectCounty(input: {
   )
     return "saintLucie";
 
+  if (
+    subdivision.includes("miami") ||
+    subdivision.includes("hialeah") ||
+    subdivision.includes("doral") ||
+    subdivision.includes("kendall")
+  )
+    return "miamidade";
+
   // city name detection
   if (
     city.includes("davie") ||
@@ -59,12 +71,20 @@ export function detectCounty(input: {
   )
     return "saintLucie";
 
-  // ZIP‑code ranges
-  const zipNum = Number(zip);
+  if (
+    city.includes("miami") ||
+    city.includes("hialeah") ||
+    city.includes("doral") ||
+    city.includes("kendall") ||
+    city.includes("homestead") ||
+    city.includes("aventura") ||
+    city.includes("coral gables")
+  )
+    return "miamidade";
 
-  if (zipNum >= 33000 && zipNum <= 33399) return "broward";
-  if (zipNum >= 33400 && zipNum <= 33499) return "palmBeach";
-  if (zipNum >= 34900 && zipNum <= 34999) return "saintLucie";
+  // ZIP detection (new logic)
+  const zipCounty = getCountyFromZip(zip);
+  if (zipCounty) return zipCounty;
 
   return null;
 }

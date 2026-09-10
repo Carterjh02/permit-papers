@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import type { Company } from "@prisma/client";
 
 interface CompanyForView {
     id: string;
@@ -25,6 +24,14 @@ interface CompanyForView {
     roofingQualifierName: string | null;
     roofingDescOfImprov: string | null;
     roofingBusinessTaxReceipt: string | null;
+
+    mechanicalLicenseNumber: string | null;
+    mechanicalQualifierName: string | null;
+    mechanicalDescOfImprov: string | null;
+
+    electricLicenseNumber: string | null;
+    electricQualifierName: string | null;
+    electricDescOfImprov: string | null;
   
     logoUrl: string | null;
     companyCode: string;
@@ -36,6 +43,8 @@ interface CompanyForView {
   const tabs = [
     { id: "windowdoor", label: "Window / Door Contractor" },
     { id: "roofing", label: "Roofing Contractor" },
+    { id: "mechanical", label: "Mechanical Contractor" },
+    { id: "electric", label: "Electrical Contractor" },
   ];
 
   const [activeTab, setActiveTab] = useState("windowdoor");
@@ -75,6 +84,22 @@ interface CompanyForView {
             <Info label="Roofing License Number" value={company.roofingLicenseNumber} />
             <Info label="Roofing Qualifier Name" value={company.roofingQualifierName} />
             <Info label="Roofing Description of Improvement" value={company.roofingDescOfImprov} />
+          </>
+        )}
+
+        {activeTab === "mechanical" && (
+          <>
+            <Info label="Mechanical License Number" value={company.mechanicalLicenseNumber} />
+            <Info label="Mechanical Qualifier Name" value={company.mechanicalQualifierName} />
+            <Info label="Mechanical Description of Improvement" value={company.mechanicalDescOfImprov} />
+          </>
+        )}
+
+        {activeTab === "electric" && (
+          <>
+            <Info label="Electrical License Number" value={company.electricLicenseNumber} />
+            <Info label="Electrical Qualifier Name" value={company.electricQualifierName} />
+            <Info label="Electrical Description of Improvement" value={company.electricDescOfImprov} />
           </>
         )}
       </div>

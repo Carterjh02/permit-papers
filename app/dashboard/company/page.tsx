@@ -45,6 +45,21 @@ export default async function CompanyInfoPage() {
       roofingQualifierName: true,
       roofingDescOfImprov: true,
       roofingBusinessTaxReceipt: true,
+
+      // Mechanical Contractor
+      mechanicalLicenseNumber: true,
+      mechanicalQualifierName: true,
+      mechanicalDescOfImprov: true,
+    
+      // Electrical Contractor
+      electricLicenseNumber: true,
+      electricQualifierName: true,
+      electricDescOfImprov: true,
+    
+      // Company Contact
+      companyContactName: true,
+      companyContactPhone: true,
+      companyContactEmail: true,
   
       logoUrl: true,
       companyCode: true,
@@ -78,6 +93,12 @@ export default async function CompanyInfoPage() {
         <Info label="City" value={company.addressCity} />
         <Info label="State" value={company.addressState} />
         <Info label="Zip" value={company.addressZip} />
+      </Section>
+
+      <Section title="Company Contact">
+        <Info label="Contact Name" value={company.companyContactName} />
+        <Info label="Contact Phone" value={company.companyContactPhone} />
+        <Info label="Contact Email" value={company.companyContactEmail} />
       </Section>
   
       {/* Contractor Info (Tabbed View) */}

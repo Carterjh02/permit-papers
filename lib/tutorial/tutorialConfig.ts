@@ -30,7 +30,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome-1",
     section: "welcome",
-    role: "admin",
+    role: "user",
     message: "Welcome to PermitPapers.com! This quick tutorial will guide you through the main features of the system.",
     xPercent: 38,
     yPercent: 50,
@@ -38,7 +38,7 @@ export const tutorialSteps: TutorialStep[] = [
   },
   {
     id: "welcome-2",
-    section: "welcome",
+    section: "company-setup",
     role: "admin",
     message: "Let’s start by exploring the navigation bar at the top of the page.",
     xPercent: 38,
@@ -122,7 +122,7 @@ export const tutorialSteps: TutorialStep[] = [
     section: "company-setup",
     role: "admin",
     page: "/dashboard/users",
-    message: "This page lists all employees linked to your company. From here, you can create new user accounts or edit existing ones to keep your team information up to date.",
+    message: "This page lists all employees linked to your company. From here, you can create new user accounts or edit existing accounts to keep your team information up to date.",
     xPercent: 38,
     yPercent: 50,
     zIndex: 9999,
@@ -193,7 +193,7 @@ export const tutorialSteps: TutorialStep[] = [
     section: "formatting",
     role: "admin",
     page: "/dashboard/settings",
-    message: "These settings define how data is formatted across your company. Any changes made here will automatically update how customer and company information appears in all future documents you generate.",
+    message: "These settings define how data is formatted on your company forms. Any changes made here will automatically update how customer and company information appears in all future documents you generate.",
     xPercent: 38,
     yPercent: 50,
     zIndex: 9999,
@@ -203,7 +203,7 @@ export const tutorialSteps: TutorialStep[] = [
     section: "formatting",
     role: "admin",
     page: "/dashboard/settings",
-    message: "After choosing the formatting options you want to apply company‑wide, click 'Save Formatting Preferences' to update your settings.",
+    message: "After choosing the formatting options you want to apply, click 'Save Formatting Preferences' to update your settings.",
     xPercent: 73,
     yPercent: 68,
     zIndex: 9999,
@@ -222,7 +222,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-add",
     section: "job-flow",
-    role: "admin",
+    role: "user",
     page: "/dashboard",
     message: "Click the '+ Add Job' button at the top of the table to begin creating a new job record.",
     xPercent: 38,
@@ -232,7 +232,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-upload-overview",
     section: "job-flow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "This page lets you choose how to start a new job. There are several ways to upload or enter customer data — continue reading before making your selection.",
     xPercent: 38,
@@ -242,7 +242,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-upload-choice",
     section: "job-flow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message:
     "Select how you’d like to begin:\n" +
@@ -266,7 +266,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "snippet-intro",
     section: "snippet-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "To begin with the snippet workflow, use your computer’s Snipping Tool to capture the customer information from your CRM. You can paste the image directly or upload it as a file.",
     xPercent: 38,
@@ -276,7 +276,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "snippet-upload",
     section: "snippet-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Upload your captured image into the Customer Snippet box. Once uploaded, the system will extract the customer details for you.",
     xPercent: 3,
@@ -286,7 +286,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "snippet-options",
     section: "snippet-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "After reviewing the extracted information, you can apply it directly to the form or run a Property Appraiser search to gather additional property details. For this tutorial, choose the Property Appraiser search.",
     xPercent: 13,
@@ -296,7 +296,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "snippet-pa-confirm",
     section: "snippet-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Confirm that the Property Appraiser results look accurate. Make any adjustments if needed, then click 'Populate Form' to apply the information.",
     xPercent: 13,
@@ -308,7 +308,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "pa-intro",
     section: "property-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "To begin with a manual property search, click the 'Search Property Appraiser' button.",
     xPercent: 38,
@@ -318,7 +318,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "pa-input",
     section: "property-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Enter the customer’s full address and any other known details. A complete address ensures the most accurate search results. Click 'Search' when ready.",
     xPercent: 13,
@@ -328,7 +328,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "pa-confirm",
     section: "property-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Review the extracted property information. If everything looks correct, click 'Populate Form' to apply the details.",
     xPercent: 13,
@@ -340,7 +340,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "manual-intro",
     section: "manual-workflow",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "To manually enter customer information, fill out each section of the form with the customer’s details.",
     xPercent: 38,
@@ -352,7 +352,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-customer-complete",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Make sure all customer fields are complete before continuing. Add any missing details such as job value or description of improvement.",
     xPercent: 58,
@@ -362,7 +362,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-add-doc",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Once the customer information is ready, click 'Add Document' to begin selecting the required documents for this job.",
     xPercent: 52,
@@ -372,9 +372,9 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-doc-filters",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
-    message: "Use the filters or browse the folder structure to find the documents needed for the county and municipality where the property is located.",
+    message: "Use the filters or browse the folders to find the documents needed for the county and municipality where the property is located.",
     xPercent: 78,
     yPercent: 50,
     zIndex: 9999,
@@ -382,7 +382,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-doc-confirm",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "Select the documents you need and click 'Confirm Selection' to attach them to the job.",
     xPercent: 78,
@@ -392,7 +392,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-preview",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/new",
     message: "When everything looks correct, click 'Save & Preview' to generate the documents.",
     xPercent: 78,
@@ -404,9 +404,9 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-review-preview",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/preview",
-    message: "Review the generated documents. If adjustments are needed, you can edit the fields directly on this page before downloading.",
+    message: "Review the documents. If adjustments are needed, you can edit the fields directly on this page before downloading.",
     xPercent: 38,
     yPercent: 50,
     zIndex: 9999,
@@ -414,7 +414,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-save-doc",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/preview",
     message: "If changes were made, use the document’s 'download' icon. Otherwise, you can download the document using the 'Open / Download' button.",
     xPercent: 79,
@@ -424,7 +424,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-finish",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/preview",
     message: "Once your documents are saved and downloaded, you’ve completed your first job! You can start another or return to the dashboard.",
     xPercent: 61,
@@ -434,7 +434,7 @@ export const tutorialSteps: TutorialStep[] = [
   {
     id: "job-tutorial-complete",
     section: "job-flow1",
-    role: "admin",
+    role: "user",
     page: "/dashboard/jobs/preview",
     message: "This concludes the tutorial! You can revisit any section at any time from the 'Settings' tab under User Preferences.",
     xPercent: 38,
@@ -448,7 +448,11 @@ export const tutorialSteps: TutorialStep[] = [
 /* ---------------------------------------------------------------------- */
 
 export function getStepsForSection(section: string, role: "admin" | "user") {
-  return tutorialSteps.filter(s => s.section === section && s.role === role);
+  const allowedRoles = role === "admin" ? ["admin", "user"] : ["user"];
+
+  return tutorialSteps.filter(
+    s => s.section === section && allowedRoles.includes(s.role)
+  );
 }
 
 export function getStep(section: string, stepIndex: number, role: "admin" | "user") {

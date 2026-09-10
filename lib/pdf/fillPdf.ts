@@ -90,6 +90,15 @@ export async function fillPdf({
     roofingQualifierName: String(company["roofing_qualifier_name"] ?? ""),
     roofingDescOfImprov: String(company["roofing_desc_of_improv"] ?? ""),
     roofingBusinessTaxReceipt: String(company["roofing_business_tax_receipt"] ?? ""),
+    mechanicalLicenseNumber: String(company["mech_license_number"] ?? ""),
+    mechanicalQualifierName: String(company["mech_qualifier_name"] ?? ""),
+    mechanicalDescOfImprov: String(company["mech_desc_of_improv"] ?? ""),
+    electricLicenseNumber: String(company["elec_license_number"] ?? ""),
+    electricQualifierName: String(company["elec_qualifier_name"] ?? ""),
+    electricDescOfImprov: String(company["elec_desc_of_improv"] ?? ""),
+    companyContactName: String(company["cc_name"] ?? ""),
+    companyContactPhone: String(company["cc_phone"] ?? ""),
+    companyContactEmail: String(company["cc_email"] ?? ""),
     companyCode: String(company["company_code"] ?? ""),
   };
   
@@ -133,6 +142,15 @@ export async function fillPdf({
     "roofing_qualifier_name",
     "roofing_desc_of_improv",
     "roofing_business_tax_receipt",
+    "mech_license_number",
+    "mech_qualifier_name",
+    "mech_desc_of_improv",
+    "elec_license_number",
+    "elec_qualifier_name",
+    "elec_desc_of_improv",
+    "cc_name",
+    "cc_phone",
+    "cc_email",
 
     // Customer / Job
     "customer_name",
@@ -331,6 +349,36 @@ export async function fillPdf({
 
       value = jobVal || companyVal || "";
     }
+
+    // -------------------------
+    // Mechanical Contractor (RAW)
+    // -------------------------
+    else if (normalizedName === "mech_license_number")
+      value = String(company["mech_license_number"] ?? "");
+    else if (normalizedName === "mech_qualifier_name")
+      value = String(company["mech_qualifier_name"] ?? "");
+    else if (normalizedName === "mech_desc_of_improv")
+      value = String(company["mech_desc_of_improv"] ?? "");
+
+    // -------------------------
+    // Electrical Contractor (RAW)
+    // -------------------------
+    else if (normalizedName === "elec_license_number")
+      value = String(company["elec_license_number"] ?? "");
+    else if (normalizedName === "elec_qualifier_name")
+      value = String(company["elec_qualifier_name"] ?? "");
+    else if (normalizedName === "elec_desc_of_improv")
+      value = String(company["elec_desc_of_improv"] ?? "");
+
+    // -------------------------
+    // Company Contact (RAW)
+    // -------------------------
+    else if (normalizedName === "cc_name")
+      value = String(company["cc_name"] ?? "");
+    else if (normalizedName === "cc_phone")
+      value = String(company["cc_phone"] ?? "");
+    else if (normalizedName === "cc_email")
+      value = String(company["cc_email"] ?? "");
 
     // -------------------------
     // Legal Description Components (RAW)

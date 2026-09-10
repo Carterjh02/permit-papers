@@ -62,6 +62,21 @@ export interface CompanyFields {
   roofingDescOfImprov?: string;
   roofingBusinessTaxReceipt?: string;
 
+  // Mechanical Contractor
+  mechanicalQualifierName?: string;
+  mechanicalLicenseNumber?: string;
+  mechanicalDescOfImprov?: string;
+
+  // Electrical Contractor
+  electricQualifierName?: string;
+  electricLicenseNumber?: string;
+  electricDescOfImprov?: string;
+
+  // Company Contact
+  companyContactName?: string;
+  companyContactPhone?: string;
+  companyContactEmail?: string;
+
   // Address
   addressStreet?: string;
   addressCity?: string;
@@ -107,10 +122,32 @@ export function formatCompanyFields(
     // Misc
     email: company.email?.trim() || "",
     website: company.website?.trim() || "",
+    companyCode: company.companyCode?.trim().toUpperCase(),
+
+    // Window / Door Contractor
     descOfImprov: company.descOfImprov?.trim() || "",
     businessTaxReceipt: company.businessTaxReceipt?.trim() || "",
     licenseNumber: company.licenseNumber?.trim() || "",
-    companyCode: company.companyCode?.trim().toUpperCase(),
+
+    // Roofing Contractor
+    roofingDescOfImprov: company.roofingDescOfImprov?.trim() || "",
+    roofingBusinessTaxReceipt: company.roofingBusinessTaxReceipt?.trim() || "",
+    roofingLicenseNumber: company.roofingLicenseNumber?.trim() || "",
+
+    // Mechanical Contractor
+    mechanicalQualifierName: applyNameCase(company.mechanicalQualifierName),
+    mechanicalLicenseNumber: company.mechanicalLicenseNumber?.trim() || "",
+    mechanicalDescOfImprov: company.mechanicalDescOfImprov?.trim() || "",
+  
+    // Electrical Contractor
+    electricQualifierName: applyNameCase(company.electricQualifierName),
+    electricLicenseNumber: company.electricLicenseNumber?.trim() || "",
+    electricDescOfImprov: company.electricDescOfImprov?.trim() || "",
+  
+    // Company Contact
+    companyContactName: applyNameCase(company.companyContactName),
+    companyContactPhone: formatPhone(company.companyContactPhone, prefs.phoneFormat),
+    companyContactEmail: company.companyContactEmail?.trim() || "",
   };
 }
 

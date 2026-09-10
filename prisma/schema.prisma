@@ -8,31 +8,53 @@ datasource db {
 }
 
 model Company {
-  id                        String              @id @default(cuid())
-  companyCode               String              @unique
-  name                      String
-  email                     String?
-  phone                     String?
-  address                   String?
-  website                   String?
-  logoUrl                   String?
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  addressCity               String?
-  addressState              String?
-  addressStreet             String?
-  addressZip                String?
-  businessTaxReceipt        String?
-  descOfImprov              String?
-  qualifierName             String?
-  licenseNumber             String?
+  id                 String   @id @default(cuid())
+  companyCode        String   @unique
+  name               String
+  email              String?
+  phone              String?
+  address            String?
+  website            String?
+  logoUrl            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  businessTaxReceipt String?
+
+  // Address
+  addressCity   String?
+  addressState  String?
+  addressStreet String?
+  addressZip    String?
+
+  // Window/Door Qualifier 
+  descOfImprov  String?
+  qualifierName String?
+  licenseNumber String?
+
+  // Roofing Qualifier 
   roofingLicenseNumber      String?
   roofingQualifierName      String?
   roofingDescOfImprov       String?
   roofingBusinessTaxReceipt String?
-  jobs                      Job[]
-  users                     User[]
-  preferences               CompanyPreferences?
+
+  // Mechanical Qualifier
+  mechanicalLicenseNumber String?
+  mechanicalQualifierName String?
+  mechanicalDescOfImprov  String?
+
+  // Electrical Qualifier
+  electricLicenseNumber String?
+  electricQualifierName String?
+  electricDescOfImprov  String?
+
+  // Company Contact
+  companyContactName  String?
+  companyContactPhone String?
+  companyContactEmail String?
+
+  jobs        Job[]
+  users       User[]
+  preferences CompanyPreferences?
 }
 
 model CompanyPreferences {

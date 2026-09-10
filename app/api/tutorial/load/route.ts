@@ -42,10 +42,20 @@ export async function GET() {
     "user-management",
     "formatting",
     "job-flow",
+    "snippet-workflow",
+    "property-workflow",
+    "manual-workflow",
     "job-flow1",
   ];
-
-  const userFlow = ["welcome", "job-flow", "job-flow1"];
+  
+  const userFlow = [
+    "welcome",
+    "job-flow",
+    "snippet-workflow",
+    "property-workflow",
+    "manual-workflow",
+    "job-flow1",
+  ];
 
   const flow = role === "admin" ? adminFlow : userFlow;
 
@@ -58,6 +68,23 @@ export async function GET() {
 
   const completed = tutorial.completedSections ?? [];
   const currentSection = tutorial.currentSection ?? "welcome";
+
+  // STOP if the current section is already completed
+  if (
+    tutorial.currentSection &&
+    completed.includes(tutorial.currentSection)
+  ) {
+    tutorial = await prisma.tutorialProgress.update({
+      where: { userId },
+      data: {
+        enabled: false,
+        currentSection: null,
+        currentStep: null,
+      },
+    });
+
+  return NextResponse.json({ tutorial });
+}
 
   // If currentSection is valid OR a branch section → do nothing
   if (flow.includes(currentSection) || branchSections.includes(currentSection)) {
