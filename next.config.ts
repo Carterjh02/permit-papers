@@ -1,6 +1,4 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
     remotePatterns: [
       // Existing pattern for company logos
@@ -22,6 +20,12 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/sign/**",
       }      
     ],
+  },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
   },
 
   turbopack: {},

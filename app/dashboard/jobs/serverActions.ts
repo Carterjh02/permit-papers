@@ -263,14 +263,31 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
   return job;
 }
 
+function normalizeIncomingBuffer(obj: unknown): Uint8Array | undefined {
+  if (!obj) return undefined;
+
+  if (typeof obj === "string") return undefined;
+
+  if (obj instanceof Uint8Array) return obj;
+
+  if (obj instanceof Buffer) return new Uint8Array(obj);
+
+  if (typeof obj === "object" && obj !== null) {
+    const maybeData = (obj as Record<string, unknown>).data;
+    if (Array.isArray(maybeData)) {
+      return new Uint8Array(maybeData);
+    }
+  }
+
+  if (Array.isArray(obj)) return new Uint8Array(obj);
+
+  return undefined;
+}
+
 interface PADataResultFromEdge {
   county: "broward" | "palmBeach" | "saintLucie" | "miamidade";
 
-  htmlPath?: string;
-  screenshotPath?: string;
-  sketchPath?: string;
-  parcelPhotoPath?: string;
-
+  html?: string; // now receiving raw HTML instead of htmlPath
   screenshot?: Uint8Array;
   sketchBuffer?: Uint8Array;
   parcelPhotoBuffer?: Uint8Array;
@@ -283,7 +300,7 @@ interface PADataResultFromEdge {
 export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
   const {
     county,
-    htmlPath,
+    html,
     screenshot,
     sketchBuffer,
     parcelPhotoBuffer,
@@ -291,21 +308,17 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
     companyCode,
   } = paData;
 
+  const screenshotNorm = normalizeIncomingBuffer(screenshot);
+  const sketchNorm = normalizeIncomingBuffer(sketchBuffer);
+  const parcelNorm = normalizeIncomingBuffer(parcelPhotoBuffer);
+
   /* -----------------------------------------------------------
-     1. DOWNLOAD HTML 
+     1. PARSE HTML (if available)
   ----------------------------------------------------------- */
   let htmlString: string | undefined = undefined;
 
-  if (htmlPath) {
-    const { data: htmlFile, error: htmlErr } = await supabaseServer.storage
-      .from("companies")
-      .download(htmlPath);
-
-    if (htmlErr) {
-      console.error("❌ Failed downloading HTML:", htmlErr);
-    } else {
-      htmlString = await htmlFile.text();
-    }
+  if (html && html.length > 20) {
+    htmlString = html;
   }
 
   /* -----------------------------------------------------------
@@ -315,43 +328,45 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   let sketchPathFinal: string | undefined = undefined;
   let parcelPhotoPathFinal: string | undefined = undefined;
 
-  if (screenshot) {
+  const basePath = `companies/${companyCode}/jobs/${jobNumber}/pa`;
+
+  if (screenshotNorm) {
     const screenshotUpload = await supabaseServer.storage
       .from("companies")
       .upload(
-        `companies/${companyCode}/jobs/${jobNumber}/pa/screenshot.png`,
-        Buffer.from(screenshot),
+        `${basePath}/screenshot.png`,
+        Buffer.from(screenshotNorm),
         { contentType: "image/png", upsert: true }
       );
-
+  
     if (!screenshotUpload.error) {
       screenshotPathFinal = screenshotUpload.data.path;
     }
   }
 
-  if (sketchBuffer) {
+  if (sketchNorm) {
     const sketchUpload = await supabaseServer.storage
       .from("companies")
       .upload(
-        `companies/${companyCode}/jobs/${jobNumber}/pa/sketch.png`,
-        Buffer.from(sketchBuffer),
+        `${basePath}/sketch.png`,
+        Buffer.from(sketchNorm),
         { contentType: "image/png", upsert: true }
       );
-
+  
     if (!sketchUpload.error) {
       sketchPathFinal = sketchUpload.data.path;
     }
   }
 
-  if (parcelPhotoBuffer) {
+  if (parcelNorm) {
     const parcelUpload = await supabaseServer.storage
       .from("companies")
       .upload(
-        `companies/${companyCode}/jobs/${jobNumber}/pa/parcel-photo.png`,
-        Buffer.from(parcelPhotoBuffer),
+        `${basePath}/parcel-photo.png`,
+        Buffer.from(parcelNorm),
         { contentType: "image/png", upsert: true }
       );
-
+  
     if (!parcelUpload.error) {
       parcelPhotoPathFinal = parcelUpload.data.path;
     }
@@ -390,7 +405,7 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
       taxFolioNumber: parsed.folio ?? null,
       legalDescription: parsed.legalDescription ?? null,
 
-      paHtmlPath: htmlPath ?? undefined,
+      paHtmlPath: htmlString ? `${basePath}/pa.html` : undefined,
       paScreenshotPath: screenshotPathFinal ?? undefined,
       paSketchPath: sketchPathFinal ?? undefined,
       paParcelPhotoPath: parcelPhotoPathFinal ?? undefined,
