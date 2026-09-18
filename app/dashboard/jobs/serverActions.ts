@@ -328,7 +328,7 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   let sketchPathFinal: string | undefined = undefined;
   let parcelPhotoPathFinal: string | undefined = undefined;
 
-  const basePath = `companies/${companyCode}/jobs/${jobNumber}/pa`;
+  const basePath = `${companyCode}/jobs/${jobNumber}/pa`;
 
   if (screenshotNorm) {
     const screenshotUpload = await supabaseServer.storage
@@ -378,8 +378,8 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   let parsed: ParsedPAData = {};
 
   if (county === "saintLucie") {
-    if (screenshot) {
-      const ocrText = await extractTextFromImage(Buffer.from(screenshot));
+    if (screenshotNorm) {
+      const ocrText = await extractTextFromImage(Buffer.from(screenshotNorm));
       parsed = parsePAData(ocrText, county);
     }
   } else {
@@ -394,6 +394,23 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   /* -----------------------------------------------------------
      4. SAVE TO DATABASE — INCLUDING ASSET PATHS
   ----------------------------------------------------------- */
+
+  let htmlPathFinal: string | undefined = undefined;
+
+if (htmlString) {
+  const htmlUpload = await supabaseServer.storage
+    .from("companies")
+    .upload(
+      `${basePath}/pa.html`,
+      Buffer.from(htmlString),
+      { contentType: "text/html", upsert: true }
+    );
+
+  if (!htmlUpload.error) {
+    htmlPathFinal = htmlUpload.data.path;
+  }
+}
+
   await prisma.job.update({
     where: { id: jobId },
     data: {
@@ -405,7 +422,7 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
       taxFolioNumber: parsed.folio ?? null,
       legalDescription: parsed.legalDescription ?? null,
 
-      paHtmlPath: htmlString ? `${basePath}/pa.html` : undefined,
+      paHtmlPath: htmlPathFinal ?? undefined,
       paScreenshotPath: screenshotPathFinal ?? undefined,
       paSketchPath: sketchPathFinal ?? undefined,
       paParcelPhotoPath: parcelPhotoPathFinal ?? undefined,
@@ -415,6 +432,10 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   return {
     ...paData,
     parsed,
+    htmlPath: htmlPathFinal,
+    screenshotPath: screenshotPathFinal,
+    sketchPath: sketchPathFinal,
+    parcelPhotoPath: parcelPhotoPathFinal,
   };
 }
 

@@ -122,7 +122,7 @@ export function formatCompanyFields(
     // Misc
     email: company.email?.trim() || "",
     website: company.website?.trim() || "",
-    companyCode: company.companyCode?.trim().toUpperCase(),
+    companyCode: company.companyCode?.trim(),
 
     // Window / Door Contractor
     descOfImprov: company.descOfImprov?.trim() || "",
