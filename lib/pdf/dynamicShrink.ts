@@ -209,7 +209,12 @@ export function getShrinkRule(meta: FieldMeta): ShrinkRule {
   const base = baseRuleForKind(meta.kind);
   const tuned = tuneRuleForGeometry(meta, base);
   const finalRule = tweakRuleForName(meta, tuned);
-  return finalRule;
+
+  return {
+    ...finalRule,
+    minFont: 6,
+    maxFont: 10,
+  };
 }
 
 // ---------------------------------------------------------
@@ -331,7 +336,6 @@ export async function applyDynamicShrink(
   pdfDoc: PDFDocument,
   baseFont: PDFFont,
   meta: FieldMeta,
-  sharedLayoutCache: Map<string, TextLayout>
 ) {
   const rule = getShrinkRule(meta);
   const acro = field.acroField;
@@ -347,30 +351,29 @@ export async function applyDynamicShrink(
   }
 
   const padding = 4;
-  let layout: TextLayout;
 
   // ============================================================
   // Shared layout for all fields with same normalized name
-  // (meta.width/height are already the smallest across pages)
+  // (rect.width/height are already the smallest across pages)
   // ============================================================
-  if (sharedLayoutCache.has(meta.normalizedName)) {
-    layout = sharedLayoutCache.get(meta.normalizedName)!;
-  } else {
-
-    layout = computeLayoutWithRule(
+  
+  for (const widget of widgets) {
+    const rect = widget.getRectangle();
+    const fieldWidth = rect.width - padding;
+    const fieldHeight = rect.height - padding;
+  
+    const layout = computeLayoutWithRule(
       text,
-      meta.width - padding,
-      meta.height - padding,
+      fieldWidth,
+      fieldHeight,
       baseFont,
       rule
     );
-
-    sharedLayoutCache.set(meta.normalizedName, layout);
+  
+    field.setFontSize(layout.fontSize);
+    field.setText(layout.lines.join("\n"));
+    field.updateAppearances(baseFont);
   }
-
-  field.setFontSize(layout.fontSize);
-  field.setText(layout.lines.join("\n"));
-  field.updateAppearances(baseFont);
 }
 
 // ---------------------------------------------------------
@@ -381,7 +384,6 @@ export function createShrinker(
   baseFont: PDFFont,
   fieldMetaMap: Record<string, FieldMeta>
 ) {
-  const sharedLayoutCache = new Map<string, TextLayout>();
 
   return async (field: PDFTextField, value: string) => {
     const name = field.getName();
@@ -394,7 +396,10 @@ export function createShrinker(
     const acro = field.acroField;
     const widgets = acro.getWidgets();
 
-    if (widgets && widgets.length > 0) {
+    if (!widgets || widgets.length === 0) {
+      field.setText(value);
+      return;
+    }
 
     // ---------------------------------------------------------
     // FALLBACK (no meta found)
@@ -403,7 +408,7 @@ export function createShrinker(
       const fallbackRule: ShrinkRule = {
         mode: "words",
         minFont: 6,
-        maxFont: 12,
+        maxFont: 10,
         sharedLayout: true,
       };
 
@@ -417,23 +422,26 @@ export function createShrinker(
         return;
       }
 
-      const rect = fallbackWidgets[0].getRectangle();
       const padding = 4;
 
-      const fieldWidth = rect.width - padding;
-      const fieldHeight = rect.height - padding;
+      for (const widget of fallbackWidgets) {
+        const rect = widget.getRectangle();
+        const fieldWidth = rect.width - padding;
+        const fieldHeight = rect.height - padding;
+      
+        const layout = computeLayoutWithRule(
+          value,
+          fieldWidth,
+          fieldHeight,
+          baseFont,
+          fallbackRule
+        );
+      
+        field.setFontSize(layout.fontSize);
+        field.setText(layout.lines.join("\n"));
+        field.updateAppearances(baseFont);
+      }
 
-      const layout = computeLayoutWithRule(
-        value,
-        fieldWidth,
-        fieldHeight,
-        baseFont,
-        fallbackRule
-      );
-
-      field.setFontSize(layout.fontSize);
-      field.setText(layout.lines.join("\n"));
-      field.updateAppearances(baseFont);
       return;
     }
 
@@ -446,8 +454,6 @@ export function createShrinker(
       pdfDoc,
       baseFont,
       meta,
-      sharedLayoutCache
     );
   };
  }
-}

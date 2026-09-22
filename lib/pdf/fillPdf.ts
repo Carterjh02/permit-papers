@@ -30,8 +30,25 @@ interface FillPdfOptions {
 
 function normalize(name: string | null | undefined): string {
   if (!name) return "";
-  return String(name).replace(/\s+/g, "").trim().toLowerCase();
+  return String(name).trim().toLowerCase();
 }
+
+/**
+ * Extract base name + optional suffix (#1, #2, etc.)
+ * Example:
+ *   "customer_address_street#2" → { base: "customer_address_street", suffix: "2" }
+ *   "customer_address_street"   → { base: "customer_address_street", suffix: null }
+ */
+function splitFieldName(name: string) {
+  const normalized = normalize(name);
+
+  const parts = normalized.split("#");
+  const base = parts[0];
+  const suffix = parts.length > 1 ? parts[1] : null;
+
+  return { base, suffix };
+}
+
 
 export async function fillPdf({
   templateBuffer,
@@ -65,10 +82,17 @@ export async function fillPdf({
   const fieldMetaMap = analyzeFields(form.getFields());
   const shrinker = createShrinker(pdfDoc, baseFont, fieldMetaMap);
 
-  const pdfFields = form.getFields().map((f) => ({
-    raw: f,
-    name: normalize(f.getName()),
-  }));
+  const pdfFields = form.getFields().map((f) => {
+    const fullName = normalize(f.getName());
+    const { base, suffix } = splitFieldName(fullName);
+  
+    return {
+      raw: f,
+      fullName,
+      baseName: base,
+      suffix,
+    };
+  });  
 
   // ============================================================
   // 2. Apply Formatting Preferences (simple fields ONLY)
@@ -184,9 +208,11 @@ export async function fillPdf({
     "folio",
   ]);
 
-  function getAllFields(name: string) {
-    const n = normalize(name);
-    return pdfFields.filter((f) => f.name === n).map((f) => f.raw);
+  function getAllFields(baseName: string) {
+    const n = normalize(baseName);
+    return pdfFields
+      .filter((f) => f.baseName === n)
+      .map((f) => f.raw);
   }
 
   // ============================================================
@@ -230,6 +256,7 @@ export async function fillPdf({
 
     for (const field of fields) {
       if (field instanceof PDFTextField) {
+        // independent widget sizing
         await shrinker(field, value);
       }
     }
@@ -244,8 +271,8 @@ export async function fillPdf({
   // ============================================================
   // 6. STRICT AUTO-FILL (compound fields use RAW values)
   // ============================================================
-  for (const { raw: field, name } of pdfFields) {
-    const normalizedName = normalize(name);
+  for (const { raw: field, baseName } of pdfFields) {
+    const normalizedName = normalize(baseName);
     if (!allowedKeys.has(normalizedName)) continue;
 
     let value: string | number | null | undefined = null;
