@@ -20,6 +20,7 @@ export function detectCounty(input: {
   if (countyHint.includes("lucie")) return "saintLucie";
   if (countyHint.includes("dade") || countyHint.includes("miami"))
     return "miamidade";
+  if (countyHint.includes("seminole")) return "seminole";
 
   // subdivision hints
   if (
@@ -49,6 +50,17 @@ export function detectCounty(input: {
     subdivision.includes("kendall")
   )
     return "miamidade";
+
+  if (
+    subdivision.includes("lake mary") ||
+    subdivision.includes("longwood") ||
+    subdivision.includes("sanford") ||
+    subdivision.includes("winter springs") ||
+    subdivision.includes("oviedo") ||
+    subdivision.includes("altamonte") ||
+    subdivision.includes("casselberry")
+  )
+    return "seminole";
 
   // city name detection
   if (
@@ -81,6 +93,25 @@ export function detectCounty(input: {
     city.includes("coral gables")
   )
     return "miamidade";
+
+  if (
+    city.includes("lake mary") ||
+    city.includes("longwood") ||
+    city.includes("sanford") ||
+    city.includes("winter springs") ||
+    city.includes("oviedo") ||
+    city.includes("altamonte") ||
+    city.includes("casselberry") ||
+    city.includes("fern park") ||
+    city.includes("heathrow") ||
+    city.includes("wekiva") ||
+    city.includes("wekiwa") ||
+    city.includes("bear lake") ||
+    city.includes("forest city") ||
+    city.includes("goldenrod") ||
+    city.includes("geneva")
+  )
+    return "seminole";
 
   // ZIP detection (new logic)
   const zipCounty = getCountyFromZip(zip);

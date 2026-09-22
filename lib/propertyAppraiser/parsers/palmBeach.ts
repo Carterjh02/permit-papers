@@ -46,9 +46,21 @@ export function parsePalmBeachPA(html: string): ParsedPAData {
   --------------------------------------------------------- */
 
   // 1. Clean raw Palm Beach owner strings
+  // 1. Clean raw Palm Beach owner strings
   let cleanedOwners = owners
-    .map(o => o.replace(/&/g, "").trim())
-    .filter(o => o.length > 0);
+    .map(o => {
+      // Remove HTML ampersands
+      let cleaned = o.replace(/&/g, "").trim();
+  
+      // Remove single-letter tokens (middle initials, stray characters)
+      cleaned = cleaned
+        .split(/\s+/)
+        .filter(token => token.length > 1)   // keep only tokens longer than 1 char
+        .join(" ");
+  
+      return cleaned;
+    })
+    .filter(o => o.length > 0);  
   
   // 2. Palm Beach sometimes returns 3+ owners; keep only first two
   if (cleanedOwners.length > 2) {

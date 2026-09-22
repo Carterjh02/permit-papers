@@ -427,7 +427,7 @@ export async function fillPdf({
         const line = rawPhone.slice(6);
 
         if (normalizedName === "customer_phone1") {
-          value = `(${area})`;
+          value = area;
         } else {
           value = `${prefix}-${line}`;
         }

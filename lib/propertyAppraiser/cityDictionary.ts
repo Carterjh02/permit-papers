@@ -93,5 +93,15 @@ export const countyCities: Record<string, string[]> = {
       "VIRGINIA GARDENS",
       "WEST MIAMI",
     ],
+
+    seminole: [
+      "ALTAMONTE SPRINGS",
+      "CASSELBERRY",
+      "LAKE MARY",
+      "LONGWOOD",
+      "OVIEDO",
+      "SANFORD",
+      "WINTER SPRINGS",
+    ],
   };
   

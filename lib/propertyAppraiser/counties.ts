@@ -17,6 +17,7 @@ export const countyZipRanges: Record<
   palmBeach: { start: 33400, end: 33499 },
   miamidade: { start: 33100, end: 33299 },
   saintLucie: { start: 34900, end: 34999 },
+  seminole:    { start: 32700, end: 32799 },
 };
 
 /**

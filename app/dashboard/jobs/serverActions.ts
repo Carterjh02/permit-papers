@@ -285,7 +285,7 @@ function normalizeIncomingBuffer(obj: unknown): Uint8Array | undefined {
 }
 
 interface PADataResultFromEdge {
-  county: "broward" | "palmBeach" | "saintLucie" | "miamidade";
+  county: "broward" | "palmBeach" | "saintLucie" | "miamidade" | "seminole";
 
   html?: string; // now receiving raw HTML instead of htmlPath
   screenshot?: Uint8Array;

@@ -164,7 +164,7 @@ export async function runPropertyAppraiserSearch(input: SearchInput) {
   }
   
   return {
-    county: county as "broward" | "palmBeach" | "saintLucie",
+    county: county as "broward" | "palmBeach" | "saintLucie" | "miamidade" | "seminole",
     paPath,
     parsed,
     html,

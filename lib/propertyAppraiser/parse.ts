@@ -1,6 +1,7 @@
 import { parseBrowardPA } from "./parsers/broward";
 import { parsePalmBeachPA } from "./parsers/palmBeach";
 import { parseMiamiDadePA } from "./parsers/miamiDade";
+import { parseSeminolePA } from "./parsers/seminole";
 import type { ParsedPAData } from "./types";
 
 export function parsePAData(ocrText: string, county: string): ParsedPAData {
@@ -15,6 +16,9 @@ export function parsePAData(ocrText: string, county: string): ParsedPAData {
 
       case "miamidade": 
         return parseMiamiDadePA(ocrText);
+
+      case "seminole":
+        return parseSeminolePA(ocrText);
 
     default:
       throw new Error(`No parser implemented for county: ${county}`);
