@@ -46,21 +46,21 @@ export default async function TemplateEditPage({ params }: PageProps) {
         <input type="hidden" name="template_id" value={tpl.id} />
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Template Name
           </label>
           <input name="name" defaultValue={tpl.name} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Description
           </label>
           <textarea name="description" defaultValue={tpl.description ?? ""} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Folder Path
           </label>
           <input
@@ -71,11 +71,11 @@ export default async function TemplateEditPage({ params }: PageProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Replace File (optional)
           </label>
           <input name="file" type="file" accept="application/pdf" />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-[var(--text-color)] mt-1">
             Current file: {tpl.storagePath}
           </p>
         </div>

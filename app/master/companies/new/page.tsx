@@ -126,87 +126,87 @@ export default async function NewCompanyPage() {
   }
 
   return (
-    <div className="page-container space-y-6">
-      <h1 className="text-2xl font-bold">Add New Company</h1>
+    <div className="page-container space-y-6 text-[var(--text-color)]">
+      <h1 className="text-2xl font-bold text-[var(--text-color)]">Add New Company</h1>
 
-      <form action={createCompany} className="space-y-4 card p-6">
+      <form action={createCompany} className="space-y-4 card p-6 bg-[var(--card-bg)] border border-[var(--border-color)]">
         <div>
-          <label className="block text-sm font-medium">Upload Logo</label>
-          <input type="file" name="logo" accept="image/*" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Upload Logo</label>
+          <input type="file" name="logo" accept="image/*" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Company Name</label>
-          <input name="company_name" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Company Name</label>
+          <input name="company_name" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Company Code</label>
-          <input name="company_code" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Company Code</label>
+          <input name="company_code" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Qualifier Name</label>
-          <input name="qualifier_name" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Qualifier Name</label>
+          <input name="qualifier_name" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Email</label>
-          <input name="email" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Email</label>
+          <input name="email" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Phone</label>
-          <input name="phone" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Phone</label>
+          <input name="phone" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Address Street</label>
-          <input name="addressStreet" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Address Street</label>
+          <input name="addressStreet" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium">City</label>
-            <input name="addressCity" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)]">City</label>
+            <input name="addressCity" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">State</label>
-            <input name="addressState" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)]">State</label>
+            <input name="addressState" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Zip</label>
-            <input name="addressZip" className="input" />
+            <label className="block text-sm font-medium text-[var(--text-color)]">Zip</label>
+            <input name="addressZip" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium">License Number</label>
-          <input name="company_license" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">License Number</label>
+          <input name="company_license" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Website</label>
-          <input name="website" className="input" />
+          <label className="block text-sm font-medium text-[var(--text-color)]">Website</label>
+          <input name="website" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Description of Improvements
           </label>
-          <textarea name="desc_of_improv" className="input" />
+          <textarea name="desc_of_improv" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Business Tax Receipt Number
           </label>
-          <input name="business_tax_receipt" className="input" />
+          <input name="business_tax_receipt" className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]" />
         </div>
 
-        <button className="btn btn-primary" type="submit">
+        <button className="btn btn-primary bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover)]" type="submit">
           Create Company
         </button>
       </form>

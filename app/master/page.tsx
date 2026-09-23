@@ -25,18 +25,18 @@ export default async function MasterHome() {
       <h1 className="text-2xl font-bold">Master Dashboard</h1>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Companies</p>
+        <div className="p-4 bg-[var(--card-bg)] rounded shadow">
+          <p className="text-sm text-[var(--text-color)]">Companies</p>
           <p className="text-2xl font-bold">{companiesCount}</p>
         </div>
 
-        <div className="p-4 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Users</p>
+        <div className="p-4 bg-[var(--card-bg)] rounded shadow">
+          <p className="text-sm text-[var(--text-color)]">Users</p>
           <p className="text-2xl font-bold">{usersCount}</p>
         </div>
 
-        <div className="p-4 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Jobs</p>
+        <div className="p-4 bg-[var(--card-bg)] rounded shadow">
+          <p className="text-sm text-[var(--text-color)]">Jobs</p>
           <p className="text-2xl font-bold">{jobsCount}</p>
         </div>
       </div>

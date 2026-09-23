@@ -152,13 +152,13 @@ export default function TemplateMappingPage() {
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-xl font-semibold">Field Mapping</h1>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-[var(--text-color)]">
         Fields with suggested mappings are pre-filled. Review and adjust as needed, then click Save.
       </p>
 
       <table className="w-full border text-sm">
         <thead>
-          <tr className="bg-gray-100">
+          <tr className="bg-[var(--card-bg)]">
             <th className="p-2 border text-left">PDF Field Name</th>
             <th className="p-2 border text-left">Map To</th>
           </tr>

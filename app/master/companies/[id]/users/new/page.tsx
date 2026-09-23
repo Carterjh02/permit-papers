@@ -26,21 +26,21 @@ export default async function MasterCreateUserPage({ params }: PageProps) {
         <input type="hidden" name="company_id" value={company.id} />
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Username
           </label>
           <input name="username" className="input" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Password
           </label>
           <input name="password" type="password" className="input" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800">
+          <label className="block text-sm font-medium text-[var(--text-color)]">
             Role
           </label>
           <select name="role" className="input">

@@ -15,7 +15,7 @@ interface FolderBrowserPanelProps {
   initialPath?: string;
   companyCode?: string;
   onClose: () => void;
-  onUploadComplete?: (path: string) => void;
+  onUploadComplete?: (path: string | string[]) => void;
 
   // MULTI-FILE SELECTION
   onSelectFile: (paths: string[]) => void;
@@ -201,75 +201,78 @@ export default function FolderBrowserPanel({
   /* -----------------------------------------------------------
   MASTER MODE — UPLOAD FILE
 ----------------------------------------------------------- */
-const handleUpload = async (file: File) => {
- // Only masters can upload files
- if (mode !== "master") {
-   console.warn("Upload blocked: only master users may upload files.");
-   return;
- }
+const handleUpload = async (files: File[]) => {
+  // Only masters can upload files
+  if (mode !== "master") {
+    console.warn("Upload blocked: only master users may upload files.");
+    return;
+  }
 
- const base = currentPath.replace(/\/+$/, "");
- const cleanName = file.name.replace(/\\/g, "/");
+  const base = currentPath.replace(/\/+$/, "");
 
  /* -----------------------------------------
     TEMPLATES UPLOAD (master only)
  ----------------------------------------- */
  if (activeTree === "templates") {
-   const fullPath = base ? `${base}/${cleanName}` : cleanName;
+  for (const file of files) {
+    const cleanName = file.name.replace(/\\/g, "/");
+    const fullPath = base ? `${base}/${cleanName}` : cleanName;
 
-   // Use server upload route
-   const formData = new FormData();
-   formData.append("file", file);
-   formData.append("bucket", "templates");
-   formData.append("path", fullPath);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("bucket", "templates");
+    formData.append("path", fullPath);
 
-   const res = await fetch("/api/storage/upload", {
-     method: "POST",
-     body: formData,
-   });
+    const res = await fetch("/api/storage/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-   const json = await res.json();
+    const json = await res.json();
+    if (!res.ok) {
+      console.error("Upload error:", json.error);
+      continue;
+    }
 
-   if (!res.ok) {
-     console.error("Upload error:", json.error);
-     return;
-   }
+    onUploadComplete?.(fullPath);
+  }
 
-   onUploadComplete?.(fullPath);
-   await load();
-   return;
- }
+  await load();
+  return;
+}
 
  /* -----------------------------------------
     COMPANIES UPLOAD (master only)
  ----------------------------------------- */
  if (activeTree === "companies") {
-  const fullPath = base ? `${base}/${cleanName}` : cleanName;
+  for (const file of files) {
+    const cleanName = file.name.replace(/\\/g, "/");
+    const fullPath = base ? `${base}/${cleanName}` : cleanName;
 
-  // Use server upload route
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("bucket", "companies");
-  formData.append("path", fullPath);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("bucket", "companies");
+    formData.append("path", fullPath);
 
-  // tell the server which company this doc belongs to
-  if (companyCode) {
-    formData.append("companyCode", companyCode);
+    // tell the server which company this doc belongs to
+    if (companyCode) {
+      formData.append("companyCode", companyCode);
+    }
+
+    const res = await fetch("/api/storage/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      console.error("Upload error:", json.error);
+      continue;
+    }
+
+    onUploadComplete?.(fullPath);
   }
 
-  const res = await fetch("/api/storage/upload", {
-    method: "POST",
-    body: formData,
-  });
-
-  const json = await res.json();
-
-  if (!res.ok) {
-    console.error("Upload error:", json.error);
-    return;
-  }
-
-  onUploadComplete?.(fullPath);
   await load();
   return;
 }
@@ -333,10 +336,11 @@ const handleUpload = async (file: File) => {
                   <input
                     type="file"
                     accept="application/pdf"
+                    multiple
                     className="hidden"
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUpload(file);
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) handleUpload(files);
                     }}
                   />
                 </label>

@@ -133,7 +133,7 @@ export default async function MasterUsersPage({
                 <td className="py-2 pr-4">
                   <Link
                     href={`/master/users/${u.id}/edit`}
-                    className="text-blue-600 hover:underline"
+                    className="text-[var(--link-color)] hover:underline"
                   >
                     Edit
                   </Link>
@@ -143,7 +143,7 @@ export default async function MasterUsersPage({
 
             {typedUsers.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-center text-gray-500">
+                <td colSpan={6} className="py-4 text-center text-[var(--text-color)]">
                   No users found.
                 </td>
               </tr>

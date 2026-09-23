@@ -12,7 +12,7 @@ export default async function BatchMappingPage(props: {
     return (
       <div className="p-10">
         <h1 className="text-2xl font-bold">No Templates Provided</h1>
-        <p className="mt-4 text-gray-600">
+        <p className="mt-4 text-[var(--text-color)]">
           No template paths were passed to this batch mapping page.
         </p>
       </div>
@@ -90,7 +90,7 @@ export default async function BatchMappingPage(props: {
     <form action={saveBatchMappings} className="p-10 space-y-10">
       <h1 className="text-3xl font-bold">Batch Template Mapping</h1>
 
-      <p className="text-gray-600">
+      <p className="text-[var(--text-color)]">
         Map all uploaded templates in one batch. When finished, click{" "}
         <b>Save All Mappings</b>.
       </p>
@@ -104,14 +104,14 @@ export default async function BatchMappingPage(props: {
       {templateData.map((t) => (
         <div
           key={t.id}
-          className="border rounded-lg p-6 bg-gray-50 space-y-4"
+          className="border rounded-lg p-6 bg-[var(--card-bg)] space-y-4"
         >
           <h2 className="text-xl font-semibold">
-            {t.name} <span className="text-gray-500 text-sm">({t.path})</span>
+            {t.name} <span className="text-[var(--text-color)] text-sm">({t.path})</span>
           </h2>
 
           {t.fields.length === 0 ? (
-            <p className="text-gray-500">No fields detected in this PDF.</p>
+            <p className="text-[var(--text-color)]">No fields detected in this PDF.</p>
           ) : (
             <table className="w-full border-collapse">
               <thead>

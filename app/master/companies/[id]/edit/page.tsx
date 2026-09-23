@@ -27,7 +27,7 @@ export default async function CompanyEditPage({
 
         <form action={deleteCompanyAction}>
           <input type="hidden" name="company_id" value={company.id} />
-          <button className="btn btn-danger" type="submit">
+          <button className="dashboard-btn dashboard-btn-secondary" type="submit">
             Delete Company
           </button>
         </form>
@@ -140,8 +140,8 @@ export default async function CompanyEditPage({
       </form>
 
       {/* Company Documents */}
-      <div className="space-y-4 border border-gray-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+      <div className="space-y-4 border border-[var(--border-color)] rounded-lg p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-[var(--text-color)] border-b pb-2">
           Company Documents
         </h2>
 
@@ -155,8 +155,8 @@ export default async function CompanyEditPage({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-4 border border-gray-200 rounded-lg p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
+    <div className="space-y-4 border border-[var(--border-color)] rounded-lg p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-[var(--text-color)] border-b pb-2">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>

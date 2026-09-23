@@ -133,7 +133,7 @@ export default async function MasterEditUserPage({
         <div>
           <label className="block text-sm font-medium">Company</label>
           <input
-            className="input bg-gray-100 cursor-not-allowed"
+            className="input bg-[var(--input-bg)] cursor-not-allowed"
             value={typedUser.company?.name ?? "— No company —"}
             disabled
           />
