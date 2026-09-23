@@ -15,8 +15,9 @@ export default function NewTemplatePage() {
   /* ---------------------------------------------------------
      HANDLE UPLOAD COMPLETE (from FolderBrowserPanel)
   --------------------------------------------------------- */
-  const handleUploadComplete = (fullPath: string) => {
-    setUploadedPaths((prev) => [...prev, fullPath]);
+  const handleUploadComplete = (paths: string | string[]) => {
+    const normalized = Array.isArray(paths) ? paths : [paths];
+    setUploadedPaths((prev) => [...prev, ...normalized]);
   };
 
   /* ---------------------------------------------------------
