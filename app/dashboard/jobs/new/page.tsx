@@ -11,7 +11,6 @@ import {
   addTemplateAction,
   removeTemplateAction,
 } from "../serverActions";
-import { TutorialStep } from "@/app/components/tutorial/TutorialStep";
 
 export default async function NewJobPage() {
   const session = await getServerSession(authOptions);

@@ -1,6 +1,5 @@
 "use client";
 
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 import { useState, useRef } from "react";
 import FolderBrowserPanel from "@/app/components/FolderBrowserPanel";
 import { useToast } from "@/app/components/ToastProvider";
@@ -837,7 +836,13 @@ return (
             }
 
             // Save to server
-            const saved = await savePADataAction(id, data);
+            const saved = await savePADataAction(id, {
+              county: data.county,
+              jobId: id,
+              jobNumber: jobMeta.jobNumber!,
+              companyCode: jobMeta.companyCode,
+              parsed: data.parsed,
+            });
 
             setPaResult(saved.parsed);
 
