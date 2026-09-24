@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { parsePAData } from "@/lib/propertyAppraiser/parse";
 import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 export async function POST(req: Request) {
   try {
     const {
