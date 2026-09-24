@@ -263,34 +263,10 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
   return job;
 }
 
-function normalizeIncomingBuffer(obj: unknown): Uint8Array | undefined {
-  if (!obj) return undefined;
-
-  if (typeof obj === "string") return undefined;
-
-  if (obj instanceof Uint8Array) return obj;
-
-  if (obj instanceof Buffer) return new Uint8Array(obj);
-
-  if (typeof obj === "object" && obj !== null) {
-    const maybeData = (obj as Record<string, unknown>).data;
-    if (Array.isArray(maybeData)) {
-      return new Uint8Array(maybeData);
-    }
-  }
-
-  if (Array.isArray(obj)) return new Uint8Array(obj);
-
-  return undefined;
-}
-
 interface PADataResultFromEdge {
-  county: "broward" | "palmBeach" | "saintLucie" | "miamidade" | "seminole";
+  county: "broward" | "palmbeach" | "saintlucie" | "miamidade" | "seminole";
 
-  html?: string; // now receiving raw HTML instead of htmlPath
-  screenshot?: Uint8Array;
-  sketchBuffer?: Uint8Array;
-  parcelPhotoBuffer?: Uint8Array;
+  parsed: ParsedPAData;
 
   jobId: string;
   jobNumber: number;
@@ -300,49 +276,14 @@ interface PADataResultFromEdge {
 export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
   const {
     county,
-    html,
-    companyCode, 
+    parsed,
+    companyCode,
     jobNumber,
   } = paData;
 
   /* -----------------------------------------------------------
-     1. PARSE HTML (if available)
+     SAVE PARSED DATA DIRECTLY
   ----------------------------------------------------------- */
-  let htmlString: string | undefined = undefined;
-
-  if (html && html.length > 20) {
-    htmlString = html;
-  }
-
-  /* -----------------------------------------------------------
-    3. PARSE PA DATA
-  ----------------------------------------------------------- */
-  let parsed: ParsedPAData = {};
-
-  if (htmlString) {
-    parsed = parsePAData(htmlString, county);
-  }
-
-  /* -----------------------------------------------------------
-     4. SAVE TO DATABASE — INCLUDING ASSET PATHS
-  ----------------------------------------------------------- */
-  const basePath = `${companyCode}/jobs/${jobNumber}/pa`;
-
-  let htmlPathFinal: string | undefined = undefined;
-
-if (htmlString) {
-  const htmlUpload = await supabaseServer.storage
-    .from("companies")
-    .upload(
-      `${basePath}/pa.html`,
-      Buffer.from(htmlString),
-      { contentType: "text/html", upsert: true }
-    );
-
-  if (!htmlUpload.error) {
-    htmlPathFinal = htmlUpload.data.path;
-  }
-}
 
   await prisma.job.update({
     where: { id: jobId },
@@ -355,14 +296,14 @@ if (htmlString) {
       taxFolioNumber: parsed.folio ?? null,
       legalDescription: parsed.legalDescription ?? null,
 
-      paHtmlPath: htmlPathFinal ?? undefined,
+      // HTML is no longer stored
+      paHtmlPath: undefined,
     },
   });
 
   return {
     ...paData,
     parsed,
-    htmlPath: htmlPathFinal,
   };
 }
 

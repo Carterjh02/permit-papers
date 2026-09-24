@@ -333,7 +333,6 @@ export default function JobFormClient({
         companyCode,
       }));
       
-  
       // Always update snippet preview immediately
       setSnippetUrl(`${publicUrl}?t=${Date.now()}`);
   
@@ -649,14 +648,20 @@ return (
               showToast("PA search returned invalid JSON");
               return;
             }
-
+            
             if (data.error) {
               showToast("PA search failed: " + data.error);
               return;
             }
-
-            const saved = await savePADataAction(id, data);
-
+            
+            const saved = await savePADataAction(id, {
+              county: data.county,
+              jobId: id,
+              jobNumber: jobMeta.jobNumber!,
+              companyCode: jobMeta.companyCode,
+              parsed: data.parsed,
+            });
+            
             setPaResult(saved.parsed);
 
             showToast(
