@@ -301,16 +301,9 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   const {
     county,
     html,
-    screenshot,
-    sketchBuffer,
-    parcelPhotoBuffer,
+    companyCode, 
     jobNumber,
-    companyCode,
   } = paData;
-
-  const screenshotNorm = normalizeIncomingBuffer(screenshot);
-  const sketchNorm = normalizeIncomingBuffer(sketchBuffer);
-  const parcelNorm = normalizeIncomingBuffer(parcelPhotoBuffer);
 
   /* -----------------------------------------------------------
      1. PARSE HTML (if available)
@@ -322,78 +315,18 @@ export async function savePADataAction(jobId: string, paData: PADataResultFromEd
   }
 
   /* -----------------------------------------------------------
-    2. UPLOAD SCREENSHOT / SKETCH / PARCEL PHOTO (if provided)
-  ----------------------------------------------------------- */
-  let screenshotPathFinal: string | undefined = undefined;
-  let sketchPathFinal: string | undefined = undefined;
-  let parcelPhotoPathFinal: string | undefined = undefined;
-
-  const basePath = `${companyCode}/jobs/${jobNumber}/pa`;
-
-  if (screenshotNorm) {
-    const screenshotUpload = await supabaseServer.storage
-      .from("companies")
-      .upload(
-        `${basePath}/screenshot.png`,
-        Buffer.from(screenshotNorm),
-        { contentType: "image/png", upsert: true }
-      );
-  
-    if (!screenshotUpload.error) {
-      screenshotPathFinal = screenshotUpload.data.path;
-    }
-  }
-
-  if (sketchNorm) {
-    const sketchUpload = await supabaseServer.storage
-      .from("companies")
-      .upload(
-        `${basePath}/sketch.png`,
-        Buffer.from(sketchNorm),
-        { contentType: "image/png", upsert: true }
-      );
-  
-    if (!sketchUpload.error) {
-      sketchPathFinal = sketchUpload.data.path;
-    }
-  }
-
-  if (parcelNorm) {
-    const parcelUpload = await supabaseServer.storage
-      .from("companies")
-      .upload(
-        `${basePath}/parcel-photo.png`,
-        Buffer.from(parcelNorm),
-        { contentType: "image/png", upsert: true }
-      );
-  
-    if (!parcelUpload.error) {
-      parcelPhotoPathFinal = parcelUpload.data.path;
-    }
-  }
-
-  /* -----------------------------------------------------------
     3. PARSE PA DATA
   ----------------------------------------------------------- */
   let parsed: ParsedPAData = {};
 
-  if (county === "saintLucie") {
-    if (screenshotNorm) {
-      const ocrText = await extractTextFromImage(Buffer.from(screenshotNorm));
-      parsed = parsePAData(ocrText, county);
-    }
-  } else {
-    if (htmlString) {
-      parsed = parsePAData(htmlString, county);
-    }
+  if (htmlString) {
+    parsed = parsePAData(htmlString, county);
   }
-
-  parsed.sketchPath = sketchPathFinal ?? undefined;
-  parsed.parcelPhotoPath = parcelPhotoPathFinal ?? undefined;
 
   /* -----------------------------------------------------------
      4. SAVE TO DATABASE — INCLUDING ASSET PATHS
   ----------------------------------------------------------- */
+  const basePath = `${companyCode}/jobs/${jobNumber}/pa`;
 
   let htmlPathFinal: string | undefined = undefined;
 
@@ -423,9 +356,6 @@ if (htmlString) {
       legalDescription: parsed.legalDescription ?? null,
 
       paHtmlPath: htmlPathFinal ?? undefined,
-      paScreenshotPath: screenshotPathFinal ?? undefined,
-      paSketchPath: sketchPathFinal ?? undefined,
-      paParcelPhotoPath: parcelPhotoPathFinal ?? undefined,
     },
   });
 
@@ -433,9 +363,6 @@ if (htmlString) {
     ...paData,
     parsed,
     htmlPath: htmlPathFinal,
-    screenshotPath: screenshotPathFinal,
-    sketchPath: sketchPathFinal,
-    parcelPhotoPath: parcelPhotoPathFinal,
   };
 }
 
