@@ -265,9 +265,7 @@ export async function createMinimalJob(companyId: string, createdBy: string) {
 
 interface PADataResultFromEdge {
   county: "broward" | "palmbeach" | "saintlucie" | "miamidade" | "seminole";
-
   parsed: ParsedPAData;
-
   jobId: string;
   jobNumber: number;
   companyCode: string;
@@ -275,10 +273,7 @@ interface PADataResultFromEdge {
 
 export async function savePADataAction(jobId: string, paData: PADataResultFromEdge) {
   const {
-    county,
     parsed,
-    companyCode,
-    jobNumber,
   } = paData;
 
   /* -----------------------------------------------------------
