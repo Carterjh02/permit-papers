@@ -262,11 +262,17 @@ export default function JobFormClient({
       : ""
   );
 
+  const jobPricePlain = jobPrice.replace(/[^0-9.]/g, "");
+
   const formatWithCommas = (value: string) => {
     const numeric = value.replace(/[^\d.]/g, "");
     if (!numeric) return "";
+  
     const parts = numeric.split(".");
+  
+    // Format whole number part
     parts[0] = Number(parts[0]).toLocaleString("en-US");
+  
     return `$ ${parts.join(".")}`;
   };
 
@@ -274,6 +280,33 @@ export default function JobFormClient({
     const raw = e.target.value;
     setJobPrice(formatWithCommas(raw));
   };
+
+const handlePriceBlur = () => {
+  const numeric = jobPrice.replace(/[^0-9.]/g, "");
+  if (!numeric) return;
+
+  const parts = numeric.split(".");
+
+  // If user typed decimals, enforce exactly two
+  if (parts.length > 1) {
+    let decimals = parts[1];
+
+    // Trim if too long
+    decimals = decimals.slice(0, 2);
+
+    // Pad if too short
+    decimals = decimals.padEnd(2, "0");
+
+    parts[1] = decimals;
+  }
+
+  // Rebuild formatted value
+  const formatted =
+    `$ ${Number(parts[0]).toLocaleString("en-US")}` +
+    (parts[1] ? `.${parts[1]}` : "");
+
+  setJobPrice(formatted);
+};
 
   /* ---------------------------------------------------------
      OCR STATE
@@ -1257,6 +1290,7 @@ return (
                 className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
                 value={jobPrice}
                 onChange={handlePriceChange}
+                onBlur={handlePriceBlur}
               />
             </div>
             <div className="flex flex-col gap-[var(--block-gap)] col-span-2">
