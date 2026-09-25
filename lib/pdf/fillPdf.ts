@@ -425,21 +425,7 @@ export async function fillPdf({
     // Job Price (RAW)
     // -------------------------
     else if (normalizedName === "job_price") {
-      const raw = Number(job["job_price"] ?? 0);
-    
-      const hasDecimal = raw % 1 !== 0;
-    
-      if (hasDecimal) {
-        value = `$${raw.toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}`;
-      } else {
-        value = `$${raw.toLocaleString("en-US", {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })}`;
-      }
+      value = String(job["job_price"] ?? "");
     }
 
     // -------------------------

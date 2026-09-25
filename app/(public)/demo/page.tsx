@@ -1,6 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 export default function DemoPage() {
+  const [activeTab, setActiveTab] = useState("full");
+
   return (
     <div className="demo-container">
 
@@ -12,30 +17,53 @@ export default function DemoPage() {
         </p>
       </section>
 
-      {/* WHAT YOU’LL SEE */}
+      {/* TUTORIALS & TIPS */}
       <section className="demo-box">
-        <h2 className="section-title">What You’ll See</h2>
-        <div className="demo-content">
-          <ul className="demo-list">
-            <li>✔ Importing company information automatically from your saved profile</li>
-            <li>✔ Creating and managing jobs with customer and contractor data</li>
-            <li>✔ Auto‑filling forms and generating complete permit packets</li>
-            <li>✔ Downloading ready‑to‑submit PDFs instantly</li>
-          </ul>
+        <h2 className="section-title">Tutorials & Tips</h2>
+
+        {/* TAB BUTTONS */}
+        <div className="tab-buttons">
+          <button onClick={() => setActiveTab("full")} className={activeTab === "full" ? "active" : ""}>
+            Full Walkthrough
+          </button>
+          <button onClick={() => setActiveTab("snip")} className={activeTab === "snip" ? "active" : ""}>
+            Using the Snipping Tool
+          </button>
+          <button onClick={() => setActiveTab("company")} className={activeTab === "company" ? "active" : ""}>
+            Updating Company Information
+          </button>
+          <button onClick={() => setActiveTab("custom")} className={activeTab === "custom" ? "active" : ""}>
+            Requesting Custom Documents
+          </button>
+        </div>
+
+        {/* TAB CONTENT */}
+        <div className="tab-content">
+          {activeTab === "full" && (
+            <video src="/demo/videos/full-video-demonstration.mp4" controls className="demo-video" />
+          )}
+          {activeTab === "snip" && (
+            <video src="/demo/videos/snipping-tool-tutorial.mp4" controls className="demo-video" />
+          )}
+          {activeTab === "company" && (
+            <video src="/demo/videos/update-company-info.mp4" controls className="demo-video" />
+          )}
+          {activeTab === "custom" && (
+            <video src="/demo/videos/request-custom-documents.mp4" controls className="demo-video" />
+          )}
         </div>
       </section>
 
       {/* GUIDED DEMO ACCESS */}
       <section className="demo-box">
-        <h2 className="section-title">Guided Demo Access</h2>
+        <h2 className="section-title">Guided Demo Access (Coming Soon)</h2>
         <div className="demo-content">
           <p className="demo-text">
-            We offer a temporary demo login so you can explore Permit Papers without setting up a full account.
-            You’ll receive a secure, time‑limited link that lets you walk through the workflow as if you were a real user.
+            Soon, you’ll be able to request a temporary demo login to explore Permit Papers without creating a full account.
+            You’ll receive a secure, time‑limited link that walks you through the workflow as if you were a real user.
           </p>
           <p className="demo-text">
-            Soon, this page will include a form where you can enter your email and automatically receive a demo link.
-            This guided demo will show you how Permit Papers imports company data, creates jobs, and generates permit packets.
+            This guided demo will show how Permit Papers imports company data, creates jobs, and generates permit packets.
           </p>
         </div>
       </section>
@@ -52,7 +80,6 @@ export default function DemoPage() {
           </Link>
         </div>
       </section>
-
     </div>
   );
 }
