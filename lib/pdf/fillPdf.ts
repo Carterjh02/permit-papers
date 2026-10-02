@@ -190,6 +190,9 @@ export async function fillPdf({
     "customer_address_zip",
     "customer_tax_folio",
     "job_price",
+    "roofing_job_price",
+    "mech_job_price",
+    "elec_job_price",
     "legal_description",
 
     // Legal description boxes
@@ -426,6 +429,18 @@ export async function fillPdf({
     // -------------------------
     else if (normalizedName === "job_price") {
       value = String(job["job_price"] ?? "");
+    }
+    
+    else if (normalizedName === "roofing_job_price") {
+      value = String(job["roofing_job_price"] ?? "");
+    }
+    
+    else if (normalizedName === "mech_job_price") {
+      value = String(job["mech_job_price"] ?? "");
+    }
+    
+    else if (normalizedName === "elec_job_price") {
+      value = String(job["elec_job_price"] ?? "");
     }
 
     // -------------------------

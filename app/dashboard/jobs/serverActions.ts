@@ -161,6 +161,22 @@ export async function generatePreviews(jobId: string) {
           typeof job.jobValue === "number"
             ? `$ ${job.jobValue.toLocaleString("en-US")}`
             : "",
+        
+          roofing_job_price:
+            typeof job.roofingJobValue === "number"
+              ? `$ ${job.roofingJobValue.toLocaleString("en-US")}`
+              : "",
+          
+          mech_job_price:
+            typeof job.mechanicalJobValue === "number"
+              ? `$ ${job.mechanicalJobValue.toLocaleString("en-US")}`
+              : "",
+          
+          elec_job_price:
+            typeof job.electricJobValue === "number"
+              ? `$ ${job.electricJobValue.toLocaleString("en-US")}`
+              : "",
+          
         job_number: job.jobNumber ?? "",
         desc_of_improv: job.description ?? "",
       };
@@ -224,6 +240,18 @@ export async function generatePreviews(jobId: string) {
     data: { updatedAt: new Date() },
   });
 }
+
+function parsePrice(raw: string | null): number {
+  if (!raw) return 0;
+
+  return Number(
+    raw
+      .replace(/\$/g, "")
+      .replace(/\s/g, "")
+      .replace(/,/g, "")
+  );
+}
+
 
 /* -----------------------------------------------------------
    CREATE MINIMAL JOB
@@ -544,6 +572,12 @@ export async function updateJobAction(formData: FormData) {
     customerState: formData.get("customer_address_state") as string | null,
     customerZip: formData.get("customer_address_zip") as string | null,
     legalDescription: formData.get("legal_description") as string | null,
+    roofingJobValue: parsePrice(formData.get("roofing_job_price") as string | null),
+    mechanicalJobValue: parsePrice(formData.get("mech_job_price") as string | null),
+    electricalJobValue: parsePrice(formData.get("elec_job_price") as string | null),
+    roofingDescOfImprov: (formData.get("roofing_desc_of_improv") as string | null)?.trim() ?? "",
+    mechanicalDescOfImprov: (formData.get("mech_desc_of_improv") as string | null)?.trim() ?? "",
+    electricalDescOfImprov: (formData.get("elec_desc_of_improv") as string | null)?.trim() ?? "",
   };
 
   const templatePaths = JSON.parse(
@@ -583,7 +617,7 @@ export async function updateJobAction(formData: FormData) {
 
   const subdivision = formData.get("subdivision") as string | null;
   const taxFolioNumber = formData.get("customer_tax_folio") as string | null;
-  const rawPrice = formData.get("job_price") as string | null;
+  const rawPrice = formData.get("job_price_display") as string | null;
 
   const jobValue = rawPrice
     ? Number(
@@ -613,6 +647,13 @@ export async function updateJobAction(formData: FormData) {
       subdivision: subdivision ?? undefined,
       taxFolioNumber: taxFolioNumber ?? undefined,
       jobValue,
+      roofingJobValue: raw.roofingJobValue,
+      mechanicalJobValue: raw.mechanicalJobValue,
+      electricJobValue: raw.electricalJobValue,
+  
+      roofingDescOfImprov: raw.roofingDescOfImprov,
+      mechanicalDescOfImprov: raw.mechanicalDescOfImprov,
+      electricDescOfImprov: raw.electricalDescOfImprov,
       description,
     },
   });
@@ -830,7 +871,7 @@ export async function createJobAction(formData: FormData) {
     return await updateJobAction(formData);
   }
 
-  const rawPrice = formData.get("job_price") as string | null;
+  const rawPrice = formData.get("job_price_display") as string | null;
 
   const jobValue = rawPrice
     ? Number(
@@ -853,6 +894,12 @@ export async function createJobAction(formData: FormData) {
     legalDescription: formData.get("legal_description") as string | null,
     subdivision: formData.get("subdivision") as string | null,
     taxFolioNumber: formData.get("customer_tax_folio") as string | null,
+    roofingJobValue: parsePrice(formData.get("roofing_job_price") as string | null),
+    mechanicalJobValue: parsePrice(formData.get("mech_job_price") as string | null),
+    electricalJobValue: parsePrice(formData.get("elec_job_price") as string | null),
+    roofingDescOfImprov: (formData.get("roofing_desc_of_improv") as string | null)?.trim() ?? "",
+    mechanicalDescOfImprov: (formData.get("mech_desc_of_improv") as string | null)?.trim() ?? "",
+    electricalDescOfImprov: (formData.get("elec_desc_of_improv") as string | null)?.trim() ?? "",
     jobValue: jobValue,
   };
 
@@ -923,6 +970,13 @@ export async function createJobAction(formData: FormData) {
       subdivision: raw.subdivision ?? undefined,
       taxFolioNumber: raw.taxFolioNumber ?? undefined,
       jobValue: jobValue,
+      roofingJobValue: raw.roofingJobValue,
+      mechanicalJobValue: raw.mechanicalJobValue,
+      electricJobValue: raw.electricalJobValue,
+  
+      roofingDescOfImprov: raw.roofingDescOfImprov,
+      mechanicalDescOfImprov: raw.mechanicalDescOfImprov,
+      electricDescOfImprov: raw.electricalDescOfImprov,
     },
   });
 

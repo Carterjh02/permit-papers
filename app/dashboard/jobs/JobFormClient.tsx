@@ -8,6 +8,7 @@ import type { ParsedPAData } from "@/lib/propertyAppraiser/types";
 import { detectCounty } from "@/lib/propertyAppraiser/detectCounty";
 import { normalizeAddress } from "@/lib/propertyAppraiser/normalizeAddress";
 import { savePADataAction } from "./serverActions";
+import JobTabs from "./JobTabs";
 
 /* ---------------------------------------------------------
    EditableField
@@ -181,11 +182,38 @@ export default function JobFormClient({
     companyCode: companyCode,
   });
 
+  {/* Tab State */}
+const [activeTab, setActiveTab] = useState("windowdoor");
+
+/* Price formatting helpers */
+const formatWithCommas = (value: string) => {
+  const numeric = value.replace(/[^\d.]/g, "");
+  if (!numeric) return "";
+  const parts = numeric.split(".");
+  parts[0] = Number(parts[0]).toLocaleString("en-US");
+  return `$ ${parts.join(".")}`;
+};
+
+const finalizePrice = (value: string) => {
+  const numeric = value.replace(/[^0-9.]/g, "");
+  if (!numeric) return "";
+  const parts = numeric.split(".");
+  if (parts.length > 1) {
+    let decimals = parts[1];
+    decimals = decimals.slice(0, 2).padEnd(2, "0");
+    parts[1] = decimals;
+  }
+  return `$ ${Number(parts[0]).toLocaleString("en-US")}` +
+    (parts[1] ? `.${parts[1]}` : "");
+};
+
+  const normalizedInitialJob = initialJob
+  ? { description: initialJob.description ?? "" }
+  : null;
 
   function applyPaToForm(pa: ParsedPAData | null) {
     if (!pa) return;
 
-  
     setForm((prev) => {
       const updated = { ...prev };
   
@@ -252,61 +280,6 @@ export default function JobFormClient({
   const [snippetUrl, setSnippetUrl] = useState<string | null>(
     initialJob?.snippetSignedUrl ?? null
   );
-
-  /* ---------------------------------------------------------
-     PRICE FIELD (controlled)
-  --------------------------------------------------------- */
-  const [jobPrice, setJobPrice] = useState(
-    initialJob?.jobValue != null
-      ? `$ ${new Intl.NumberFormat("en-US").format(initialJob.jobValue)}`
-      : ""
-  );
-
-  const jobPricePlain = jobPrice.replace(/[^0-9.]/g, "");
-
-  const formatWithCommas = (value: string) => {
-    const numeric = value.replace(/[^\d.]/g, "");
-    if (!numeric) return "";
-  
-    const parts = numeric.split(".");
-  
-    // Format whole number part
-    parts[0] = Number(parts[0]).toLocaleString("en-US");
-  
-    return `$ ${parts.join(".")}`;
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    setJobPrice(formatWithCommas(raw));
-  };
-
-const handlePriceBlur = () => {
-  const numeric = jobPrice.replace(/[^0-9.]/g, "");
-  if (!numeric) return;
-
-  const parts = numeric.split(".");
-
-  // If user typed decimals, enforce exactly two
-  if (parts.length > 1) {
-    let decimals = parts[1];
-
-    // Trim if too long
-    decimals = decimals.slice(0, 2);
-
-    // Pad if too short
-    decimals = decimals.padEnd(2, "0");
-
-    parts[1] = decimals;
-  }
-
-  // Rebuild formatted value
-  const formatted =
-    `$ ${Number(parts[0]).toLocaleString("en-US")}` +
-    (parts[1] ? `.${parts[1]}` : "");
-
-  setJobPrice(formatted);
-};
 
   /* ---------------------------------------------------------
      OCR STATE
@@ -986,7 +959,6 @@ return (
     <div className="md:flex items-start gap-[var(--section-gap)]">
       <form className="pb-[calc(var(--section-gap)*3)] space-y-[var(--section-gap)] p-[var(--section-gap)] bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-sm">
         {/* Hidden fields required for server action */}
-        <input type="hidden" name="job_price" value={jobPrice} />
         <input
           type="hidden"
           name="template_paths"
@@ -1276,33 +1248,178 @@ return (
           </div>
         </div>
 
-        {/* ---------------------------------------------------------
-          JOB DESCRIPTION
-        --------------------------------------------------------- */}
-        <div className="space-y-[var(--block-gap)] border-t pt-[var(--section-gap)]">
-          <h3 className="text-md-d font-semibold text-[var(--text-color)]">Job Description</h3>
-          <div className="grid grid-cols-2 gap-[var(--block-gap)]">
-            <div className="flex flex-col gap-[var(--block-gap)]">
-              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Job Value</label>
-              <input
-                name="job_price_display"
-                inputMode="decimal"
-                className="input w-full bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
-                value={jobPrice}
-                onChange={handlePriceChange}
-                onBlur={handlePriceBlur}
-              />
-            </div>
-            <div className="flex flex-col gap-[var(--block-gap)] col-span-2">
-              <label className="text-[length:var(--base-font-size)] font-medium text-[var(--text-color)] opacity-80">Description of Improvement</label>
-              <textarea
-                name="desc_of_improvement"
-                className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
-                defaultValue={initialJob?.description ?? ""}
-              />
-            </div>
-          </div>
-        </div>
+{/* ---------------------------------------------------------
+  JOB DESCRIPTION (Tabs + Inputs)
+--------------------------------------------------------- */}
+
+{/* Tabs */}
+<div className="flex flex-wrap gap-[var(--block-gap)] border-b border-[var(--border-color)] pb-[var(--section-gap)]">
+  {[
+    { id: "windowdoor", label: "Window / Door" },
+    { id: "roofing", label: "Roofing" },
+    { id: "mechanical", label: "Mechanical" },
+    { id: "electric", label: "Electrical" },
+  ].map((tab) => (
+    <button
+      key={tab.id}
+      type="button"
+      onClick={() => setActiveTab(tab.id)}
+      className={`px-[var(--btn-padding-x)] py-[var(--btn-padding-y)] rounded-md text-sm-d-d font-medium ${
+        activeTab === tab.id
+          ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+          : "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)]"
+      }`}
+    >
+      {tab.label}
+    </button>
+  ))}
+</div>
+
+{/* Tab Content */}
+<div className="space-y-[var(--block-gap)]">
+
+  {/* WINDOW / DOOR */}
+  {activeTab === "windowdoor" && (
+    <>
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Job Value
+        </label>
+        <input
+          name="job_price_display"
+          defaultValue={
+            initialJob?.jobValue
+              ? `$ ${initialJob.jobValue.toLocaleString("en-US")}`
+              : ""
+          }
+          onChange={(e) => {
+            e.target.value = formatWithCommas(e.target.value);
+          }}
+          onBlur={(e) => {
+            e.target.value = finalizePrice(e.target.value);
+          }}
+          className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Description of Improvement
+        </label>
+        <textarea
+          name="desc_of_improvement"
+          defaultValue={initialJob?.description ?? ""}
+          className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+          rows={4}
+        />
+      </div>
+    </>
+  )}
+
+  {/* ROOFING */}
+  {activeTab === "roofing" && (
+    <>
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Roofing Job Value
+        </label>
+        <input
+          name="roofing_job_price"
+          defaultValue=""
+          onChange={(e) => {
+            e.target.value = formatWithCommas(e.target.value);
+          }}
+          onBlur={(e) => {
+            e.target.value = finalizePrice(e.target.value);
+          }}
+          className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Roofing Description of Improvement
+        </label>
+        <textarea
+          name="roofing_desc_of_improv"
+          defaultValue=""
+          className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+          rows={4}
+        />
+      </div>
+    </>
+  )}
+
+  {/* MECHANICAL */}
+  {activeTab === "mechanical" && (
+    <>
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Mechanical Job Value
+        </label>
+        <input
+          name="mech_job_price"
+          defaultValue=""
+          onChange={(e) => {
+            e.target.value = formatWithCommas(e.target.value);
+          }}
+          onBlur={(e) => {
+            e.target.value = finalizePrice(e.target.value);
+          }}
+          className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Mechanical Description of Improvement
+        </label>
+        <textarea
+          name="mech_desc_of_improv"
+          defaultValue=""
+          className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+          rows={4}
+        />
+      </div>
+    </>
+  )}
+
+  {/* ELECTRICAL */}
+  {activeTab === "electric" && (
+    <>
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Electrical Job Value
+        </label>
+        <input
+          name="elec_job_price"
+          defaultValue=""
+          onChange={(e) => {
+            e.target.value = formatWithCommas(e.target.value);
+          }}
+          onBlur={(e) => {
+            e.target.value = finalizePrice(e.target.value);
+          }}
+          className="input bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm-d font-medium text-[var(--text-color)] opacity-80">
+          Electrical Description of Improvement
+        </label>
+        <textarea
+          name="elec_desc_of_improv"
+          defaultValue=""
+          className="textarea bg-[var(--input-bg)] border border-[var(--input-border)] text-[var(--text-color)]"
+          rows={4}
+        />
+      </div>
+    </>
+  )}
+
+</div>
+
 
         {/* ---------------------------------------------------------
           SAVE BUTTON
@@ -1320,7 +1437,7 @@ return (
                 { duration: 4000 }
               );
             }}
-          >
+            >
             {mode === "create" ? "Save & Preview" : "Update & Preview"}
           </button>
         </div>

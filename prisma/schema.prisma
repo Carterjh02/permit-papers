@@ -131,39 +131,45 @@ model TutorialProgress {
 }
 
 model Job {
-  id                String        @id @default(cuid())
-  companyId         String
-  title             String?
-  customerName      String?
-  customerPhone     String?
-  customerAddress   String?
-  customerCity      String?
-  customerState     String?
-  customerZip       String?
-  legalDescription  String?
-  lotNumber         String?
-  blockNumber       String?
-  subdivision       String?
-  buildingNumber    String?
-  unitNumber        String?
-  taxFolioNumber    String?
-  jobValue          Float?
-  description       String?
-  createdBy         String
-  createdAt         DateTime      @default(now())
-  status            String?       @default("open")
-  customerEmail     String?
-  snippetPath       String?
-  snippetSignedUrl  String?       @db.Text
-  updatedAt         DateTime?     @updatedAt
-  jobNumber         Int
-  company           Company       @relation(fields: [companyId], references: [id])
-  documents         JobDocument[]
-  jobFiles          JobFile[]
-  paHtmlPath        String?
-  paScreenshotPath  String?
-  paSketchPath      String?
-  paParcelPhotoPath String?
+  id                     String        @id @default(cuid())
+  companyId              String
+  title                  String?
+  customerName           String?
+  customerPhone          String?
+  customerAddress        String?
+  customerCity           String?
+  customerState          String?
+  customerZip            String?
+  legalDescription       String?
+  lotNumber              String?
+  blockNumber            String?
+  subdivision            String?
+  buildingNumber         String?
+  unitNumber             String?
+  taxFolioNumber         String?
+  jobValue               Float?
+  description            String?
+  roofingJobValue        Float?
+  mechanicalJobValue     Float?
+  electricJobValue     Float?
+  roofingDescOfImprov    String?
+  mechanicalDescOfImprov String?
+  electricDescOfImprov   String?
+  createdBy              String
+  createdAt              DateTime      @default(now())
+  status                 String?       @default("open")
+  customerEmail          String?
+  snippetPath            String?
+  snippetSignedUrl       String?       @db.Text
+  updatedAt              DateTime?     @updatedAt
+  jobNumber              Int
+  company                Company       @relation(fields: [companyId], references: [id])
+  documents              JobDocument[]
+  jobFiles               JobFile[]
+  paHtmlPath             String?
+  paScreenshotPath       String?
+  paSketchPath           String?
+  paParcelPhotoPath      String?
 }
 
 model FormTemplate {
