@@ -1,15 +1,32 @@
 /* ============================================================
-   GLOBAL SHELL + BACKGROUND (PUBLIC PAGES)
+   PUBLIC PAGE SHELL
    ============================================================ */
+
 .public-shell {
   position: relative;
-  min-height: 100vh;
+
+  /* The shared layout controls the overall page height. */
+  min-height: 0;
+
+  /* Fill available space between navigation and footer. */
+  flex: 1;
+
   width: 100%;
-  background: radial-gradient(circle at top left, #dbeafe 0%, #e0e7ff 45%, #c7d2fe 75%, #f3f4f6 100%);
+
+  background: radial-gradient(
+    circle at top left,
+    #dbeafe 0%,
+    #e0e7ff 45%,
+    #c7d2fe 75%,
+    #f3f4f6 100%
+  );
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
   justify-content: flex-start;
+
   overflow-x: hidden;
 }
 
